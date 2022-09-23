@@ -1,6 +1,7 @@
 #!/bin/sh
 MW_KUBE_AGENT_HOME_GO=/usr/local/bin/mw-agent-kube-go
 export MW_KUBE_AGENT_HOME_GO
+#commented code
 
 sudo su << EOSUDO
 mkdir -p $MW_KUBE_AGENT_HOME_GO
