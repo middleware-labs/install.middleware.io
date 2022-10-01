@@ -220,7 +220,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-          image: ghcr.io/middleware-labs/agent-kube-go:dev
+          image: ghcr.io/middleware-labs/agent-kube-go:master
           imagePullPolicy: Always
           name: mw-kube-agent
           resources: {}
