@@ -1,5 +1,5 @@
 #!/bin/bash
-docker pull ghcr.io/middleware-labs/agent-host-go:dev
+docker pull ghcr.io/middleware-labs/agent-host-go:master
 docker run -d \
 --name mw-agent-${MW_API_KEY:0:5} \
 --pid host \
@@ -8,4 +8,4 @@ docker run -d \
 -e TARGET=$TARGET \
 -v /var/run/docker.sock:/var/run/docker.sock \
 --privileged \
---network=host ghcr.io/middleware-labs/agent-host-go:dev api-server start
+--network=host ghcr.io/middleware-labs/agent-host-go:master api-server start

@@ -205,7 +205,7 @@ spec:
               value: "TARGET_VALUE"
             - name: MW_API_KEY
               value: "MW_API_KEY_VALUE"
-          image: ghcr.io/middleware-labs/agent-kube-go:dev
+          image: ghcr.io/middleware-labs/agent-kube-go:master
           imagePullPolicy: Always
           name: mw-kube-agent
           resources: {}
