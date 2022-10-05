@@ -7,5 +7,6 @@ docker run -d \
 -e MW_API_KEY=$MW_API_KEY \
 -e TARGET=$TARGET \
 -v /var/run/docker.sock:/var/run/docker.sock \
+-v /var/log:/var/log \
 --privileged \
 --network=host ghcr.io/middleware-labs/agent-host-go:master api-server start
