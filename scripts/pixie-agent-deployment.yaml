@@ -31,7 +31,7 @@ spec:
               value: "MW_PX_API_KEY_VALUE"
             - name: MW_PX_CLUSTER_ID
               value: "MW_PX_CLUSTER_ID_VALUE"
-          image: pixie-test
+          image: ghcr.io/middleware-labs/pixie-test
           name: pixie-agent
           resources: {}
       restartPolicy: Always
