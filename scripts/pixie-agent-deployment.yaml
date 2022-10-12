@@ -31,6 +31,10 @@ spec:
               value: "MW_PX_API_KEY_VALUE"
             - name: MW_PX_CLUSTER_ID
               value: "MW_PX_CLUSTER_ID_VALUE"
+            - name: MW_API_KEY
+              value: "MW_API_KEY_VALUE"
+            - name: MW_TARGET
+              value: "MW_TARGET_VALUE"
           image: ghcr.io/middleware-labs/pixie-test
           name: pixie-agent
           resources: {}
