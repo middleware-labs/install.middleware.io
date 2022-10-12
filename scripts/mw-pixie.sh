@@ -2,6 +2,7 @@
 bash -c "$(curl -fsSL https://install.middleware.io/scripts/pixie-install-noauth.sh)"
 
 # bash ./pixie-install-noauth.sh
+export PL_CLOUD_ADDR="px.middleware.io"
 
 px auth login --api_key $MW_PX_API_KEY
 px deploy --deploy_key $MW_PX_DEPLOY_KEY
