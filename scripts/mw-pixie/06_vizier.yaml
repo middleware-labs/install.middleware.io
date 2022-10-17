@@ -1,0 +1,14 @@
+apiVersion: px.dev/v1alpha1
+kind: Vizier
+metadata:
+  name: pixie
+  namespace: pl
+spec:
+  version: 0.11.8
+  deployKey: px-dep-0230422b-25d5-40ed-8438-bebcedbdab73
+  cloudAddr: dev.px.middleware.io:443
+  disableAutoUpdate: false
+  useEtcdOperator: false
+  clusterName: k8s
+  dataAccess: Full
+  dataCollectorParams:
