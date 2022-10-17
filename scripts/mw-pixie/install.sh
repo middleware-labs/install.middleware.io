@@ -5,35 +5,35 @@ export MW_PIXIE_SCRIPT_HOME
 sudo su << EOSUDO
 mkdir -p $MW_PIXIE_SCRIPT_HOME
 
-touch -p $MW_KUBE_AGENT_HOME_GO/00_nm.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/00_nm.yaml https://install.middleware.io/scripts/mw-pixie/00_nm.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/00_nm.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/00_nm.yaml https://install.middleware.io/scripts/mw-pixie/00_nm.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/00_olm_crd.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/00_olm_crd.yaml https://install.middleware.io/scripts/mw-pixie/00_olm_crd.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/00_olm_crd.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/00_olm_crd.yaml https://install.middleware.io/scripts/mw-pixie/00_olm_crd.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/01_vizier_crd.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/01_vizier_crd.yaml https://install.middleware.io/scripts/mw-pixie/01_vizier_crd.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/01_vizier_crd.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/01_vizier_crd.yaml https://install.middleware.io/scripts/mw-pixie/01_vizier_crd.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/02_olm.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/02_olm.yaml https://install.middleware.io/scripts/mw-pixie/02_olm.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/02_olm.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/02_olm.yaml https://install.middleware.io/scripts/mw-pixie/02_olm.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/03_px_olm.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/03_px_olm.yaml https://install.middleware.io/scripts/mw-pixie/03_px_olm.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/03_px_olm.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/03_px_olm.yaml https://install.middleware.io/scripts/mw-pixie/03_px_olm.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/04_catalog.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/04_catalog.yaml https://install.middleware.io/scripts/mw-pixie/04_catalog.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/04_catalog.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/04_catalog.yaml https://install.middleware.io/scripts/mw-pixie/04_catalog.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/05_subscription.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/05_subscription.yaml https://install.middleware.io/scripts/mw-pixie/05_subscription.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/05_subscription.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/05_subscription.yaml https://install.middleware.io/scripts/mw-pixie/05_subscription.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/06_vizier.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/06_vizier.yaml https://install.middleware.io/scripts/mw-pixie/06_vizier.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/06_vizier.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/06_vizier.yaml https://install.middleware.io/scripts/mw-pixie/06_vizier.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/07_pixiecustom.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/07_pixiecustom.yaml https://install.middleware.io/scripts/mw-pixie/07_pixiecustom.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/07_pixiecustom.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/07_pixiecustom.yaml https://install.middleware.io/scripts/mw-pixie/07_pixiecustom.yaml
 
-touch -p $MW_KUBE_AGENT_HOME_GO/08_otel.yaml
-wget -O $MW_KUBE_AGENT_HOME_GO/08_otel.yaml https://install.middleware.io/scripts/mw-pixie/08_otel.yaml
+touch -p $MW_PIXIE_SCRIPT_HOME/08_otel.yaml
+wget -O $MW_PIXIE_SCRIPT_HOME/08_otel.yaml https://install.middleware.io/scripts/mw-pixie/08_otel.yaml
 
 
 EOSUDO
