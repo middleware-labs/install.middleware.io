@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: "mw-agent-ns-dummy"
+  namespace: "MW_NAMESPACE_VALUE"
   annotations:
     kompose.cmd: kompose convert
     kompose.version: 1.26.1 (a9d05d509)
