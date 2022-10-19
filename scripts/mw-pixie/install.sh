@@ -46,6 +46,23 @@ sudo cp 08_otel.yaml otel.yaml
 sudo rm 07_pixiecustom.yaml
 sudo rm 08_otel.yaml
 sed -e 's|MW_PX_DEPLOY_KEY_VALUE|'${MW_PX_DEPLOY_KEY}'|g' 06_vizier.yaml | 06_vizier.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/00_nm.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/00_olm_crd.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/01_vizier_crd.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/02_olm.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/03_px_olm.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/04_catalog.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/05_subscription.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/06_vizier.yaml
+
+kubectl wait -f $MW_PIXIE_SCRIPT_HOME/06_vizier.yaml
+
+MW_PX_CLUSTER_ID=`kubectl get secret pl-cluster-secrets -n pl -o jsonpath="{.data.cluster-id}" | base64 -d`
+export MW_PX_CLUSTER_ID
+echo $MW_PX_CLUSTER_ID
+
 sed -e 's|MW_PX_DEPLOY_KEY_VALUE|'${MW_PX_DEPLOY_KEY}'|g' -e 's|MW_PX_API_KEY_VALUE|'${MW_PX_API_KEY}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_TARGET_VALUE|'${MW_TARGET}'|g' -e 's|MW_NAMESPACE_VALUE|mw-agent-ns-'${MW_API_KEY:0:5}'|g' otel.yaml | sudo tee otel.yaml
-sed -e 's|MW_PX_DEPLOY_KEY_VALUE|'${MW_PX_DEPLOY_KEY}'|g' -e 's|MW_PX_API_KEY_VALUE|'${MW_PX_API_KEY}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_TARGET_VALUE|'${MW_TARGET}'|g' -e 's|MW_NAMESPACE_VALUE|mw-agent-ns-'${MW_API_KEY:0:5}'|g' pixiecustom.yaml | sudo tee pixiecustom.yaml
-kubectl apply -f $MW_PIXIE_SCRIPT_HOME
+sed -e 's|MW_PX_CLUSTER_ID_VALUE|'${MW_PX_CLUSTER_ID}'|g' -e 's|MW_PX_API_KEY_VALUE|'${MW_PX_API_KEY}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_TARGET_VALUE|'${MW_TARGET}'|g' -e 's|MW_NAMESPACE_VALUE|mw-agent-ns-'${MW_API_KEY:0:5}'|g' pixiecustom.yaml | sudo tee pixiecustom.yaml
+
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/pixiecustom.yaml
+kubectl apply -f $MW_PIXIE_SCRIPT_HOME/otel.yaml
