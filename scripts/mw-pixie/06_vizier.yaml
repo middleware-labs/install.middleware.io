@@ -9,6 +9,6 @@ spec:
   cloudAddr: dev.px.middleware.io:443
   disableAutoUpdate: false
   useEtcdOperator: false
-  clusterName: k8s-MW_PX_DEPLOY_KEY_VALUE
+  clusterName: k8s
   dataAccess: Full
   dataCollectorParams:
