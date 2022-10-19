@@ -45,7 +45,6 @@ sudo cp 07_pixiecustom.yaml pixiecustom.yaml
 sudo cp 08_otel.yaml otel.yaml
 sudo rm 07_pixiecustom.yaml
 sudo rm 08_otel.yaml
-sed -e 's|MW_PX_DEPLOY_KEY_VALUE|'${MW_PX_DEPLOY_KEY}'|g' 06_vizier.yaml | sudo tee 06_vizier.yaml
 kubectl apply -f $MW_PIXIE_SCRIPT_HOME/00_nm.yaml
 kubectl apply -f $MW_PIXIE_SCRIPT_HOME/00_olm_crd.yaml
 kubectl apply -f $MW_PIXIE_SCRIPT_HOME/01_vizier_crd.yaml
