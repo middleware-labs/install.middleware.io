@@ -30,8 +30,8 @@ spec:
           env:
             - name: MW_PX_API_KEY
               value: "MW_PX_API_KEY_VALUE"
-            - name: MW_PX_DEPLOY_KEY
-              value: "MW_PX_DEPLOY_KEY_VALUE"
+            - name: MW_PX_CLUSTER_ID
+              value: "MW_PX_CLUSTER_ID_VALUE"
             - name: MW_API_KEY
               value: "MW_API_KEY_VALUE"
             - name: MW_TARGET
