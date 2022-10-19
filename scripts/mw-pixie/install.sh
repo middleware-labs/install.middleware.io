@@ -54,7 +54,7 @@ kubectl apply -f $MW_PIXIE_SCRIPT_HOME/04_catalog.yaml
 kubectl apply -f $MW_PIXIE_SCRIPT_HOME/05_subscription.yaml
 kubectl apply -f $MW_PIXIE_SCRIPT_HOME/06_vizier.yaml
 
-while !`kubectl get secret pl-cluster-secrets -n pl`; do echo "Waiting for Cluster ID"; sleep 1m; done
+while ! kubectl get secret pl-cluster-secrets -n pl; do echo "Waiting for Cluster ID"; sleep 1m; done
 
 MW_PX_CLUSTER_ID=`kubectl get secret pl-cluster-secrets -n pl -o jsonpath="{.data.cluster-id}" | base64 -d`
 export MW_PX_CLUSTER_ID
