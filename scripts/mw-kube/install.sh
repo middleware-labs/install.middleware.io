@@ -26,7 +26,7 @@ sudo rm 02_pixiecustom.yaml
 sudo rm 03_otel.yaml
 kubectl apply -f $MW_PIXIE_SCRIPT_HOME/01_pixie.yaml
 
-while ! kubectl get secret pl-cluster-secrets -n pl -o jsonpath="{.data.cluster-id}"; do echo "Waiting for Cluster ID"; sleep 1m; done
+while [ -z `kubectl get secret pl-cluster-secrets -n pl -o jsonpath="{.data.cluster-id}"` ]; do echo "Waiting for Cluster ID"; sleep 1m; done
 
 MW_PX_CLUSTER_ID=`kubectl get secret pl-cluster-secrets -n pl -o jsonpath="{.data.cluster-id}" | base64 -d`
 export MW_PX_CLUSTER_ID
