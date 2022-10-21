@@ -207,6 +207,10 @@ spec:
         k8s-app: mw-app
       creationTimestamp: null
     spec:
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
       containers:
         - args:
             - api-server
