@@ -188,7 +188,7 @@ subjects:
     name: mw-service-account
     namespace: "NAMESPACE_VALUE"
 ---
-kind: Deployment
+kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   creationTimestamp: null
