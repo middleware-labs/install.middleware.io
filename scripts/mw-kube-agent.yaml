@@ -198,8 +198,6 @@ spec:
   selector:
     matchLabels:
       app: mw-app
-  replicas: 1
-  strategy: {}
   template:
     metadata:
       labels:
