@@ -223,6 +223,10 @@ spec:
           image: ghcr.io/middleware-labs/agent-kube-go:master
           imagePullPolicy: Always
           name: mw-kube-agent
+          volumeMounts:
+          - mountPath: /var/log
+            name: varlog
+            readOnly: true
           resources: {}
       imagePullSecrets:
         - name: gh-regcred
