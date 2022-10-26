@@ -225,6 +225,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: K8S_NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
           image: ghcr.io/middleware-labs/agent-kube-go:master
           imagePullPolicy: Always
           name: mw-kube-agent
