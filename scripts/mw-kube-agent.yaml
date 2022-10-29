@@ -36,9 +36,9 @@ data:
       otlp:
         protocols:
           grpc:
-            endpoint: 0.0.0.0:4317
+            endpoint: 0.0.0.0:9319
           http:
-            endpoint: 0.0.0.0:4318
+            endpoint: 0.0.0.0:9320
 
     exporters:
       logging:
@@ -139,12 +139,12 @@ spec:
     - port: 443
       name: "grpc"
       targetPort: 8443
-    - port: 4317
+    - port: 9319
       name: "grpc2"
-      targetPort: 4317
-    - port: 4318
+      targetPort: 9319
+    - port: 9320
       name: "http"
-      targetPort: 4318
+      targetPort: 9320
     - port: 8006
       name: "fluent"
       targetPort: 8006
