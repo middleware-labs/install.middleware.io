@@ -14,6 +14,8 @@ sudo touch /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public
 sudo wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public
 sudo touch /etc/apt/sources.list.d/mw-go.list
 
+echo "Logs\The Host agent will be reading your log files from [/var/log/*.log]\n"
+
 sudo mkdir -p /usr/bin/configyamls/all
 sudo wget -O /usr/bin/configyamls/all/otel-config.yaml https://install.middleware.io/configyamls/all/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/metrics
