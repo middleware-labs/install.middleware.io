@@ -74,6 +74,9 @@ data:
             - from: connection
       resource:
         attributes:
+          - key: misc
+            from_attribute: host.name
+            action: upsert
           - key: mw.account_key
             action: insert
             value: ${MW_API_KEY}
