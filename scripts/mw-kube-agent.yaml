@@ -18,7 +18,7 @@ data:
       kubeletstats:
         collection_interval: 10s
         auth_type: serviceAccount
-        endpoint: "${K8S_NODE_NAME}:10250"
+        endpoint: "${K8S_NODE_IP}:10250"
         insecure_skip_verify: true
       k8s_events:
         auth_type: serviceAccount
