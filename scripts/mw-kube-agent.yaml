@@ -45,9 +45,6 @@ data:
         loglevel: debug
       otlp:
         endpoint: ${TARGET}
-        tls:
-          insecure: false
-          insecure_skip_verify: false
     processors:
       k8sattributes:
         auth_type: "serviceAccount"
