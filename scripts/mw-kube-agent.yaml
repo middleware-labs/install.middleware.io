@@ -42,7 +42,7 @@ data:
 
     exporters:
       logging:
-        loglevel: debug
+        loglevel: warn
       otlp:
         endpoint: ${TARGET}
     processors:
