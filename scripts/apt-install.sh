@@ -24,6 +24,8 @@ sudo mkdir -p /usr/bin/configyamls/logs
 sudo wget -O /usr/bin/configyamls/logs/otel-config.yaml https://install.middleware.io/configyamls/logs/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/nodocker
 sudo wget -O /usr/bin/configyamls/nodocker/otel-config.yaml https://install.middleware.io/configyamls/nodocker/otel-config.yaml
+sudo mkdir -p /etc/ssl/certs
+sudo wget -O /etc/ssl/certs/MwCA.pem https://install.middleware.io/certs/MwCA.pem
 
 echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
 
