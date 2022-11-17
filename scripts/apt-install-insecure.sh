@@ -29,7 +29,7 @@ sudo wget --no-check-certificate -O /etc/ssl/certs/MwCA.pem https://install.midd
 sudo apt install ca-certificates
 sudo update-ca-certificates
 
-echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
+echo "deb [trusted=yes arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/mw-go.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
