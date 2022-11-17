@@ -32,6 +32,7 @@ sudo apt install ca-certificates
 sudo update-ca-certificates
 
 sudo touch /usr/local/bin/mw-go-agent/mw-agent.log
+sudo chmod 777 /usr/local/bin/mw-go-agent/mw-agent.log
 
 echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
 
