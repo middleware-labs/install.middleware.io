@@ -1,0 +1,392 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "NAMESPACE_VALUE"
+---
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: "NAMESPACE_VALUE"
+data:
+  config.yaml: |-
+    receivers:
+      filelog:
+        include: [ /var/log/pods/*/*/*.log ]
+        start_at: beginning
+      kubeletstats:
+        collection_interval: 10s
+        auth_type: serviceAccount
+        endpoint: "${K8S_NODE_IP}:10250"
+        insecure_skip_verify: true
+      k8s_events:
+        auth_type: serviceAccount
+        namespaces: all
+      k8s_cluster:
+        auth_type: serviceAccount
+        collection_interval: 10s
+        node_conditions_to_report: [ Ready, DiskPressure, MemoryPressure, PIDPressure, NetworkUnavailable ]
+        distribution: kubernetes
+        allocatable_types_to_report: [ cpu, memory, ephemeral-storage, storage ]
+      fluentforward:
+        endpoint: 0.0.0.0:8006
+      # kubeletstats:
+      #   ceat_path:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:9319
+          http:
+            endpoint: 0.0.0.0:9320
+    exporters:
+      logging:
+        loglevel: warn
+      otlp:
+        endpoint: ${TARGET}
+    processors:
+      k8sattributes:
+        auth_type: "serviceAccount"
+        passthrough: false
+        filter:
+          node_from_env_var: KUBE_NODE_NAME
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.deployment.name
+            - k8s.cluster.name
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.pod.start_time
+        pod_association:
+          - sources:
+            - from: resource_attribute
+              name: k8s.pod.ip
+          - sources:
+            - from: resource_attribute
+              name: k8s.pod.uid
+          - sources:
+            - from: connection
+      resource:
+        attributes:
+          - key: mw.account_key
+            action: insert
+            value: ${MW_API_KEY}
+      resource/kubeletstats:
+        attributes:
+          - key: kubelet.node.uid
+            from_attribute: k8s.node.name
+            action: upsert
+          - key: k8s.node.uid
+            from_attribute: k8s.node.name
+            action: upsert
+          - key: mw.account_key
+            action: insert
+            value: ${MW_API_KEY}
+       resource/filelog:
+         attributes:
+          - key: k8s.pod.uid
+            from_attribute: host.name
+            action: upsert
+          - key: mw.account_key
+            action: insert
+            value: ${MW_API_KEY}
+          
+      resourcedetection:
+        detectors: [ env, system, docker ]
+        timeout: 2s
+        override: false
+      #  memory_limiter:
+      #    check_interval: 1s
+      #    limit_mib: 4000
+      #    spike_limit_mib: 800
+      batch:
+      batch/2:
+        send_batch_size: 2000
+        timeout: 10s
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+        metrics:
+          address: 0.0.0.0:8888
+      #extensions:
+      #  - health_check
+      #  - zpages
+      #  - pprof
+      pipelines:
+        traces:
+          receivers: [ otlp ]
+          processors: [ resourcedetection,resource, batch, batch/2 ]
+          exporters: [  otlp ]
+        logs:
+          receivers: [fluentforward, k8s_events, otlp ]
+          processors: [ resourcedetection,resource, k8sattributes, batch, batch/2 ]
+          exporters: [ otlp ]
+        logs/filelog:
+          receivers: [filelog ]
+          processors: [ resourcedetection,resource/filelog, k8sattributes, batch, batch/2 ]
+          exporters: [ otlp ]
+        metrics/kubeletstats:
+          receivers: [ kubeletstats ]
+          processors: [ resourcedetection,resource/kubeletstats, k8sattributes, batch, batch/2]
+          exporters: [ otlp ]
+        metrics:
+          receivers: [ k8s_cluster, otlp ]
+          processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
+          exporters: [ otlp ]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-service-account
+  namespace: "NAMESPACE_VALUE"
+---
+# This section modified
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-service
+  namespace: "NAMESPACE_VALUE"
+spec:
+  type: NodePort
+  ports:
+    - port: 443
+      name: "grpc"
+      targetPort: 8443
+    - port: 9319
+      name: "grpc2"
+      targetPort: 9319
+    - port: 9320
+      name: "http"
+      targetPort: 9320
+    - port: 8006
+      name: "fluent"
+      targetPort: 8006
+  selector:
+    k8s-app: mw-app
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-app-certs
+  namespace: "NAMESPACE_VALUE"
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-app-csrf
+  namespace: "NAMESPACE_VALUE"
+type: Opaque
+data:
+  csrf: ""
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-app-key-holder
+  namespace: "NAMESPACE_VALUE"
+type: Opaque
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-app-settings
+  namespace: "NAMESPACE_VALUE"
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-role
+  namespace: "NAMESPACE_VALUE"
+rules:
+  # Allow Dashboard to get, update and delete Dashboard exclusive secrets.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["mw-app-key-holder", "mw-app-certs", "mw-app-csrf"]
+    verbs: ["get", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec"]
+    verbs: ["get", "list", "delete", "patch", "create"]
+    # Allow Dashboard to get and update 'mw-app-settings' config map.
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["mw-app-settings"]
+    verbs: ["get", "update"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+    # Allow Dashboard to get metrics.
+  - apiGroups: [""]
+    resources: ["services"]
+    resourceNames: ["heapster", "dashboard-metrics-scraper"]
+    verbs: ["proxy"]
+  - apiGroups: [""]
+    resources: ["services/proxy"]
+    resourceNames: ["heapster", "http:heapster:", "https:heapster:", "dashboard-metrics-scraper", "http:dashboard-metrics-scraper"]
+    verbs: ["get"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: mw-cluster-role
+  namespace: "NAMESPACE_VALUE"
+rules:
+  # Allow Metrics Scraper to get metrics from the Metrics server
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list", "watch"]
+
+  # Other resources
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/stats", "namespaces", "pods", "serviceaccounts", "services", "configmaps", "endpoints", "persistentvolumeclaims", "replicationcontrollers", "replicationcontrollers/scale", "persistentvolumeclaims", "persistentvolumes", "bindings", "events", "limitranges", "namespaces/status", "pods/log", "pods/status", "replicationcontrollers/status", "resourcequotas", "resourcequotas/status"]
+    verbs: ["get", "list", "watch"]
+  
+  - apiGroups: ["apps"]
+    resources: ["daemonsets", "deployments", "deployments/scale", "replicasets", "replicasets/scale", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["batch"]
+    resources: ["cronjobs", "jobs"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["extensions"]
+    resources: ["daemonsets", "deployments", "deployments/scale", "networkpolicies", "replicasets", "replicasets/scale", "replicationcontrollers/scale"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "volumeattachments"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterrolebindings", "clusterroles", "roles", "rolebindings", ]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-role-binding
+  namespace: "NAMESPACE_VALUE"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mw-role
+subjects:
+  - kind: ServiceAccount
+    name: mw-service-account
+    namespace: "NAMESPACE_VALUE"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mw-app
+  namespace: "NAMESPACE_VALUE"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mw-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: mw-service-account
+    namespace: "NAMESPACE_VALUE"
+---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  creationTimestamp: null
+  name: mw-kube-agent
+  namespace: "NAMESPACE_VALUE"
+spec:
+  selector:
+    matchLabels:
+      app: mw-app
+  template:
+    metadata:
+      labels:
+        app: mw-app
+        k8s-app: mw-app
+      creationTimestamp: null
+    spec:
+      volumes:
+      # volume binding for opentelemetry-config
+      - name: data
+        configMap:
+          name: otel-collector-config
+      # volume binding for log collection 
+      - name: varlog
+        hostPath:
+          path: /var/log
+      # volume binding for log collection
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      containers:
+        - args:
+            - api-server
+            - start
+          env:
+            - name: TARGET
+              value: "TARGET_VALUE"
+            - name: MW_API_KEY
+              value: "MW_API_KEY_VALUE"
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: K8S_NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          image: ghcr.io/middleware-labs/agent-kube-go:master
+          imagePullPolicy: Always
+          name: mw-kube-agent
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - mountPath: /app/otel-config.yaml
+            name: data
+            subPath: config.yaml
+            readOnly: true
+          - mountPath: /var/log
+            name: varlog
+            readOnly: true
+          - mountPath: /var/lib/docker/containers
+            name: varlibdockercontainers
+            readOnly: true
+          resources: {}
+      imagePullSecrets:
+        - name: gh-regcred
+      restartPolicy: Always
+      serviceAccountName: mw-service-account
