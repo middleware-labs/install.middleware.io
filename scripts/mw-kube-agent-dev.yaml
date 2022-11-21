@@ -15,6 +15,15 @@ data:
       filelog:
         include: [ /var/log/pods/*/*/*.log ]
         start_at: beginning
+      hostmetrics:
+        collection_interval: 5s
+        scrapers:
+          cpu:
+            metrics:
+              system.cpu.utilization:
+                enabled: true
+          load:
+            cpu_average: true
       kubeletstats:
         collection_interval: 10s
         auth_type: serviceAccount
@@ -115,7 +124,7 @@ data:
           processors: [ resourcedetection,resource/kubeletstats, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
         metrics:
-          receivers: [ otlp ]
+          receivers: [ otlp, hostmetrics ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
 ---
