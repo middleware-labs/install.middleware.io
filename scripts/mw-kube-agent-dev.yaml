@@ -24,6 +24,21 @@ data:
                 enabled: true
           load:
             cpu_average: true
+          memory:
+            metrics:
+              system.memory.utilization:
+                enabled: true
+          paging: {}
+          disk: {}
+          filesystem:
+            metrics:
+              system.filesystem.utilization:
+                enabled: true
+          network: {}
+          processes: {}
+          process:
+            avoid_selected_errors: true
+            mute_process_name_error: true
       k8s_events:
         auth_type: serviceAccount
         namespaces: all
