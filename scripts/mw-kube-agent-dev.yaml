@@ -73,10 +73,7 @@ data:
             value: ${MW_API_KEY}
       resource/hostmetrics:
         attributes:
-          - key: kubelet.node.uid
-            from_attribute: host.name
-            action: upsert
-          - key: kubelet.node.name
+          - key: host.id
             from_attribute: host.name
             action: upsert
           - key: mw.account_key
