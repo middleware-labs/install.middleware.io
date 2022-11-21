@@ -76,6 +76,17 @@ data:
           - key: mw.account_key
             action: insert
             value: ${MW_API_KEY}
+      resource/hostmetrics:
+        attributes:
+          - key: kubelet.node.uid
+            from_attribute: host.name
+            action: upsert
+          - key: kubelet.node.name
+            from_attribute: host.name
+            action: upsert
+          - key: mw.account_key
+            action: insert
+            value: ${MW_API_KEY}
       resource/kubeletstats:
         attributes:
           - key: kubelet.node.uid
@@ -123,8 +134,12 @@ data:
           receivers: [ kubeletstats ]
           processors: [ resourcedetection,resource/kubeletstats, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
+        metrics/hostmetrics:
+          receivers: [ hostmetrics ]
+          processors: [ resourcedetection,resource/hostmetrics, k8sattributes, batch, batch/2]
+          exporters: [ otlp ]
         metrics:
-          receivers: [ otlp, hostmetrics ]
+          receivers: [ otlp ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
 ---
