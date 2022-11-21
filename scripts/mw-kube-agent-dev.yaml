@@ -345,6 +345,7 @@ spec:
         k8s-app: mw-app
       creationTimestamp: null
     spec:
+      hostNetwork: true
       volumes:
       # volume binding for opentelemetry-config
       - name: data
