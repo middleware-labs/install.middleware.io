@@ -24,11 +24,6 @@ data:
                 enabled: true
           load:
             cpu_average: true
-      kubeletstats:
-        collection_interval: 10s
-        auth_type: serviceAccount
-        endpoint: "${K8S_NODE_IP}:10250"
-        insecure_skip_verify: true
       k8s_events:
         auth_type: serviceAccount
         namespaces: all
@@ -129,10 +124,6 @@ data:
         logs:
           receivers: [fluentforward, k8s_events, otlp, filelog ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2 ]
-          exporters: [ otlp ]
-        metrics/kubeletstats:
-          receivers: [ kubeletstats ]
-          processors: [ resourcedetection,resource/kubeletstats, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
         metrics/hostmetrics:
           receivers: [ hostmetrics ]
