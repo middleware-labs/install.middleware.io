@@ -107,7 +107,7 @@ data:
             value: ${MW_API_KEY}
           
       resourcedetection:
-        detectors: [ env, system, docker ]
+        detectors: [ env, system, docker, eks, ec2 ]
         timeout: 2s
         override: false
       #  memory_limiter:
