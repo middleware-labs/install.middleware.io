@@ -15,20 +15,32 @@ data:
       filelog:
         include: [ /var/log/pods/*/*/*.log ]
         start_at: beginning
-      kubeletstats:
-        collection_interval: 10s
-        auth_type: serviceAccount
-        endpoint: "${K8S_NODE_IP}:10250"
-        insecure_skip_verify: true
+      hostmetrics:
+        collection_interval: 5s
+        scrapers:
+          cpu:
+            metrics:
+              system.cpu.utilization:
+                enabled: true
+          load:
+            cpu_average: true
+          memory:
+            metrics:
+              system.memory.utilization:
+                enabled: true
+          paging: {}
+          disk: {}
+          filesystem:
+            metrics:
+              system.filesystem.utilization:
+                enabled: true
+          network: {}
+          processes: {}
+          process:
+            mute_process_name_error: true
       k8s_events:
         auth_type: serviceAccount
         namespaces: all
-      k8s_cluster:
-        auth_type: serviceAccount
-        collection_interval: 10s
-        node_conditions_to_report: [ Ready, DiskPressure, MemoryPressure, PIDPressure, NetworkUnavailable ]
-        distribution: kubernetes
-        allocatable_types_to_report: [ cpu, memory, ephemeral-storage, storage ]
       fluentforward:
         endpoint: 0.0.0.0:8006
       # kubeletstats:
@@ -70,6 +82,14 @@ data:
             - from: connection
       resource:
         attributes:
+          - key: mw.account_key
+            action: insert
+            value: ${MW_API_KEY}
+      resource/hostmetrics:
+        attributes:
+          - key: host.id
+            from_attribute: host.name
+            action: upsert
           - key: mw.account_key
             action: insert
             value: ${MW_API_KEY}
@@ -128,12 +148,12 @@ data:
           receivers: [filelog ]
           processors: [ resourcedetection,resource/filelog, k8sattributes, batch, batch/2 ]
           exporters: [ otlp ]
-        metrics/kubeletstats:
-          receivers: [ kubeletstats ]
-          processors: [ resourcedetection,resource/kubeletstats, k8sattributes, batch, batch/2]
+        metrics/hostmetrics:
+          receivers: [ hostmetrics ]
+          processors: [ resourcedetection,resource/hostmetrics, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
         metrics:
-          receivers: [ k8s_cluster, otlp ]
+          receivers: [ otlp ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
 ---
