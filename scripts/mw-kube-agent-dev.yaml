@@ -140,13 +140,13 @@ data:
           receivers: [ otlp ]
           processors: [ resourcedetection,resource, batch, batch/2 ]
           exporters: [  otlp ]
-        logs/filelog:
-          receivers: [ filelog ]
-          processors: [ resourcedetection,resource/filelog, k8sattributes, batch, batch/2 ]
-          exporters: [ otlp ]
         logs:
           receivers: [fluentforward, k8s_events, otlp ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2 ]
+          exporters: [ otlp ]
+        logs/filelog:
+          receivers: [ filelog ]
+          processors: [ resourcedetection,resource/filelog, k8sattributes, batch, batch/2 ]
           exporters: [ otlp ]
         metrics/hostmetrics:
           receivers: [ hostmetrics ]
