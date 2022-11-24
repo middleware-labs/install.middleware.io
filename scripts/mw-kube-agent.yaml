@@ -34,7 +34,10 @@ data:
             metrics:
               system.filesystem.utilization:
                 enabled: true
-          network: {}
+          network:
+            metrics:
+              system.network.io.bandwidth:
+                enabled: true
           processes: {}
           process:
             mute_process_name_error: true
