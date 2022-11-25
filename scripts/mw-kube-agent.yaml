@@ -29,7 +29,10 @@ data:
               system.memory.utilization:
                 enabled: true
           paging: {}
-          disk: {}
+          disk:
+            metrics:
+              system.disk.io.speed:
+                enabled: true
           filesystem:
             metrics:
               system.filesystem.utilization:
