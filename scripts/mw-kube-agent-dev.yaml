@@ -44,11 +44,11 @@ data:
           processes: {}
           process:
             mute_process_name_error: true
-      # docker_stats:
-      #   endpoint: ${MW_DOCKER_ENDPOINT}
-      #   collection_interval: 5s
-      #   timeout: 20s
-      #   api_version: 1.24
+      docker_stats:
+        endpoint: ${MW_DOCKER_ENDPOINT}
+        collection_interval: 5s
+        timeout: 20s
+        api_version: 1.24
       k8s_events:
         auth_type: serviceAccount
         namespaces: all

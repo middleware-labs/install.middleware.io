@@ -44,11 +44,11 @@ data:
           processes: {}
           process:
             mute_process_name_error: true
-      # docker_stats:
-      #   endpoint: ${MW_DOCKER_ENDPOINT}
-      #   collection_interval: 5s
-      #   timeout: 20s
-      #   api_version: 1.24
+      docker_stats:
+        endpoint: ${MW_DOCKER_ENDPOINT}
+        collection_interval: 5s
+        timeout: 20s
+        api_version: 1.24
       k8s_events:
         auth_type: serviceAccount
         namespaces: all
@@ -164,7 +164,7 @@ data:
           processors: [ resourcedetection,resource/hostmetrics, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
         metrics:
-          receivers: [ otlp ]
+          receivers: [ otlp, docker_stats ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
 ---
@@ -380,6 +380,12 @@ spec:
       - name: varlog
         hostPath:
           path: /var/log
+      - name: varrun
+        hostPath:
+          path: /var/run/docker.sock
+      - name: runcontainerd
+        hostPath:
+          path: /run/containerd/containerd.sock
       # volume binding for log collection
       - name: varlibdockercontainers
         hostPath:
@@ -415,6 +421,12 @@ spec:
             readOnly: true
           - mountPath: /var/log
             name: varlog
+            readOnly: true
+          - mountPath: /var/run/docker.sock
+            name: varrun
+            readOnly: true
+          - mountPath: /run/containerd/containerd.sock
+            name: runcontainerd
             readOnly: true
           - mountPath: /var/lib/docker/containers
             name: varlibdockercontainers
