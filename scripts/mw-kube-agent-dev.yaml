@@ -29,7 +29,10 @@ data:
               system.memory.utilization:
                 enabled: true
           paging: {}
-          disk: {}
+          disk:
+            metrics:
+              system.disk.io.speed:
+                enabled: true
           filesystem:
             metrics:
               system.filesystem.utilization:
@@ -41,6 +44,11 @@ data:
           processes: {}
           process:
             mute_process_name_error: true
+      # docker_stats:
+      #   endpoint: ${MW_DOCKER_ENDPOINT}
+      #   collection_interval: 5s
+      #   timeout: 20s
+      #   api_version: 1.24
       k8s_events:
         auth_type: serviceAccount
         namespaces: all
@@ -88,14 +96,6 @@ data:
           - key: mw.account_key
             action: insert
             value: ${MW_API_KEY}
-      resource/filelog:
-        attributes:
-          - key: host.id
-            from_attribute: host.name
-            action: upsert
-          - key: mw.account_key
-            action: insert
-            value: ${MW_API_KEY}
       resource/hostmetrics:
         attributes:
           - key: host.id
@@ -111,6 +111,14 @@ data:
             action: upsert
           - key: k8s.node.uid
             from_attribute: k8s.node.name
+            action: upsert
+          - key: mw.account_key
+            action: insert
+            value: ${MW_API_KEY}
+      resource/filelog:
+        attributes:
+          - key: k8s.pod.uid
+            from_attribute: host.name
             action: upsert
           - key: mw.account_key
             action: insert
@@ -148,7 +156,7 @@ data:
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2 ]
           exporters: [ otlp ]
         logs/filelog:
-          receivers: [ filelog ]
+          receivers: [filelog ]
           processors: [ resourcedetection,resource/filelog, k8sattributes, batch, batch/2 ]
           exporters: [ otlp ]
         metrics/hostmetrics:
@@ -372,6 +380,9 @@ spec:
       - name: varlog
         hostPath:
           path: /var/log
+      - name: varrun
+        hostPath:
+          path: /var/run/docker.sock
       # volume binding for log collection
       - name: varlibdockercontainers
         hostPath:
@@ -385,6 +396,8 @@ spec:
               value: "TARGET_VALUE"
             - name: MW_API_KEY
               value: "MW_API_KEY_VALUE"
+            - name: MW_DOCKER_ENDPOINT
+              value: "MW_DOCKER_ENDPOINT_VALUE"
             - name: K8S_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -405,6 +418,9 @@ spec:
             readOnly: true
           - mountPath: /var/log
             name: varlog
+            readOnly: true
+          - mountPath: /var/run/docker.sock
+            name: varrun
             readOnly: true
           - mountPath: /var/lib/docker/containers
             name: varlibdockercontainers
