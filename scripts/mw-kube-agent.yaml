@@ -164,7 +164,7 @@ data:
           processors: [ resourcedetection,resource/hostmetrics, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
         metrics:
-          receivers: [ otlp ]
+          receivers: [ otlp, docker_stats ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
 ---
