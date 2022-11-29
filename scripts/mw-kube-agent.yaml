@@ -7,7 +7,7 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: otel-collector-config
+  name: otel-collector-config-nodocker
   namespace: "NAMESPACE_VALUE"
 nodockerdata:
   config.yaml: |-
@@ -162,6 +162,12 @@ nodockerdata:
           receivers: [ otlp ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: "NAMESPACE_VALUE"
 data:
   config.yaml: |-
     receivers:
@@ -529,6 +535,9 @@ spec:
       - name: data
         configMap:
           name: otel-collector-config
+      - name: nodockerdata
+        configMap:
+          name: otel-collector-config-nodocker
       # volume binding for log collection 
       - name: varlog
         hostPath:
