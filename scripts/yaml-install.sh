@@ -13,7 +13,7 @@ if [ -z "${MW_KUBECONFIG}" ]; then
     sed -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${TARGET}'|g' -e 's|NAMESPACE_VALUE|mw-agent-ns-'${MW_API_KEY:0:5}'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml
     kubectl apply --kubeconfig=${MW_KUBECONFIG}  -f $MW_KUBE_AGENT_HOME_GO/agent.yaml
 else
-    sed -e -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${TARGET}'|g' -e 's|NAMESPACE_VALUE|mw-agent-ns-'${MW_API_KEY:0:5}'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml
+    sed -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${TARGET}'|g' -e 's|NAMESPACE_VALUE|mw-agent-ns-'${MW_API_KEY:0:5}'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml
     kubectl apply -f $MW_KUBE_AGENT_HOME_GO/agent.yaml
 fi
 
