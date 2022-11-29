@@ -162,7 +162,6 @@ nodockerdata:
           receivers: [ otlp ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
----
 data:
   config.yaml: |-
     receivers:
