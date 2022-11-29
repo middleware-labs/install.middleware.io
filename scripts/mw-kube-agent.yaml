@@ -393,6 +393,8 @@ spec:
               value: "TARGET_VALUE"
             - name: MW_API_KEY
               value: "MW_API_KEY_VALUE"
+            - name: MW_DOCKER_ENDPOINT
+              value: "MW_DOCKER_ENDPOINT_VALUE"
             - name: K8S_NODE_NAME
               valueFrom:
                 fieldRef:
