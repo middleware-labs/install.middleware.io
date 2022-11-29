@@ -9,8 +9,8 @@ kind: ConfigMap
 metadata:
   name: otel-collector-config-nodocker
   namespace: "NAMESPACE_VALUE"
-nodockerdata:
-  config.yaml: |-
+data:
+  nodockerconfig.yaml: |-
     receivers:
       filelog:
         include: [ /var/log/pods/*/*/*.log ]
@@ -602,3 +602,4 @@ spec:
         - name: gh-regcred
       restartPolicy: Always
       serviceAccountName: mw-service-account
+
