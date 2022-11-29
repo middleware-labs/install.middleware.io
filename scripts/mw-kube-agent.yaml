@@ -10,7 +10,7 @@ metadata:
   name: otel-collector-config-nodocker
   namespace: "NAMESPACE_VALUE"
 data:
-  nodockerconfig.yaml: |-
+  config.yaml: |-
     receivers:
       filelog:
         include: [ /var/log/pods/*/*/*.log ]
