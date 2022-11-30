@@ -126,9 +126,6 @@ data:
           - key: host.id
             from_attribute: host.name
             action: upsert
-          - key: k8s.pod.uid
-            from_attribute: host.name
-            action: upsert
           - key: mw.account_key
             action: insert
             value: ${MW_API_KEY}
@@ -302,9 +299,6 @@ data:
       resource/filelog:
         attributes:
           - key: host.id
-            from_attribute: host.name
-            action: upsert
-          - key: k8s.pod.uid
             from_attribute: host.name
             action: upsert
           - key: mw.account_key
