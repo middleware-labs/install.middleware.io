@@ -15,6 +15,17 @@ data:
       filelog:
         include: [ /var/log/pods/*/*/*.log ]
         start_at: beginning
+      k8s_cluster:
+        auth_type: serviceAccount
+        collection_interval: 10s
+        node_conditions_to_report: [ Ready, DiskPressure, MemoryPressure, PIDPressure, NetworkUnavailable ]
+        distribution: kubernetes
+        allocatable_types_to_report: [ cpu, memory, ephemeral-storage, storage ]
+      kubeletstats:
+        collection_interval: 10s
+        auth_type: serviceAccount
+        endpoint: "${K8S_NODE_IP}:10250"
+        insecure_skip_verify: true
       hostmetrics:
         collection_interval: 5s
         scrapers:
@@ -159,7 +170,7 @@ data:
           processors: [ resourcedetection,resource/hostmetrics, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
         metrics:
-          receivers: [ otlp ]
+          receivers: [ otlp, kubeletstats, k8s_cluster ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
 ---
@@ -174,6 +185,17 @@ data:
       filelog:
         include: [ /var/log/pods/*/*/*.log ]
         start_at: beginning
+      k8s_cluster:
+        auth_type: serviceAccount
+        collection_interval: 10s
+        node_conditions_to_report: [ Ready, DiskPressure, MemoryPressure, PIDPressure, NetworkUnavailable ]
+        distribution: kubernetes
+        allocatable_types_to_report: [ cpu, memory, ephemeral-storage, storage ]
+      kubeletstats:
+        collection_interval: 10s
+        auth_type: serviceAccount
+        endpoint: "${K8S_NODE_IP}:10250"
+        insecure_skip_verify: true
       hostmetrics:
         collection_interval: 5s
         scrapers:
@@ -323,7 +345,7 @@ data:
           processors: [ resourcedetection,resource/hostmetrics, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
         metrics:
-          receivers: [ otlp, docker_stats ]
+          receivers: [ otlp, docker_stats, kubeletstats, k8s_cluster ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
 ---
