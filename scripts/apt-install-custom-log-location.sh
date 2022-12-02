@@ -46,6 +46,7 @@ while true; do
           export MW_LOG_PATH_COMPLETE
 
           MW_LOG_PATHS=$MW_LOG_PATH_COMPLETE
+          export MW_LOG_PATHS
           echo -e "\n------------------------------------------------"
           echo -e "\nNow, our agent will also monitor these paths : "$MW_LOG_PATH_COMPLETE
           echo -e "\n------------------------------------------------\n"
