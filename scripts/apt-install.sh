@@ -8,6 +8,59 @@ if [ "${MW_VERSION}" = "" ]; then
   export MW_VERSION
 fi
 
+
+MW_LOG_PATHS=""
+
+echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
+while true; do
+    read -p "Do you want to monitor any more directories for logs ? [Y|n] : " yn
+    case $yn in
+        [Yy]* )
+          MW_LOG_PATH_DIR=""
+          
+          while true; do
+            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2] : " MW_LOG_PATH_DIR
+            export MW_LOG_PATH_DIR
+            if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
+            then 
+              break
+            else
+              echo $MW_LOG_PATH_DIR
+              echo "Invalid file path, try again ..."
+            fi
+          done
+
+          MW_LOG_PATH_COMPLETE=""
+
+          MW_LOG_PATH_DIR_ARRAY=($(echo $MW_LOG_PATH_DIR | tr "," "\n"))
+
+          for i in "${MW_LOG_PATH_DIR_ARRAY[@]}"
+          do
+            if [ "${MW_LOG_PATH_COMPLETE}" = "" ]; then
+              MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE$i/**/*.*"
+            else
+              MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE,$i/**/*.*"
+            fi
+          done
+
+          export MW_LOG_PATH_COMPLETE
+
+          MW_LOG_PATHS=$MW_LOG_PATH_COMPLETE
+          export MW_LOG_PATHS
+          echo -e "\n------------------------------------------------"
+          echo -e "\nNow, our agent will also monitor these paths : "$MW_LOG_PATH_COMPLETE
+          echo -e "\n------------------------------------------------\n"
+          sleep 4
+          break;;
+        [Nn]* ) 
+          echo -e "\n----------------------------------------------------------\n\nOkay, Continuing installation ....\n\n----------------------------------------------------------\n"
+          break;;
+        * ) 
+          echo -e "\nPlease answer y or n."
+          continue;;
+    esac
+done
+
 # Adding APT repo address & public key to system
 sudo mkdir -p /usr/local/bin/mw-go-agent/apt
 sudo touch /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public
@@ -28,6 +81,8 @@ sudo mkdir -p /etc/ssl/certs
 sudo wget -O /etc/ssl/certs/MwCA.pem https://install.middleware.io/certs/MwCA.pem
 sudo apt install ca-certificates
 sudo update-ca-certificates
+
+sed -e 's|$MW_LOG_PATHS|'$MW_LOG_PATHS'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml
 
 echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
 
