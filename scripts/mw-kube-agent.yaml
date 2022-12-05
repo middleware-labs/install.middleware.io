@@ -111,6 +111,9 @@ data:
             - from: connection
       resource:
         attributes:
+          - key: host.id
+            from_attribute: host.name
+            action: upsert
           - key: mw.account_key
             action: insert
             value: ${MW_API_KEY}
@@ -298,6 +301,9 @@ data:
             - from: connection
       resource:
         attributes:
+          - key: host.id
+            from_attribute: host.name
+            action: upsert
           - key: mw.account_key
             action: insert
             value: ${MW_API_KEY}
