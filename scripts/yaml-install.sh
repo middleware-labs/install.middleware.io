@@ -11,57 +11,57 @@ if [ "${MW_NAMESPACE}" = "" ]; then
   export MW_NAMESPACE
 fi
 
-MW_LOG_PATHS=""
+# MW_LOG_PATHS=""
 
-echo -e "\nThe host agent will monitor all '.log' files inside your/var/log/pods directory [/var/log/pods/*/*/*.log]"
-while true; do
-    read -p "Do you want to monitor any more directories for logs (from Kubernetes node filesystem) ? [Y|n] : " yn
-    case $yn in
-        [Yy]* )
-          MW_LOG_PATH_DIR=""
+# echo -e "\nThe host agent will monitor all '.log' files inside your/var/log/pods directory [/var/log/pods/*/*/*.log]"
+# while true; do
+#     read -p "Do you want to monitor any more directories for logs (from Kubernetes node filesystem) ? [Y|n] : " yn
+#     case $yn in
+#         [Yy]* )
+#           MW_LOG_PATH_DIR=""
           
-          while true; do
-            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2] : " MW_LOG_PATH_DIR
-            export MW_LOG_PATH_DIR
-            if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
-            then 
-              break
-            else
-              echo $MW_LOG_PATH_DIR
-              echo "Invalid file path, try again ..."
-            fi
-          done
+#           while true; do
+#             read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2] : " MW_LOG_PATH_DIR
+#             export MW_LOG_PATH_DIR
+#             if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
+#             then 
+#               break
+#             else
+#               echo $MW_LOG_PATH_DIR
+#               echo "Invalid file path, try again ..."
+#             fi
+#           done
 
-          MW_LOG_PATH_COMPLETE=""
+#           MW_LOG_PATH_COMPLETE=""
 
-          MW_LOG_PATH_DIR_ARRAY=($(echo $MW_LOG_PATH_DIR | tr "," "\n"))
+#           MW_LOG_PATH_DIR_ARRAY=($(echo $MW_LOG_PATH_DIR | tr "," "\n"))
 
-          for i in "${MW_LOG_PATH_DIR_ARRAY[@]}"
-          do
-            if [ "${MW_LOG_PATH_COMPLETE}" = "" ]; then
-              MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE$i/**/*.*"
-            else
-              MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE,$i/**/*.*"
-            fi
-          done
+#           for i in "${MW_LOG_PATH_DIR_ARRAY[@]}"
+#           do
+#             if [ "${MW_LOG_PATH_COMPLETE}" = "" ]; then
+#               MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE$i/**/*.*"
+#             else
+#               MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE,$i/**/*.*"
+#             fi
+#           done
 
-          export MW_LOG_PATH_COMPLETE
+#           export MW_LOG_PATH_COMPLETE
 
-          MW_LOG_PATHS=$MW_LOG_PATH_COMPLETE
-          export MW_LOG_PATHS
-          echo -e "\n------------------------------------------------"
-          echo -e "\nNow, our agent will also monitor these paths : "$MW_LOG_PATH_COMPLETE
-          echo -e "\n------------------------------------------------\n"
-          sleep 4
-          break;;
-        [Nn]* ) 
-          echo -e "\n----------------------------------------------------------\n\nOkay, Continuing installation ....\n\n----------------------------------------------------------\n"
-          break;;
-        * ) 
-          echo -e "\nPlease answer y or n."
-          continue;;
-    esac
-done
+#           MW_LOG_PATHS=$MW_LOG_PATH_COMPLETE
+#           export MW_LOG_PATHS
+#           echo -e "\n------------------------------------------------"
+#           echo -e "\nNow, our agent will also monitor these paths : "$MW_LOG_PATH_COMPLETE
+#           echo -e "\n------------------------------------------------\n"
+#           sleep 4
+#           break;;
+#         [Nn]* ) 
+#           echo -e "\n----------------------------------------------------------\n\nOkay, Continuing installation ....\n\n----------------------------------------------------------\n"
+#           break;;
+#         * ) 
+#           echo -e "\nPlease answer y or n."
+#           continue;;
+#     esac
+# done
 
 sudo su << EOSUDO
 mkdir -p $MW_KUBE_AGENT_HOME_GO
