@@ -7,136 +7,345 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: otel-collector-config-nodocker
+  namespace: "NAMESPACE_VALUE"
+data:
+  receivers:
+    filelog:
+      include: [ /var/log/pods/*/*/*.log, $MW_LOG_PATHS ]
+      include_file_path: true
+      include_file_name_resolved: true
+      include_file_path_resolved: true
+      start_at: beginning
+    k8s_cluster:
+      auth_type: serviceAccount
+      collection_interval: 10s
+      node_conditions_to_report: [ Ready, DiskPressure, MemoryPressure, PIDPressure, NetworkUnavailable ]
+      distribution: kubernetes
+      allocatable_types_to_report: [ cpu, memory, ephemeral-storage, storage ]
+    kubeletstats:
+      collection_interval: 10s
+      auth_type: serviceAccount
+      endpoint: "${K8S_NODE_IP}:10250"
+      insecure_skip_verify: true
+    hostmetrics:
+      collection_interval: 5s
+      scrapers:
+        cpu:
+          metrics:
+            system.cpu.utilization:
+              enabled: true
+        load:
+          cpu_average: true
+        memory:
+          metrics:
+            system.memory.utilization:
+              enabled: true
+        paging: {}
+        disk:
+          metrics:
+            system.disk.io.speed:
+              enabled: true
+        filesystem:
+          metrics:
+            system.filesystem.utilization:
+              enabled: true
+        network:
+          metrics:
+            system.network.io.bandwidth:
+              enabled: true
+        processes: {}
+        process:
+          mute_process_name_error: true
+    
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: "otel-collector"
+            scrape_interval: 5s
+            static_configs:
+              - targets: ["0.0.0.0:8888"]
+    
+    k8s_events:
+      auth_type: serviceAccount
+      namespaces: all
+    fluentforward:
+      endpoint: 0.0.0.0:8006
+    # kubeletstats:
+    #   ceat_path:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:9319
+        http:
+          endpoint: 0.0.0.0:9320
+  exporters:
+    logging:
+      loglevel: warn
+    otlp:
+      endpoint: ${TARGET}
+  processors:
+    k8sattributes:
+      auth_type: "serviceAccount"
+      passthrough: false
+      filter:
+        node_from_env_var: KUBE_NODE_NAME
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.cluster.name
+          - k8s.namespace.name
+          - k8s.node.name
+          - k8s.pod.start_time
+      pod_association:
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+        - sources:
+          - from: connection
+    resource:
+      attributes:
+        - key: host.id
+          from_attribute: host.name
+          action: upsert
+        - key: mw.account_key
+          action: insert
+          value: ${MW_API_KEY}
+    resource/hostmetrics:
+      attributes:
+        - key: host.id
+          from_attribute: host.name
+          action: upsert
+        - key: mw.account_key
+          action: insert
+          value: ${MW_API_KEY}
+    resource/kubeletstats:
+      attributes:
+        - key: kubelet.node.uid
+          from_attribute: k8s.node.name
+          action: upsert
+        - key: k8s.node.uid
+          from_attribute: k8s.node.name
+          action: upsert
+        - key: mw.account_key
+          action: insert
+          value: ${MW_API_KEY}
+    resource/filelog:
+      attributes:
+        - key: host.id
+          from_attribute: host.name
+          action: upsert
+        - key: mw.account_key
+          action: insert
+          value: ${MW_API_KEY}
+        
+    resourcedetection:
+      detectors: [ env, system, docker ]
+      timeout: 2s
+      override: false
+    #  memory_limiter:
+    #    check_interval: 1s
+    #    limit_mib: 4000
+    #    spike_limit_mib: 800
+    batch:
+    batch/2:
+      send_batch_size: 2000
+      timeout: 10s
+  service:
+    telemetry:
+      logs:
+        level: "debug"
+      metrics:
+        address: 0.0.0.0:8888
+    #extensions:
+    #  - health_check
+    #  - zpages
+    #  - pprof
+    pipelines:
+      traces:
+        receivers: [ otlp ]
+        processors: [ resourcedetection,resource, batch, batch/2 ]
+        exporters: [  otlp ]
+      logs:
+        receivers: [fluentforward, k8s_events, otlp ]
+        processors: [ resourcedetection,resource, k8sattributes, batch, batch/2 ]
+        exporters: [ otlp ]
+      logs/filelog:
+        receivers: [filelog ]
+        processors: [ resourcedetection,resource/filelog, k8sattributes, batch, batch/2 ]
+        exporters: [ otlp ]
+      metrics/hostmetrics:
+        receivers: [ hostmetrics, prometheus ]
+        processors: [ resourcedetection,resource/hostmetrics, k8sattributes, batch, batch/2]
+        exporters: [ otlp ]
+      metrics:
+        receivers: [ otlp, kubeletstats, k8s_cluster ]
+        processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
+        exporters: [ otlp ]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: otel-collector-config
   namespace: "NAMESPACE_VALUE"
 data:
-  config.yaml: |-
-    receivers:
-      filelog:
-        include: [ /var/log/pods/*/*/*.log ]
-        start_at: beginning
-      hostmetrics:
-        collection_interval: 5s
-        scrapers:
-          cpu:
-            metrics:
-              system.cpu.utilization:
-                enabled: true
-          load:
-            cpu_average: true
-          memory:
-            metrics:
-              system.memory.utilization:
-                enabled: true
-          paging: {}
-          disk:
-            metrics:
-              system.disk.io.speed:
-                enabled: true
-          filesystem:
-            metrics:
-              system.filesystem.utilization:
-                enabled: true
-          network:
-            metrics:
-              system.network.io.bandwidth:
-                enabled: true
-          processes: {}
-          process:
-            mute_process_name_error: true
-      docker_stats:
-        endpoint: ${MW_DOCKER_ENDPOINT}
-        collection_interval: 5s
-        timeout: 20s
-        api_version: 1.24
-      k8s_events:
-        auth_type: serviceAccount
-        namespaces: all
-      fluentforward:
-        endpoint: 0.0.0.0:8006
-      # kubeletstats:
-      #   ceat_path:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: 0.0.0.0:9319
-          http:
-            endpoint: 0.0.0.0:9320
-    exporters:
-      logging:
-        loglevel: warn
-      otlp:
-        endpoint: ${TARGET}
-    processors:
-      k8sattributes:
-        auth_type: "serviceAccount"
-        passthrough: false
-        filter:
-          node_from_env_var: KUBE_NODE_NAME
-        extract:
-          metadata:
-            - k8s.pod.name
-            - k8s.pod.uid
-            - k8s.deployment.name
-            - k8s.cluster.name
-            - k8s.namespace.name
-            - k8s.node.name
-            - k8s.pod.start_time
-        pod_association:
-          - sources:
-            - from: resource_attribute
-              name: k8s.pod.ip
-          - sources:
-            - from: resource_attribute
-              name: k8s.pod.uid
-          - sources:
-            - from: connection
-      resource:
-        attributes:
-          - key: mw.account_key
-            action: insert
-            value: ${MW_API_KEY}
-      resource/hostmetrics:
-        attributes:
-          - key: host.id
-            from_attribute: host.name
-            action: upsert
-          - key: mw.account_key
-            action: insert
-            value: ${MW_API_KEY}
-      resource/kubeletstats:
-        attributes:
-          - key: kubelet.node.uid
-            from_attribute: k8s.node.name
-            action: upsert
-          - key: k8s.node.uid
-            from_attribute: k8s.node.name
-            action: upsert
-          - key: mw.account_key
-            action: insert
-            value: ${MW_API_KEY}
-      resource/filelog:
-        attributes:
-          - key: k8s.pod.uid
-            from_attribute: host.name
-            action: upsert
-          - key: mw.account_key
-            action: insert
-            value: ${MW_API_KEY}
-          
-      resourcedetection:
-        detectors: [ env, system, docker ]
-        timeout: 2s
-        override: false
-      #  memory_limiter:
-      #    check_interval: 1s
-      #    limit_mib: 4000
-      #    spike_limit_mib: 800
-      batch:
-      batch/2:
-        send_batch_size: 2000
-        timeout: 10s
-    service:
+  receivers:
+    filelog:
+      include: [ /var/log/pods/*/*/*.log, $MW_LOG_PATHS ]
+      include_file_path: true
+      include_file_name_resolved: true
+      include_file_path_resolved: true
+      start_at: beginning
+    k8s_cluster:
+      auth_type: serviceAccount
+      collection_interval: 10s
+      node_conditions_to_report: [ Ready, DiskPressure, MemoryPressure, PIDPressure, NetworkUnavailable ]
+      distribution: kubernetes
+      allocatable_types_to_report: [ cpu, memory, ephemeral-storage, storage ]
+    kubeletstats:
+      collection_interval: 10s
+      auth_type: serviceAccount
+      endpoint: "${K8S_NODE_IP}:10250"
+      insecure_skip_verify: true
+    hostmetrics:
+      collection_interval: 5s
+      scrapers:
+        cpu:
+          metrics:
+            system.cpu.utilization:
+              enabled: true
+        load:
+          cpu_average: true
+        memory:
+          metrics:
+            system.memory.utilization:
+              enabled: true
+        paging: {}
+        disk:
+          metrics:
+            system.disk.io.speed:
+              enabled: true
+        filesystem:
+          metrics:
+            system.filesystem.utilization:
+              enabled: true
+        network:
+          metrics:
+            system.network.io.bandwidth:
+              enabled: true
+        processes: {}
+        process:
+          mute_process_name_error: true
+    docker_stats:
+      endpoint: ${MW_DOCKER_ENDPOINT}
+      collection_interval: 5s
+      timeout: 20s
+      api_version: 1.24
+
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: "otel-collector"
+            scrape_interval: 5s
+            static_configs:
+              - targets: ["0.0.0.0:8888"]
+    
+    k8s_events:
+      auth_type: serviceAccount
+      namespaces: all
+    fluentforward:
+      endpoint: 0.0.0.0:8006
+    # kubeletstats:
+    #   ceat_path:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:9319
+        http:
+          endpoint: 0.0.0.0:9320
+  exporters:
+    logging:
+      loglevel: warn
+    otlp:
+      endpoint: ${TARGET}
+  processors:
+    k8sattributes:
+      auth_type: "serviceAccount"
+      passthrough: false
+      filter:
+        node_from_env_var: KUBE_NODE_NAME
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.cluster.name
+          - k8s.namespace.name
+          - k8s.node.name
+          - k8s.pod.start_time
+      pod_association:
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+        - sources:
+          - from: connection
+    resource:
+      attributes:
+        - key: host.id
+          from_attribute: host.name
+          action: upsert
+        - key: mw.account_key
+          action: insert
+          value: ${MW_API_KEY}
+    resource/hostmetrics:
+      attributes:
+        - key: host.id
+          from_attribute: host.name
+          action: upsert
+        - key: mw.account_key
+          action: insert
+          value: ${MW_API_KEY}
+    resource/kubeletstats:
+      attributes:
+        - key: kubelet.node.uid
+          from_attribute: k8s.node.name
+          action: upsert
+        - key: k8s.node.uid
+          from_attribute: k8s.node.name
+          action: upsert
+        - key: mw.account_key
+          action: insert
+          value: ${MW_API_KEY}
+    resource/filelog:
+      attributes:
+        - key: host.id
+          from_attribute: host.name
+          action: upsert
+        - key: mw.account_key
+          action: insert
+          value: ${MW_API_KEY}
+        
+    resourcedetection:
+      detectors: [ env, system, docker ]
+      timeout: 2s
+      override: false
+    #  memory_limiter:
+    #    check_interval: 1s
+    #    limit_mib: 4000
+    #    spike_limit_mib: 800
+    batch:
+    batch/2:
+      send_batch_size: 2000
+      timeout: 10s
+  service:
       telemetry:
         logs:
           level: "debug"
@@ -160,11 +369,11 @@ data:
           processors: [ resourcedetection,resource/filelog, k8sattributes, batch, batch/2 ]
           exporters: [ otlp ]
         metrics/hostmetrics:
-          receivers: [ hostmetrics ]
+          receivers: [ hostmetrics, prometheus ]
           processors: [ resourcedetection,resource/hostmetrics, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
         metrics:
-          receivers: [ otlp ]
+          receivers: [ otlp, docker_stats, kubeletstats, k8s_cluster ]
           processors: [ resourcedetection,resource, k8sattributes, batch, batch/2]
           exporters: [ otlp ]
 ---
@@ -376,6 +585,9 @@ spec:
       - name: data
         configMap:
           name: otel-collector-config
+      - name: nodockerdata
+        configMap:
+          name: otel-collector-config-nodocker
       # volume binding for log collection 
       - name: varlog
         hostPath:
@@ -383,6 +595,9 @@ spec:
       - name: varrun
         hostPath:
           path: /var/run/docker.sock
+      - name: runcontainerd
+        hostPath:
+          path: /run/containerd/containerd.sock
       # volume binding for log collection
       - name: varlibdockercontainers
         hostPath:
@@ -414,13 +629,18 @@ spec:
           volumeMounts:
           - mountPath: /app/otel-config.yaml
             name: data
-            subPath: config.yaml
+            readOnly: true
+          - mountPath: /app/otel-config-nodocker.yaml
+            name: nodockerdata
             readOnly: true
           - mountPath: /var/log
             name: varlog
             readOnly: true
           - mountPath: /var/run/docker.sock
             name: varrun
+            readOnly: true
+          - mountPath: /run/containerd/containerd.sock
+            name: runcontainerd
             readOnly: true
           - mountPath: /var/lib/docker/containers
             name: varlibdockercontainers
@@ -430,3 +650,4 @@ spec:
         - name: gh-regcred
       restartPolicy: Always
       serviceAccountName: mw-service-account
+
