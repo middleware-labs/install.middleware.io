@@ -247,12 +247,6 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
-          - mountPath: /app/otel-config.yaml
-            name: data
-            readOnly: true
-          - mountPath: /app/otel-config-nodocker.yaml
-            name: nodockerdata
-            readOnly: true
           - mountPath: /var/log
             name: varlog
             readOnly: true
