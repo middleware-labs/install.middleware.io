@@ -239,6 +239,15 @@ spec:
         k8s-app: mw-app
       creationTimestamp: null
     spec:
+      tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
       hostNetwork: true
       volumes:
       # volume binding for log collection 
