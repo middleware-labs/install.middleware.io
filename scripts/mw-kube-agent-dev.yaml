@@ -196,7 +196,7 @@ metadata:
   namespace: "NAMESPACE_VALUE"
 spec:
   concurrencyPolicy: Forbid
-  schedule: "MW_ROLLOUT_RESTART_RULE" # cron spec of time, here, 8 o'clock
+  schedule: 0 8 * * * # cron spec of time, here, 8 o'clock
   jobTemplate:
     spec:
       backoffLimit: 2 # this has very low chance of failing, as all this does
