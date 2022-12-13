@@ -3,7 +3,7 @@ MW_LOG_PATHS=""
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
 while true; do
-    read -p "Do you want to monitor any more directories for logs ? [Y|n] : " yn
+    read -p "Do you want to monitor any more directories for logs ? [y|N] : " yn
     case $yn in
         [Yy]* )
           MW_LOG_PATH_DIR=""
