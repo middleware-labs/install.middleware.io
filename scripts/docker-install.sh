@@ -3,7 +3,7 @@ MW_LOG_PATHS=""
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
 while true; do
-    read -p "Do you want to monitor any more directories for logs ? [Y|n] : " yn
+    read -p "Do you want to monitor any more directories for logs ? [y|N] : " yn
     case $yn in
         [Yy]* )
           MW_LOG_PATH_DIR=""
@@ -53,7 +53,7 @@ while true; do
     esac
 done
 
-docker pull ghcr.io/middleware-labs/agent-host-go:dev
+docker pull ghcr.io/middleware-labs/agent-host-go:master
 dockerrun="docker run -d \
 --name mw-agent-${MW_API_KEY:0:5} \
 --pid host \
