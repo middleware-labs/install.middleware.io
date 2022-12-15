@@ -27,7 +27,7 @@ CURRENT_CONTEXT="$(kubectl config current-context)"
 MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '"$CURRENT_CONTEXT"')].context.cluster}")"
 export MW_KUBE_CLUSTER_NAME
 
-echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $current_context\n"
+echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
 
 # MW_LOG_PATHS=""
 
