@@ -1,9 +1,10 @@
+# Creating namespace where all the Middleware Agent related components will run
 apiVersion: v1
 kind: Namespace
 metadata:
   name: "NAMESPACE_VALUE"
 ---
----
+# To establish permissions for Middleware Agent
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -12,7 +13,7 @@ metadata:
   name: mw-service-account
   namespace: "NAMESPACE_VALUE"
 ---
-# This section modified
+# Exposing service for Middleware Agent Daemonset
 kind: Service
 apiVersion: v1
 metadata:
@@ -38,43 +39,6 @@ spec:
   selector:
     k8s-app: mw-app
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  labels:
-    k8s-app: mw-app
-  name: mw-app-certs
-  namespace: "NAMESPACE_VALUE"
-type: Opaque
----
-apiVersion: v1
-kind: Secret
-metadata:
-  labels:
-    k8s-app: mw-app
-  name: mw-app-csrf
-  namespace: "NAMESPACE_VALUE"
-type: Opaque
-data:
-  csrf: ""
----
-apiVersion: v1
-kind: Secret
-metadata:
-  labels:
-    k8s-app: mw-app
-  name: mw-app-key-holder
-  namespace: "NAMESPACE_VALUE"
-type: Opaque
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  labels:
-    k8s-app: mw-app
-  name: mw-app-settings
-  namespace: "NAMESPACE_VALUE"
----
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -83,19 +47,9 @@ metadata:
   name: mw-role
   namespace: "NAMESPACE_VALUE"
 rules:
-  # Allow Dashboard to get, update and delete Dashboard exclusive secrets.
-  - apiGroups: [""]
-    resources: ["secrets"]
-    resourceNames: ["mw-app-key-holder", "mw-app-certs", "mw-app-csrf"]
-    verbs: ["get", "update", "delete"]
   - apiGroups: [""]
     resources: ["pods", "pods/exec"]
     verbs: ["get", "list", "delete", "patch", "create"]
-    # Allow Dashboard to get and update 'mw-app-settings' config map.
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    resourceNames: ["mw-app-settings"]
-    verbs: ["get", "update"]
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "watch"]
@@ -189,6 +143,7 @@ subjects:
     name: mw-service-account
     namespace: "NAMESPACE_VALUE"
 ---
+# Rollout restart Middleware Daemonset on 8:00 UTC every day - to fetch docker image
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -196,7 +151,7 @@ metadata:
   namespace: "NAMESPACE_VALUE"
 spec:
   concurrencyPolicy: Forbid
-  schedule: 0 8 * * * # cron spec of time, here, 8 o'clock
+  schedule: 0 8 * * *
   jobTemplate:
     spec:
       backoffLimit: 2 # this has very low chance of failing, as all this does
