@@ -53,7 +53,7 @@ while true; do
     esac
 done
 
-docker pull ghcr.io/middleware-labs/agent-host-go:master
+docker pull ghcr.io/middleware-labs/agent-host-go:dev
 dockerrun="docker run -d \
 --name mw-agent-${MW_API_KEY:0:5} \
 --pid host \
