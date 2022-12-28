@@ -1,9 +1,10 @@
+# Creating namespace where all the Middleware Agent related components will run
 apiVersion: v1
 kind: Namespace
 metadata:
   name: "NAMESPACE_VALUE"
 ---
----
+# To establish permissions for Middleware Agent
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -12,7 +13,7 @@ metadata:
   name: mw-service-account
   namespace: "NAMESPACE_VALUE"
 ---
-# This section modified
+# Exposing service for Middleware Agent Daemonset
 kind: Service
 apiVersion: v1
 metadata:
@@ -91,7 +92,7 @@ rules:
   - apiGroups: [""]
     resources: ["pods", "pods/exec"]
     verbs: ["get", "list", "delete", "patch", "create"]
-    # Allow Dashboard to get and update 'mw-app-settings' config map.
+  # Allow Dashboard to get and update 'mw-app-settings' config map.
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["mw-app-settings"]
@@ -189,6 +190,7 @@ subjects:
     name: mw-service-account
     namespace: "NAMESPACE_VALUE"
 ---
+# Rollout restart Middleware Daemonset on 8:00 UTC every day - to fetch docker image
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -196,7 +198,7 @@ metadata:
   namespace: "NAMESPACE_VALUE"
 spec:
   concurrencyPolicy: Forbid
-  schedule: 0 8 * * * # cron spec of time, here, 8 o'clock
+  schedule: 0 8 * * *
   jobTemplate:
     spec:
       backoffLimit: 2 # this has very low chance of failing, as all this does
@@ -239,6 +241,15 @@ spec:
         k8s-app: mw-app
       creationTimestamp: null
     spec:
+      tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
       hostNetwork: true
       volumes:
       # volume binding for log collection 
@@ -266,6 +277,8 @@ spec:
               value: "MW_API_KEY_VALUE"
             - name: MW_DOCKER_ENDPOINT
               value: "MW_DOCKER_ENDPOINT_VALUE"
+            - name: MW_KUBE_CLUSTER_NAME
+              value: "MW_KUBE_CLUSTER_NAME_VALUE"
             - name: K8S_NODE_NAME
               valueFrom:
                 fieldRef:
@@ -274,7 +287,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-          image: ghcr.io/middleware-labs/agent-kube-go:master
+          image: ghcr.io/middleware-labs/agent-kube-go:dev
           imagePullPolicy: Always
           name: mw-kube-agent
           securityContext:
