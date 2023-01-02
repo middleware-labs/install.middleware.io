@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: MW AWS Integration
+Parameters:
+  APIKey:
+    Description: >-
+      API key for the MW Account 
+    Type: String
+    Default: ""
+  Target:
+    Type: String
+    Default: uid.middleware.io:443
+    Description: Define your Datadog Site to send data to.
+  IAMRoleName:
+    Description: Customize the name of IAM role for MW AWS integration
+    Type: String
+    Default: MWIntegrationRole
+  DisableMetricCollection:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Description: >-
+      Disabling metric collection for this account will lead to a loss in visibility into your AWS services. 
+      Disable this if you only want to collect tags or resource configuration information from this AWS account, 
+      and do not want to use Datadog Infrastructure Monitoring.
+    Default: false
+
+Resources:
+  # A Macro used to generate policies for the integration IAM role based on user inputs
+  DatadogAPICall:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://install.middleware.io/integrations/aws/middleware-api-call.yaml"
+      Parameters:
+        DatadogApiKey: !Ref APIKey
+        DatadogAppKey: !Ref APPKey
+        Target: !Ref Target
+        RoleName: !Ref IAMRoleName
+        CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
+        DisableMetricCollection: !Ref DisableMetricCollection
+  # The IAM role for Datadog integration
+  MiddlewareIntegrationRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://install.middleware.io/integrations/aws/middleware-role-stack.yaml"
+      Parameters:
+        ExternalId: !GetAtt DatadogAPICall.Outputs.ExternalId
+        IAMRoleName: !Ref IAMRoleName
+        CloudSecurityPostureManagementPermissions: !If [CloudSecurityPostureManagementPermissions, true, false]
+        DdAWSAccountId: 378448125786
+  # The Lambda function to ship logs from S3 and CloudWatch, custom metrics and traces from Lambda functions to Datadog
+  # https://github.com/DataDog/datadog-serverless-functions/tree/master/aws/logs_monitoring
+
+Outputs:
+  IAMRoleName:
+    Description: AWS IAM Role named to be used with the MW AWS Integration 
+    Value: !Ref IAMRoleName
+  AccountId:
+    Description: AWS Account number
+    Value: !Ref "AWS::AccountId"
+  Region:
+    Description: AWS Region
+    Value: !Ref "AWS::Region"
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Required
+      Parameters:
+        - APIKey
+        - APPKey
+        - Target
+        - InstallLambdaLogForwarder
+        - CloudSecurityPostureManagement
+    - Label:
+        default: Advanced
+      Parameters:
+        - IAMRoleName
+        - DisableMetricCollection
+    ParameterLabels:
+      APIKey:
+        default: "DatadogApiKey *"
+      APPKey:
+        default: "DatadogAppKey *"
+      Target:
+        default: "Target *"
+      CloudSecurityPostureManagement:
+        default: "CloudSecurityPostureManagement *"
+      InstallLambdaLogForwarder:
+        default: "InstallLambdaLogForwarder *"
