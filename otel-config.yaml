@@ -1,10 +1,5 @@
 receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:9319
-      http:
-        endpoint: 0.0.0.0:9320
+
 
   # Scrapping OS metrics (Infra Metrics)
   hostmetrics:
@@ -20,73 +15,344 @@ receivers:
         metrics:
           system.memory.utilization:
             enabled: true
-      paging: {}
-      disk: {}
-      filesystem: {}
-      network: {}
-      processes: {}
+      paging: { }
+      disk:
+        metrics:
+          system.disk.io.speed:
+            enabled: true
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      network:
+        metrics:
+          system.network.io.bandwidth:
+            enabled: true
+      processes: { }
       process:
+        avoid_selected_errors: true
         mute_process_name_error: true
 
-  docker_stats:
-    endpoint: unix:///var/run/docker.sock
-    collection_interval: 5s
-    timeout: 20s
-    api_version: 1.24
+
 
   # Read log files (Infra logs + APM logs)
   filelog:
-    include: [ /var/log/linux.log ]
-    start_at: beginning
+    include: [ /var/log/*.log ]
+    start_at: end
 
   # Read log sent through fluent protocol (APM logs)
-  fluentforward:
-    endpoint: 0.0.0.0:8006
+  #fluentforward:
+  #  endpoint: 0.0.0.0:8006
+
+# extensions:
+#   health_check:
 
 processors:
   # metrics
   resource:
     attributes:
-    - key: mw.account_key
-      action: upsert
-      value: ${MW_API_KEY}
-    - key: host.id
-      from_attribute: host.name
-      action: upsert
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: host.id
+        from_attribute: host.name
+        action: upsert
 
-  # logs
-  resource/2:
+
+  resource/host-0:
     attributes:
-    - key: mw.account_key
-      action: upsert
-      value: ${MW_API_KEY}
-    - key: service.name
-      action: insert
-      value: middleware-logs
-    - key: host.id
-      from_attribute: host.name
-      action: upsert
+      - key: host.id
+        action: update
+        value: ${MW_ID}0
+      - key: host.name
+        action: update
+        value: ${MW_ID}0
+
+  resource/host-1:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}1
+      - key: host.name
+        action: update
+        value: ${MW_ID}1
+
+  resource/host-2:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}2
+      - key: host.name
+        action: update
+        value: ${MW_ID}2
+  resource/host-3:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}3
+      - key: host.name
+        action: update
+        value: ${MW_ID}3
+
+  resource/host-4:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}4
+      - key: host.name
+        action: update
+        value: ${MW_ID}4
+  resource/host-5:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}5
+      - key: host.name
+        action: update
+        value: ${MW_ID}5
+
+
+  resource/host-6:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}6
+      - key: host.name
+        action: update
+        value: ${MW_ID}6
+
+  resource/host-7:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}7
+      - key: host.name
+        action: update
+        value: ${MW_ID}7
+
+
+  resource/host-8:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}8
+      - key: host.name
+        action: update
+        value: ${MW_ID}8
+
+  resource/host-9:
+    attributes:
+      - key: host.id
+        action: update
+        value: ${MW_ID}9
+      - key: host.name
+        action: update
+        value: ${MW_ID}9
+
+
+
+
+
+
+  resource/logs-0:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}0
+      - key: host.name
+        action: update
+        value: ${MW_ID}0
+
+
+  resource/logs-1:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}1
+      - key: host.name
+        action: update
+        value: ${MW_ID}1
+
+
+  resource/logs-2:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}2
+      - key: host.name
+        action: update
+        value: ${MW_ID}2
+
+
+  resource/logs-3:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}3
+      - key: host.name
+        action: update
+        value: ${MW_ID}3
+
+
+
+  resource/logs-4:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}4
+      - key: host.name
+        action: update
+        value: ${MW_ID}4
+
+
+  resource/logs-5:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}5
+      - key: host.name
+        action: update
+        value: ${MW_ID}5
+
+
+  resource/logs-6:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}6
+      - key: host.name
+        action: update
+        value: ${MW_ID}6
+
+
+  resource/logs-7:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}7
+      - key: host.name
+        action: update
+        value: ${MW_ID}7
+
+
+  resource/logs-8:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}8
+      - key: host.name
+        action: update
+        value: ${MW_ID}8
+
+
+  resource/logs-9:
+    attributes:
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: service.name
+        action: insert
+        value: middleware-logs
+      - key: host.id
+        action: update
+        value: ${MW_ID}9
+      - key: host.name
+        action: update
+        value: ${MW_ID}9
 
   # traces
   resource/3:
     attributes:
-    - key: mw.account_key
-      action: upsert
-      value: ${MW_API_KEY}
-    - key: host.id
-      from_attribute: host.name
-      action: upsert
+      - key: mw.account_key
+        action: upsert
+        value: ${MW_API_KEY}
+      - key: host.id
+        from_attribute: host.name
+        action: upsert
+
+  attributes/traces:
+    actions:
+      - key: mw.service.name.derived
+        from_attribute: db.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: messaging.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: rpc.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: http.scheme
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: faas.trigger
+        action: insert
 
   resourcedetection:
-    detectors: [ env, system, docker ]
+    detectors: [ env, system ]
     timeout: 5s
     override: false
 
 exporters:
   logging:
-    loglevel: debug
-  otlp/2:
+    loglevel: info
+  otlphttp/2:
     endpoint: ${TARGET}
+    timeout: 60s
     tls:
       insecure: true
       insecure_skip_verify: true
@@ -94,19 +360,96 @@ exporters:
       authorization: ${MW_API_KEY}
 
 service:
+  #   extensions: [health_check]
   pipelines:
-    metrics:
-      receivers: [ hostmetrics, docker_stats, otlp ]
-      processors: [ resourcedetection, resource ]
-      exporters: [ otlp/2 ]
-    logs:
-      receivers: [ fluentforward, otlp ]
-      processors: [ resourcedetection, resource/2 ]
-      exporters: [ otlp/2 ]
-    traces:
-      receivers: [ otlp ]
-      processors: [ resourcedetection, resource/3 ]
-      exporters: [ otlp/2 ]
+    metrics/0:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-0 ]
+      exporters: [ otlphttp/2 ]
+    metrics/1:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-1 ]
+      exporters: [ otlphttp/2 ]
+    metrics/2:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-2 ]
+      exporters: [ otlphttp/2 ]
+    metrics/3:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-3 ]
+      exporters: [ otlphttp/2 ]
+    metrics/4:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource , resource/host-4]
+      exporters: [ otlphttp/2 ]
+    metrics/5:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-5 ]
+      exporters: [ otlphttp/2 ]
+    metrics/6:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-6 ]
+      exporters: [ otlphttp/2 ]
+    metrics/7:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-7 ]
+      exporters: [ otlphttp/2 ]
+    metrics/8:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-8 ]
+      exporters: [ otlphttp/2 ]
+
+    metrics/9:
+      receivers: [ hostmetrics ]
+      processors: [ resourcedetection, resource, resource/host-9 ]
+      exporters: [ otlphttp/2 ]
+
+    logs/0:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-0 ]
+      exporters: [ otlphttp/2 ]
+    logs/1:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-1 ]
+      exporters: [ otlphttp/2 ]
+    logs/2:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-2 ]
+      exporters: [ otlphttp/2 ]
+    logs/3:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-3 ]
+      exporters: [ otlphttp/2 ]
+    logs/4:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-4 ]
+      exporters: [ otlphttp/2 ]
+    logs/5:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-5 ]
+      exporters: [ otlphttp/2 ]
+    logs/6:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-6 ]
+      exporters: [ otlphttp/2 ]
+    logs/7:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-7 ]
+      exporters: [ otlphttp/2 ]
+    logs/8:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-8 ]
+      exporters: [ otlphttp/2 ]
+    logs/9:
+      receivers: [ filelog ]
+      processors: [ resourcedetection, resource/logs-9 ]
+      exporters: [ otlphttp/2 ]
+    #traces:
+    #  receivers: [ otlp ]
+    #  processors: [ resourcedetection, resource/3, attributes/traces ]
+    #  exporters: [ otlphttp/2 ]
   telemetry:
+    metrics:
+      address: ":0"
     logs:
-      level: debug
+      level: info
