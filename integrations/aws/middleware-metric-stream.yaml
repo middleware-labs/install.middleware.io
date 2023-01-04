@@ -1,0 +1,239 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  ApiKey:
+    Description: >-
+      Your Middleware API Key
+    Type: String
+    AllowedPattern: .+
+    ConstraintDescription: ApiKey is required
+    NoEcho: true
+  FilterMethod:
+    Description: >-
+      "Include" for an inclusion filter or "Exclude" for an exclusion filter for the following namespaces.
+    Type: String
+    Default: 'Include'
+  FirstNamespace:
+    Description: >-
+      A namespace to use for filtering. Leave blank if you do not need to filter by namespace.
+    Type: String
+    Default: ''
+  SecondNamespace:
+    Description: >-
+      A namespace to use for filtering. Leave blank if you do not need to filter by namespace.
+    Type: String
+    Default: ''
+  ThirdNamespace:
+    Description: >-
+      A namespace to use for filtering. Leave blank if you do not need to filter by namespace.
+      If you need to filter more than 3 namespaces, manually edit the settings for the streams
+      within the AWS CloudWatch Console after the stack is created successfully.
+    Type: String
+    Default: ''
+  Regions:
+    Description: >-
+      Comma separated list of regions to enable metric streaming
+    Type: CommaDelimitedList
+    ConstraintDescription: Regions is required
+    Default: ''
+  Target:
+    Type: String
+    Default: uid.middleware.io
+    Description: Define your Middleware Site to send data to. For example, datadoghq.eu or us5.datadoghq.com
+    AllowedPattern: .+
+    ConstraintDescription: Target is required
+Resources:
+  MiddlewareStreamStackSetAdministrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "MiddlewareStreamStackSetAdministrationRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "cloudformation.amazonaws.com"
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: MiddlewareStreamCfnStackSetAssumeRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                Resource: "*"
+  MiddlewareStreamStackSetExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "MiddlewareStreamStackSetExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt MiddlewareStreamStackSetAdministrationRole.Arn
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: MiddlewareStreamCfnStackAssumeRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:*"
+                Resource:
+                  - "arn:aws:s3:::cf-templates-*"
+              - Effect: Allow
+                Action:
+                  - "cloudformation:*"
+                Resource:
+                  - !Sub "arn:aws:cloudformation:*:${AWS::AccountId}:stack/StackSet-MiddlewareStreams-*"
+                  - !Sub "arn:aws:cloudformation:*:${AWS::AccountId}:stackset/MiddlewareStreams*"
+              - Effect: Allow
+                Action:
+                  - "sns:Publish"
+                Resource:
+                  - "arn:aws:sns:*:*:CfnNotificationSNSTopic"
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:PassRole
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:DeleteBucket
+                  - s3:PutBucketPublicAccessBlock
+                  - s3:PutEncryptionConfiguration
+                Resource:
+                  - !Sub "arn:aws:s3:::datadog-aws-metric-stream-backup-${AWS::AccountId}-*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:PutRetentionPolicy
+                  - logs:CreateLogStream
+                  - logs:DeleteLogStream
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Sub "arn:aws:logs:*:${AWS::AccountId}:log-group:datadog-metric-stream*"
+              - Effect: Allow
+                Action:
+                  - firehose:CreateDeliveryStream
+                  - firehose:DescribeDeliveryStream
+                  - firehose:DeleteDeliveryStream
+                Resource:
+                  - !Sub "arn:aws:firehose:*:${AWS::AccountId}:deliverystream/datadog-metrics-stream"
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricStream
+                  - cloudwatch:GetMetricStream
+                  - cloudwatch:ListMetricStreams
+                  - cloudwatch:DeleteMetricStream
+                Resource:
+                  - !Sub "arn:aws:cloudwatch:*:${AWS::AccountId}:metric-stream/datadog-metrics-stream"
+  ServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "MiddlewareServiceRole"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "firehose.amazonaws.com"
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: "datadog_stream_s3_policy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:AbortMultipartUpload"
+                  - "s3:GetBucketLocation"
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                  - "s3:ListBucketMultipartUploads"
+                  - "s3:PutObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::datadog-aws-metric-stream-backup-${AWS::AccountId}-*"
+                  - !Sub "arn:aws:s3:::datadog-aws-metric-stream-backup-${AWS::AccountId}-*/*"
+  MiddlewareMetricStreamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "MiddlewareMetricStreamRole"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - streams.metrics.cloudwatch.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: "datadog_stream_firehose_policy"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "firehose:PutRecord"
+                  - "firehose:PutRecordBatch"
+                Resource:
+                  - !Sub "arn:aws:firehose:*:${AWS::AccountId}:deliverystream/datadog-metrics-stream"
+      Description: A metric stream role
+  MiddlewareStreamStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: MiddlewareStreams
+      PermissionModel: SELF_MANAGED
+      AdministrationRoleARN: !GetAtt MiddlewareStreamStackSetAdministrationRole.Arn
+      ExecutionRoleName: !Ref MiddlewareStreamStackSetExecutionRole
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref "AWS::AccountId"
+          Regions: !Ref Regions
+      TemplateURL: "https://s3.amazonaws.com/datadog-cloudformation-stream-template/aws/streams_single_region.yaml"
+      Parameters:
+        - ParameterKey: ApiKey
+          ParameterValue: !Ref ApiKey
+        - ParameterKey: ServiceRoleArn
+          ParameterValue: !GetAtt ServiceRole.Arn
+        - ParameterKey: StreamRoleArn
+          ParameterValue: !GetAtt MiddlewareMetricStreamRole.Arn
+        - ParameterKey: DdSite
+          ParameterValue: !Ref DdSite
+        - ParameterKey: FilterMethod
+          ParameterValue: !Ref FilterMethod
+        - ParameterKey: FirstNamespace
+          ParameterValue: !Ref FirstNamespace
+        - ParameterKey: SecondNamespace
+          ParameterValue: !Ref SecondNamespace
+        - ParameterKey: ThirdNamespace
+          ParameterValue: !Ref ThirdNamespace
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Required
+      Parameters:
+        - ApiKey
+        - DdSite
+        - Regions
+    - Label:
+        default: Optional
+      Parameters:
+        - FilterMethod
+        - FirstNamespace
+        - SecondNamespace
+        - ThirdNamespace

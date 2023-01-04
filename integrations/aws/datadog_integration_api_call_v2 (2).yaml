@@ -1,19 +1,31 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Middleware AWS Integration API Call
+Description: Datadog AWS Integration API Call
 Parameters:
-  MiddlewareApiKey:
+  DatadogApiKey:
     Description: >-
-      API key for the Middleware account
+      API key for the Datadog account
     Type: String
     NoEcho: true
     Default: ""
-  Target:
+  DatadogAppKey:
+    Description: >-
+      APP key for the Datadog account
     Type: String
-    Default: uid.middleware.io
-    Description: Define your Middleware Site to send data to.
+    NoEcho: true
+    Default: ""
+  DatadogSite:
+    Type: String
+    Default: datadoghq.com
+    Description: Define your Datadog Site to send data to.
+    AllowedValues:
+      - datadoghq.com
+      - datadoghq.eu
+      - us3.datadoghq.com
+      - us5.datadoghq.com
+      - ddog-gov.com
   RoleName:
     Description: >-
-      The name of the IAM role created for Middleware's use.
+      The name of the IAM role created for Datadog's use.
     Type: String
   DisableMetricCollection:
     Type: String
@@ -23,10 +35,21 @@ Parameters:
     Description: >-
       Disabling metric collection for this account will lead to a loss in visibility into your AWS services. 
       Disable this if you only want to collect tags or resource configuration information from this AWS account, 
-      and do not want to use Middleware Infrastructure Monitoring.
+      and do not want to use Datadog Infrastructure Monitoring.
+    Default: false
+  CloudSecurityPostureManagement:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Description: >-
+      Add the AWS Managed SecurityAudit policy to your Datadog AWS Integration role, and enable 
+      Datadog Cloud Security Posture Management (CSPM) to start performing configuration checks across your AWS account.
+      Datadog CSPM is a product that automatically detects resource misconfigurations in your AWS account according to 
+      industry benchmarks. More info: https://www.datadoghq.com/product/security-platform/cloud-security-posture-management/
     Default: false
 Resources:
-  LambdaExecutionRoleMiddlewareAPICall:
+  LambdaExecutionRoleDatadogAPICall:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -42,21 +65,23 @@ Resources:
       ManagedPolicyArns:
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
   # Retrieving secrets passed in via SecretsManager Arn
-  MiddlewareAPICall:
-    Type: "Custom::MiddlewareAPICall"
+  DatadogAPICall:
+    Type: "Custom::DatadogAPICall"
     Properties:
-      ServiceToken: !GetAtt MiddlewareAPICallFunction.Arn
-      APIKey: !Ref MiddlewareApiKey
-      ApiURL: !Ref Target
+      ServiceToken: !GetAtt DatadogAPICallFunction.Arn
+      APIKey: !Ref DatadogApiKey
+      APPKey: !Ref DatadogAppKey
+      ApiURL: !Ref DatadogSite
       AccountId: !Ref AWS::AccountId
       RoleName: !Ref RoleName
       HostTags: [!Sub "aws_account:${AWS::AccountId}"]
+      CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
       DisableMetricCollection: !Ref DisableMetricCollection
-  MiddlewareAPICallFunction:
+  DatadogAPICallFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      Description: "A function to call the Middleware API."
-      Role: !GetAtt LambdaExecutionRoleMiddlewareAPICall.Arn
+      Description: "A function to call the Datadog API."
+      Role: !GetAtt LambdaExecutionRoleDatadogAPICall.Arn
       Handler: "index.handler"
       Runtime: "python3.8"
       Timeout: 30
@@ -73,26 +98,30 @@ Resources:
           LOGGER = logging.getLogger()
           LOGGER.setLevel(logging.INFO)
 
-          def call_middleware_api(event, method):
+          def call_datadog_api(event, method):
               api_key = event['ResourceProperties']['APIKey']
+              app_key = event['ResourceProperties']['APPKey']
               api_url = event['ResourceProperties']['ApiURL']
               account_id = event['ResourceProperties']['AccountId']
               role_name = event['ResourceProperties']['RoleName']
               host_tags = event['ResourceProperties']['HostTags']
+              cspm = event['ResourceProperties']['CloudSecurityPostureManagement']
               metrics_disabled = event['ResourceProperties']['DisableMetricCollection']
 
               # Make the url Request
-              url = 'https://test-keval.free.beeceptor.com/api/v1/integration/aws'
+              url = 'https://api.' + api_url + '/api/v1/integration/aws'
               values = {
                   'account_id': account_id,
                   'role_name': role_name,
               }
               if method != "DELETE":
                   values["host_tags"] = host_tags
+                  values["cspm_resource_collection_enabled"] = cspm == "true"
                   values["metrics_collection_enabled"] = metrics_disabled == "false"
 
               headers = {
-                  'MW-API-KEY': api_key,
+                  'DD-API-KEY': api_key,
+                  'DD-APPLICATION-KEY': app_key,
               }
               data = json.dumps(values)
               data = data.encode('utf-8')  # data should be bytes
@@ -112,13 +141,12 @@ Resources:
                   LOGGER.info('REQUEST RECEIVED:\n %s', context)
                   if event['RequestType'] == 'Create':
                       LOGGER.info('Received Create request.')
-                      response = call_middleware_api(event, 'POST')
-                      LOGGER.info('RESPONSE RECEIVED:\n %s', response)
+                      response = call_datadog_api(event, 'POST')
                       if response.getcode() == 200:
                           json_response = json.loads(response.read().decode("utf-8"))
                           send_response(event, context, "SUCCESS",
                                         {
-                                            "Message": "Middleware AWS Integration created successfully.",
+                                            "Message": "Datadog AWS Integration created successfully.",
                                             "ExternalId": json_response["external_id"],
                                         })
                       else:
@@ -132,12 +160,12 @@ Resources:
                                     {"Message": "Update not supported, no operation performed."})
                   elif event['RequestType'] == 'Delete':
                       LOGGER.info('Received Delete request.')
-                      response = call_middleware_api(event, 'DELETE')
+                      response = call_datadog_api(event, 'DELETE')
 
                       if response.getcode() == 200:
                           send_response(event, context, "SUCCESS",
                                         {
-                                            "Message": "Middleware AWS Integration deleted successfully.",
+                                            "Message": "Datadog AWS Integration deleted successfully.",
                                         })
                       else:
                           LOGGER.info('Failed - exception thrown during processing.')
@@ -188,5 +216,5 @@ Resources:
           signal.signal(signal.SIGALRM, timeout_handler)
 Outputs:
   ExternalId:
-    Description: Middleware AWS Integration ExternalId
-    Value: !GetAtt MiddlewareAPICall.ExternalId
+    Description: Datadog AWS Integration ExternalId
+    Value: !GetAtt DatadogAPICall.ExternalId
