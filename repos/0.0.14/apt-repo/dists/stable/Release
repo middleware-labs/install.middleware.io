@@ -6,13 +6,13 @@ Version: 1.0
 Architectures: amd64 arm64 arm7
 Components: main
 Description: An example software repository
-Date: Fri, 02 Dec 2022 09:24:55 +0000
+Date: Thu, 05 Jan 2023 10:25:14 +0000
 MD5Sum:
- af9ab92e0610e02e67c8409759febb9f 407 main/binary-all/Packages
- 47848dc5893e1f9d1ac3566c324d216b 317 main/binary-all/Packages.gz
+ 1822849c409c16012699d9308e63b851 407 main/binary-all/Packages
+ c15030bd2c28ccbd478cd47721128cd6 316 main/binary-all/Packages.gz
 SHA1:
- 927fb5a3e30adb11be7d055199d95b7fa936b51a 407 main/binary-all/Packages
- 82b1936411b298437b724ce2e35a7cb0d7a01170 317 main/binary-all/Packages.gz
+ 74a0dae69fd24f7072e0d0b58caa5f5b60ec7255 407 main/binary-all/Packages
+ d494c08e4d9c5775b9d892e5c56bd81f069c4591 316 main/binary-all/Packages.gz
 SHA256:
- b2d9f6d3ad6dcc39ed7257041ad3b21939222de533e491b27f0b3801c43f2533 407 main/binary-all/Packages
- d82dd3d419e7cb1cb40e2d22da254c58c35b3bba48deeaf9da7cd8023f2779dc 317 main/binary-all/Packages.gz
+ 977e045da1de4150ed138634d3e1e1416a5a7687fbd90382183f1eef4f82ef4a 407 main/binary-all/Packages
+ dfeb05bfda6d4c50ece189aaa3fd40cba4d824d2a0f96ef65b48946f581688bb 316 main/binary-all/Packages.gz
