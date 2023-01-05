@@ -350,7 +350,7 @@ processors:
 exporters:
   logging:
     loglevel: info
-  otlphttp/2:
+  otlp/2:
     endpoint: ${TARGET}
     timeout: 60s
     tls:
@@ -365,89 +365,89 @@ service:
     metrics/0:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-0 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     metrics/1:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-1 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     metrics/2:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-2 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     metrics/3:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-3 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     metrics/4:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource , resource/host-4]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     metrics/5:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-5 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     metrics/6:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-6 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     metrics/7:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-7 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     metrics/8:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-8 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
 
     metrics/9:
       receivers: [ hostmetrics ]
       processors: [ resourcedetection, resource, resource/host-9 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
 
     logs/0:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-0 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/1:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-1 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/2:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-2 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/3:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-3 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/4:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-4 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/5:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-5 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/6:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-6 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/7:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-7 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/8:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-8 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     logs/9:
       receivers: [ filelog ]
       processors: [ resourcedetection, resource/logs-9 ]
-      exporters: [ otlphttp/2 ]
+      exporters: [ otlp/2 ]
     #traces:
     #  receivers: [ otlp ]
     #  processors: [ resourcedetection, resource/3, attributes/traces ]
-    #  exporters: [ otlphttp/2 ]
+    #  exporters: [ otlp/2 ]
   telemetry:
     metrics:
       address: ":0"
