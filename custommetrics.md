@@ -10,7 +10,7 @@ POST https://{ACCOUNT-UID}.middleware.io/v1/metrics
 -------------------------
 
 ```
-curl -X POST "https://{MW-CUSTOM-METRICS-URL}/v1/metrics" \
+curl -X POST "https://{ACCOUNT-UID}.middleware.io/v1/metrics" \
 -H "Accept: application/json" \
 -H "Content-Type: application/json" \
 -d @- << EOF
