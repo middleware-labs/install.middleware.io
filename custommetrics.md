@@ -19,7 +19,7 @@ curl -X POST "https://${accountUID}.middleware.io/v1/metrics" \
             }
           },
           {
-            "key": "type",
+            "key": "mw.resource_type",
             "value": {
               "string_value": "custom"
             }
