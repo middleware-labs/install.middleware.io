@@ -81,7 +81,6 @@ Ex. If you want to add a metric for a "host" - you will need to add "host.id" re
 | Type | Resource Attributes Required | Data will be stored to this Dataset |
 |------ |----------| ----- |
 | host | host.id | Host Metrics |
-||||
 | k8s.node | k8s.node.uid | K8s Node Metrics | 
 | k8s.pod | k8s.pod.uid | K8s POD metrics |
 | k8s.deployment | k8s.deployment.uid | K8s Deployment Metrics |
