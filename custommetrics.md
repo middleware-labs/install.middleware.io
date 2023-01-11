@@ -37,23 +37,23 @@ curl -X POST "https://{ACCOUNT-UID}.middleware.io/v1/metrics" \
         {
           "metrics": [
             {
-              "name": "fluxcapacitor",
-              "description": "Flux Capacitor Output",
-              "unit": "watts",
+              "name": "swap-usage",
+              "description": "SWAP usage",
+              "unit": "Bytes",
               "gauge": {
                 "data_points": [
                   {
                     "attributes": [
                       {
-                        "key": "licenseplate",
+                        "key": "device",
                         "value": {
-                          "string_value": "outatime"
+                          "string_value": "nvme0n1p4"
                         }
                       }
                     ],
-                    "start_time_unix_nano": 1668464803000000000,
-                    "time_unix_nano": 1668464803000000000,
-                    "asInt": 12345678
+                    "start_time_unix_nano": 1673435153000000000,
+                    "time_unix_nano": 1673435153000000000,
+                    "asInt": 4000500678
                   }
                 ]
               }
