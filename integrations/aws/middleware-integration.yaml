@@ -39,17 +39,17 @@ Resources:
         # CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
         DisableMetricCollection: !Ref DisableMetricCollection
   # A Macro used to generate policies for the integration IAM role based on user inputs
-  MiddlewareEC2List:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: "https://mw-aws-integration.s3.us-east-2.amazonaws.com/middleware-ec2-list.yaml"
-      Parameters:
-        MiddlewareApiKey: !Ref APIKey
-        # DatadogAppKey: !Ref APPKey
-        Target: !Ref Target
-        RoleName: !Ref IAMRoleName
-        # CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
-        DisableMetricCollection: !Ref DisableMetricCollection
+  # MiddlewareEC2List:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: "https://mw-aws-integration.s3.us-east-2.amazonaws.com/middleware-ec2-list.yaml"
+  #     Parameters:
+  #       MiddlewareApiKey: !Ref APIKey
+  #       # DatadogAppKey: !Ref APPKey
+  #       Target: !Ref Target
+  #       RoleName: !Ref IAMRoleName
+  #       # CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
+  #       DisableMetricCollection: !Ref DisableMetricCollection
   # The IAM role for Datadog integration
   MiddlewareIntegrationRoleStack:
     Type: AWS::CloudFormation::Stack
