@@ -10,9 +10,7 @@ Parameters:
   Target:
     Type: String
     Default: uid.middleware.io
-    Description: Define your Middleware target to send data to.
-    AllowedValues:
-      - '*.middleware.io'
+    Description: Define your Middleware Site to send data to.
   RoleName:
     Description: >-
       The name of the IAM role created for Middleware's use.
@@ -27,7 +25,6 @@ Parameters:
       Disable this if you only want to collect tags or resource configuration information from this AWS account, 
       and do not want to use Middleware Infrastructure Monitoring.
     Default: false
-
 Resources:
   LambdaExecutionRoleMiddlewareAPICall:
     Type: AWS::IAM::Role
@@ -54,7 +51,6 @@ Resources:
       AccountId: !Ref AWS::AccountId
       RoleName: !Ref RoleName
       HostTags: [!Sub "aws_account:${AWS::AccountId}"]
-      # CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
       DisableMetricCollection: !Ref DisableMetricCollection
   MiddlewareAPICallFunction:
     Type: "AWS::Lambda::Function"
@@ -83,18 +79,16 @@ Resources:
               account_id = event['ResourceProperties']['AccountId']
               role_name = event['ResourceProperties']['RoleName']
               host_tags = event['ResourceProperties']['HostTags']
-              # cspm = event['ResourceProperties']['CloudSecurityPostureManagement']
               metrics_disabled = event['ResourceProperties']['DisableMetricCollection']
 
               # Make the url Request
-              url = 'https://api.' + api_url + '/api/v1/integration/aws'
+              url = 'https://test-keval.free.beeceptor.com/api/v1/integration/aws'
               values = {
                   'account_id': account_id,
                   'role_name': role_name,
               }
               if method != "DELETE":
                   values["host_tags"] = host_tags
-                  values["cspm_resource_collection_enabled"] = cspm == "true"
                   values["metrics_collection_enabled"] = metrics_disabled == "false"
 
               headers = {
@@ -119,6 +113,7 @@ Resources:
                   if event['RequestType'] == 'Create':
                       LOGGER.info('Received Create request.')
                       response = call_middleware_api(event, 'POST')
+                      LOGGER.info('RESPONSE RECEIVED:\n %s', response)
                       if response.getcode() == 200:
                           json_response = json.loads(response.read().decode("utf-8"))
                           send_response(event, context, "SUCCESS",

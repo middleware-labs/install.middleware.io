@@ -1,19 +1,19 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: MW AWS Integration
+Description: Middleware AWS Integration
 Parameters:
   APIKey:
     Description: >-
-      API key for the MW Account 
+      API key for the Middleware Account 
     Type: String
     Default: ""
   Target:
     Type: String
     Default: uid.middleware.io:443
-    Description: Define your Datadog Site to send data to.
+    Description: Define your Middleware Target to send data to.
   IAMRoleName:
-    Description: Customize the name of IAM role for MW AWS integration
+    Description: Customize the name of IAM role for Middleware AWS integration
     Type: String
-    Default: MWIntegrationRole
+    Default: MiddlewareIntegrationRole
   DisableMetricCollection:
     Type: String
     AllowedValues:
@@ -27,33 +27,45 @@ Parameters:
 
 Resources:
   # A Macro used to generate policies for the integration IAM role based on user inputs
-  DatadogAPICall:
+  MiddlewareAPICall:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "https://install.middleware.io/integrations/aws/middleware-api-call.yaml"
+      TemplateURL: "https://mw-aws-integration.s3.us-east-2.amazonaws.com/middleware-api-call.yaml"
       Parameters:
-        DatadogApiKey: !Ref APIKey
-        DatadogAppKey: !Ref APPKey
+        MiddlewareApiKey: !Ref APIKey
+        # DatadogAppKey: !Ref APPKey
         Target: !Ref Target
         RoleName: !Ref IAMRoleName
-        CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
+        # CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
         DisableMetricCollection: !Ref DisableMetricCollection
+  # A Macro used to generate policies for the integration IAM role based on user inputs
+  # MiddlewareEC2List:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: "https://mw-aws-integration.s3.us-east-2.amazonaws.com/middleware-ec2-list.yaml"
+  #     Parameters:
+  #       MiddlewareApiKey: !Ref APIKey
+  #       # DatadogAppKey: !Ref APPKey
+  #       Target: !Ref Target
+  #       RoleName: !Ref IAMRoleName
+  #       # CloudSecurityPostureManagement: !Ref CloudSecurityPostureManagement
+  #       DisableMetricCollection: !Ref DisableMetricCollection
   # The IAM role for Datadog integration
   MiddlewareIntegrationRoleStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: "https://install.middleware.io/integrations/aws/middleware-role-stack.yaml"
+      TemplateURL: "https://mw-aws-integration.s3.us-east-2.amazonaws.com/middleware-role-stack.yaml"
       Parameters:
-        ExternalId: !GetAtt DatadogAPICall.Outputs.ExternalId
+        ExternalId: !GetAtt MiddlewareAPICall.Outputs.ExternalId
         IAMRoleName: !Ref IAMRoleName
-        CloudSecurityPostureManagementPermissions: !If [CloudSecurityPostureManagementPermissions, true, false]
-        DdAWSAccountId: 378448125786
+        # CloudSecurityPostureManagementPermissions: !If [CloudSecurityPostureManagementPermissions, true, false]
+        MiddlewareAWSAccountId: 378448125786
   # The Lambda function to ship logs from S3 and CloudWatch, custom metrics and traces from Lambda functions to Datadog
   # https://github.com/DataDog/datadog-serverless-functions/tree/master/aws/logs_monitoring
 
 Outputs:
   IAMRoleName:
-    Description: AWS IAM Role named to be used with the MW AWS Integration 
+    Description: AWS IAM Role named to be used with the Middleware AWS Integration 
     Value: !Ref IAMRoleName
   AccountId:
     Description: AWS Account number
@@ -69,10 +81,10 @@ Metadata:
         default: Required
       Parameters:
         - APIKey
-        - APPKey
+        # - APPKey
         - Target
         - InstallLambdaLogForwarder
-        - CloudSecurityPostureManagement
+        # - CloudSecurityPostureManagement
     - Label:
         default: Advanced
       Parameters:
@@ -80,12 +92,6 @@ Metadata:
         - DisableMetricCollection
     ParameterLabels:
       APIKey:
-        default: "DatadogApiKey *"
-      APPKey:
-        default: "DatadogAppKey *"
+        default: "MiddlewareApiKey *"
       Target:
         default: "Target *"
-      CloudSecurityPostureManagement:
-        default: "CloudSecurityPostureManagement *"
-      InstallLambdaLogForwarder:
-        default: "InstallLambdaLogForwarder *"

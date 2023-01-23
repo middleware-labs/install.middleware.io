@@ -41,7 +41,7 @@ Resources:
                 'sts:ExternalId': !Ref ExternalId
       Path: /
       RoleName: !Ref IAMRoleName
-      ManagedPolicyArns: !If [ ShouldInstallCSPMPolicy, [ !Sub "arn:${AWS::Partition}:iam::aws:policy/SecurityAudit" ], !Ref AWS::NoValue ]
+      ManagedPolicyArns: !Ref AWS::NoValue
       Policies:
         - PolicyName: MiddlewareAWSIntegrationPolicy
           PolicyDocument:
