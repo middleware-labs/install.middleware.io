@@ -63,6 +63,7 @@ dockerrun="docker run -d \
 -e TARGET=$TARGET \
 -v /var/run/docker.sock:/var/run/docker.sock \
 -v /var/log:/var/log \
+-v /tmp:/tmp \
 $MW_LOG_PATHS_BINDING \
 --privileged \
 --network=host ghcr.io/middleware-labs/agent-host-go:master api-server start"
