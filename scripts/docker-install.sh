@@ -1,15 +1,23 @@
 #!/bin/bash
 MW_LOG_PATHS=""
 
+if [[ $(which docker) && $(docker --version) ]]; then
+  echo -e ""
+else
+  echo -e "\nSeems like docker is not already installed on the system"
+  echo -e "\nPlease install docker first, This link might be helpful : https://docs.docker.com/engine/install/\n"
+  exit 1
+fi
+
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
 while true; do
-    read -p "Do you want to monitor any more directories for logs ? [y|N] : " yn
+    read -p "`echo -e '\nDo you want to monitor any more directories for logs ? \n[C-continue to quick install | A-advanced log path setup]\n[C|A] : '`" yn
     case $yn in
-        [Yy]* )
+        [Aa]* )
           MW_LOG_PATH_DIR=""
           
           while true; do
-            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2] : " MW_LOG_PATH_DIR
+            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 | S - skip and continue ] : " MW_LOG_PATH_DIR
             export MW_LOG_PATH_DIR
             if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
             then 
@@ -44,11 +52,11 @@ while true; do
           echo -e "\n------------------------------------------------\n"
           sleep 4
           break;;
-        [Nn]* ) 
+        [Cc]* ) 
           echo -e "\n----------------------------------------------------------\n\nOkay, Continuing installation ....\n\n----------------------------------------------------------\n"
           break;;
         * ) 
-          echo -e "\nPlease answer y or n."
+          echo -e "\nPlease answer with c or a."
           continue;;
     esac
 done
