@@ -90,7 +90,7 @@ echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION
 sudo apt-get update -o Dir::Etc::sourcelist=sources.list.d/mw-go.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
 
 # Installing Agent
-sudo apt-get install mw-go-agent-host
+sudo apt-get install mw-go-agent-host-arm
 
 MW_USER=$(whoami)
 export MW_USER
@@ -122,14 +122,14 @@ if [ ! "${TARGET}" = "" ]; then
 
 cat << EOIF > /usr/local/bin/mw-go-agent/apt/executable
 #!/bin/sh
-cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET mw-go-agent-host start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET mw-go-agent-host-arm start
 EOIF
 
 else 
 
 cat << EOELSE > /usr/local/bin/mw-go-agent/apt/executable
 #!/bin/sh
-cd /usr/bin && MW_API_KEY=$MW_API_KEY mw-go-agent-host start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY mw-go-agent-host-arm start
 EOELSE
 
 fi
