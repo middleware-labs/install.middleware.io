@@ -1,5 +1,14 @@
 #!/bin/bash
 MW_LOG_PATHS=""
+MW_AGENT_DOCKER_IMAGE=""
+
+MW_DETECTED_ARCH=$(dpkg --print-architecture)
+if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "arm32" ]]; then
+  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/agent-host-go-arm:master"
+else 
+  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/agent-host-go:master"
+fi
+
 
 if [[ $(which docker) && $(docker --version) ]]; then
   echo -e ""
@@ -61,7 +70,7 @@ while true; do
     esac
 done
 
-docker pull ghcr.io/middleware-labs/agent-host-go:master
+docker pull $MW_AGENT_DOCKER_IMAGE
 dockerrun="docker run -d \
 --name mw-agent-${MW_API_KEY:0:5} \
 --pid host \
@@ -74,7 +83,7 @@ dockerrun="docker run -d \
 -v /tmp:/tmp \
 $MW_LOG_PATHS_BINDING \
 --privileged \
---network=host ghcr.io/middleware-labs/agent-host-go:master api-server start"
+--network=host $MW_AGENT_DOCKER_IMAGE api-server start"
 
 export dockerrun
 eval " $dockerrun"

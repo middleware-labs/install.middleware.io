@@ -2,6 +2,7 @@
 sudo systemctl stop mwservice
 sudo systemctl disable mwservice
 
+MW_DETECTED_ARCH=$(dpkg --print-architecture)
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "arm32" ]]; then
     sudo apt-get remove mw-go-agent-host-arm -y
     sudo rm -rf /usr/local/bin/mw-go-agent-arm/apt
