@@ -8,7 +8,7 @@ if [ "${MW_VERSION}" = "" ]; then
   export MW_VERSION
 fi
 
-MW_AGENT_HOME=/usr/local/bin/mw-go-agent
+MW_AGENT_HOME=/usr/local/bin/mw-go-agent-arm
 MW_LOG_PATHS=""
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
