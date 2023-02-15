@@ -84,7 +84,7 @@ sudo update-ca-certificates
 
 sed -e 's|$MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml
 
-echo "deb [arch=all signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
+echo "deb [arch=arm64 signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist=sources.list.d/mw-go.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
