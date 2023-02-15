@@ -8,7 +8,7 @@ if [ "${MW_VERSION}" = "" ]; then
   export MW_VERSION
 fi
 
-
+MW_AGENT_HOME=/usr/local/bin/mw-go-agent
 MW_LOG_PATHS=""
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
@@ -62,9 +62,9 @@ while true; do
 done
 
 # Adding APT repo address & public key to system
-sudo mkdir -p /usr/local/bin/mw-go-agent/apt
-sudo touch /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public
-sudo wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public
+sudo mkdir -p $MW_AGENT_HOME/apt
+sudo touch $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public
+sudo wget -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public
 sudo touch /etc/apt/sources.list.d/mw-go.list
 
 sudo mkdir -p /usr/bin/configyamls/all
@@ -84,7 +84,7 @@ sudo update-ca-certificates
 
 sed -e 's|$MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml
 
-echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
+echo "deb [arch=all signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist=sources.list.d/mw-go.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
@@ -99,17 +99,17 @@ sudo su << EOSUDO
 
 
 # Running Agent as a Daemon Service
-touch /etc/systemd/system/mwservice.service
+touch /etc/systemd/system/mw-arm-service.service
 
-cat << EOF > /etc/systemd/system/mwservice.service
+cat << EOF > /etc/systemd/system/mw-arm-service.service
 [Unit]
 Description=Melt daemon!
 [Service]
 User=$MW_USER
 #Code to execute
 #Can be the path to an executable or code itself
-WorkingDirectory=/usr/local/bin/mw-go-agent/apt
-ExecStart=/usr/local/bin/mw-go-agent/apt/executable
+WorkingDirectory=$MW_AGENT_HOME/apt
+ExecStart=$MW_AGENT_HOME/apt/executable
 Type=simple
 TimeoutStopSec=10
 Restart=on-failure
@@ -120,39 +120,39 @@ EOF
 
 if [ ! "${TARGET}" = "" ]; then
 
-cat << EOIF > /usr/local/bin/mw-go-agent/apt/executable
+cat << EOIF > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
 cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET mw-go-agent-host-arm start
 EOIF
 
 else 
 
-cat << EOELSE > /usr/local/bin/mw-go-agent/apt/executable
+cat << EOELSE > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
 cd /usr/bin && MW_API_KEY=$MW_API_KEY mw-go-agent-host-arm start
 EOELSE
 
 fi
 
-chmod 777 /usr/local/bin/mw-go-agent/apt/executable
+chmod 777 $MW_AGENT_HOME/apt/executable
 
 EOSUDO
 
 sudo systemctl daemon-reload
-sudo systemctl enable mwservice
+sudo systemctl enable mw-arm-service
 
 if [ "${MW_AUTO_START}" = true ]; then	
-    sudo systemctl start mwservice
+    sudo systemctl start mw-arm-service
 fi
 
 
 # Adding Cron to update + upgrade package every 5 minutes
 
-sudo mkdir -p /usr/local/bin/mw-go-agent/apt/cron
-sudo touch /usr/local/bin/mw-go-agent/apt/cron/mw-go.log
+sudo mkdir -p $MW_AGENT_HOME/apt/cron
+sudo touch $MW_AGENT_HOME/apt/cron/mw-go.log
 
 sudo crontab -l > cron_bkp
-sudo echo "*/5 * * * * (wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/mw-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mwservice) >> /usr/local/bin/mw-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/mw-go-agent/apt/cron/melt.log" >> cron_bkp
+sudo echo "*/5 * * * * (wget -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/mw-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mw-arm-service) >> $MW_AGENT_HOME/apt/cron/melt.log 2>&1 >> $MW_AGENT_HOME/apt/cron/melt.log" >> cron_bkp
 sudo crontab cron_bkp
 sudo rm cron_bkp
 
@@ -178,6 +178,6 @@ echo '
     |                └─── mw-go.list: Contains the APT repo entry
     └─── systemd
            └───system
-                └─── mwservice.service: Service Entry for MW Agent
+                └─── mw-arm-service.service: Service Entry for MW Agent
 '
 EOSUDO
