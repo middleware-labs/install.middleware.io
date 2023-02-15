@@ -65,7 +65,7 @@ done
 sudo mkdir -p $MW_AGENT_HOME/apt
 sudo touch $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public
 sudo wget -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public
-sudo touch /etc/apt/sources.list.d/mw-go.list
+sudo touch /etc/apt/sources.list.d/mw-go-arm.list
 
 sudo mkdir -p /usr/bin/configyamls/all
 sudo wget -O /usr/bin/configyamls/all/otel-config.yaml https://install.middleware.io/configyamls/all/otel-config.yaml
@@ -84,10 +84,10 @@ sudo update-ca-certificates
 
 sed -e 's|$MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml
 
-echo "deb [arch=arm64 signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
+echo "deb [arch=arm64 signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go-arm.list
 
 # Updating apt list on system
-sudo apt-get update -o Dir::Etc::sourcelist=sources.list.d/mw-go.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
+sudo apt-get update -o Dir::Etc::sourcelist=sources.list.d/mw-go-arm.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
 
 # Installing Agent
 sudo apt-get install mw-go-agent-host-arm
@@ -152,7 +152,7 @@ sudo mkdir -p $MW_AGENT_HOME/apt/cron
 sudo touch $MW_AGENT_HOME/apt/cron/mw-go.log
 
 sudo crontab -l > cron_bkp
-sudo echo "*/5 * * * * (wget -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/mw-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mw-arm-service) >> $MW_AGENT_HOME/apt/cron/melt.log 2>&1 >> $MW_AGENT_HOME/apt/cron/melt.log" >> cron_bkp
+sudo echo "*/5 * * * * (wget -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/mw-go-arm.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mw-arm-service) >> $MW_AGENT_HOME/apt/cron/melt.log 2>&1 >> $MW_AGENT_HOME/apt/cron/melt.log" >> cron_bkp
 sudo crontab cron_bkp
 sudo rm cron_bkp
 
@@ -175,7 +175,7 @@ echo '
   /etc 
     ├─── apt
     |      └───sources.list.d
-    |                └─── mw-go.list: Contains the APT repo entry
+    |                └─── mw-go-arm.list: Contains the APT repo entry
     └─── systemd
            └───system
                 └─── mw-arm-service.service: Service Entry for MW Agent
