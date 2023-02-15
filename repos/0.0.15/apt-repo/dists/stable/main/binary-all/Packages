@@ -4,10 +4,10 @@ Architecture: all
 Maintainer: example <example@example.com>
 Depends: libc6
 Filename: pool/main/mw-agent_0.0.15-1_all.deb
-Size: 38279032
-MD5sum: a4834e36745a073a59e2151aba73f165
-SHA1: 723f616e1f789230b3d4bc58478698b70455e50e
-SHA256: 9bd4bec0a12c0b6d0c20c3bde4c4cd3cf715856f7956e9fb2c2821783b58eaf8
+Size: 38275168
+MD5sum: 87aa1aeb2838ebee69c7b20c57925998
+SHA1: bac2a1445436a5fb39f2b440b6216b86c6c21d33
+SHA256: 9dbac73d08004569e8487d36f8d8911e7ac8d4bbbef1186dcdc65d2b36af35af
 Homepage: http://example.com
 Description: Telemetry Collector Tool
 
