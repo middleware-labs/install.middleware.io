@@ -4,7 +4,7 @@
 curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
 --header 'Content-Type: application/json' \
 --data-raw '{
-    "status": "installed",
+    "status": "tried",
     "metadata": {
         "status": "ok",
         "message": "agent installed"
