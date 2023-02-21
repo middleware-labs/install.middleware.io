@@ -6,6 +6,7 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
 --data-raw '{
     "status": "tried",
     "metadata": {
+        "script": "docker",
         "status": "ok",
         "message": "agent installed"
     }
