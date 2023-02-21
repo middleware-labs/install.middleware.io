@@ -4,7 +4,7 @@
 curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
 --header 'Content-Type: application/json' \
 --data-raw '{
-    "status": "installed",
+    "status": "tried",
     "metadata": {
         "status": "ok",
         "message": "agent installed"
@@ -18,18 +18,22 @@ MW_APT_LIST_ARCH=""
 MW_AGENT_BINARY=""
 MW_DETECTED_ARCH=$(dpkg --print-architecture)
 
-if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "arm32" ]]; then
+echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
+
+if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
   MW_LATEST_VERSION=0.0.15arm64
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent-arm
   MW_APT_LIST=mw-go-arm.list
   MW_AGENT_BINARY=mw-go-agent-host-arm
   MW_APT_LIST_ARCH=arm64
-else 
+elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
   MW_LATEST_VERSION=0.0.15
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent
   MW_APT_LIST=mw-go.list
   MW_AGENT_BINARY=mw-go-agent-host
   MW_APT_LIST_ARCH=all
+else
+  echo ""
 fi
 
 export MW_LATEST_VERSION
