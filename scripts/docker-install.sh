@@ -32,56 +32,60 @@ else
 fi
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
-# while true; do
-#     read -p "`echo -e '\nDo you want to monitor any more directories for logs ? \n[C-continue to quick install | A-advanced log path setup]\n[C|A] : '`" yn
-#     case $yn in
-#         [Aa]* )
-#           MW_LOG_PATH_DIR=""
+
+# conditional log path capabilities
+if [[ $MW_ADVANCE_LOG_PATH_SETUP == "true" ]]; then
+while true; do
+    read -p "`echo -e '\nDo you want to monitor any more directories for logs ? \n[C-continue to quick install | A-advanced log path setup]\n[C|A] : '`" yn
+    case $yn in
+        [Aa]* )
+          MW_LOG_PATH_DIR=""
           
-#           while true; do
-#             read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 | S - skip and continue ] : " MW_LOG_PATH_DIR
-#             export MW_LOG_PATH_DIR
-#             if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
-#             then 
-#               break
-#             else
-#               echo $MW_LOG_PATH_DIR
-#               echo "Invalid file path, try again ..."
-#             fi
-#           done
+          while true; do
+            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 | S - skip and continue ] : " MW_LOG_PATH_DIR
+            export MW_LOG_PATH_DIR
+            if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
+            then 
+              break
+            else
+              echo $MW_LOG_PATH_DIR
+              echo "Invalid file path, try again ..."
+            fi
+          done
 
-#           MW_LOG_PATH_COMPLETE=""
-#           MW_LOG_PATHS_BINDING=""
+          MW_LOG_PATH_COMPLETE=""
+          MW_LOG_PATHS_BINDING=""
 
-#           MW_LOG_PATH_DIR_ARRAY=($(echo $MW_LOG_PATH_DIR | tr "," "\n"))
+          MW_LOG_PATH_DIR_ARRAY=($(echo $MW_LOG_PATH_DIR | tr "," "\n"))
 
-#           for i in "${MW_LOG_PATH_DIR_ARRAY[@]}"
-#           do
-#             MW_LOG_PATHS_BINDING=$MW_LOG_PATHS_BINDING" -v $i:$i"
-#             if [ "${MW_LOG_PATH_COMPLETE}" = "" ]; then
-#               MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE$i/**/*.*"
-#             else
-#               MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE,$i/**/*.*"
-#             fi
-#           done
+          for i in "${MW_LOG_PATH_DIR_ARRAY[@]}"
+          do
+            MW_LOG_PATHS_BINDING=$MW_LOG_PATHS_BINDING" -v $i:$i"
+            if [ "${MW_LOG_PATH_COMPLETE}" = "" ]; then
+              MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE$i/**/*.*"
+            else
+              MW_LOG_PATH_COMPLETE="$MW_LOG_PATH_COMPLETE,$i/**/*.*"
+            fi
+          done
 
-#           export MW_LOG_PATH_COMPLETE
+          export MW_LOG_PATH_COMPLETE
 
-#           MW_LOG_PATHS=$MW_LOG_PATH_COMPLETE
-#           export MW_LOG_PATHS
-#           echo -e "\n------------------------------------------------"
-#           echo -e "\nNow, our agent will also monitor these paths : "$MW_LOG_PATH_COMPLETE
-#           echo -e "\n------------------------------------------------\n"
-#           sleep 4
-#           break;;
-#         [Cc]* ) 
-#           echo -e "\n----------------------------------------------------------\n\nOkay, Continuing installation ....\n\n----------------------------------------------------------\n"
-#           break;;
-#         * ) 
-#           echo -e "\nPlease answer with c or a."
-#           continue;;
-#     esac
-# done
+          MW_LOG_PATHS=$MW_LOG_PATH_COMPLETE
+          export MW_LOG_PATHS
+          echo -e "\n------------------------------------------------"
+          echo -e "\nNow, our agent will also monitor these paths : "$MW_LOG_PATH_COMPLETE
+          echo -e "\n------------------------------------------------\n"
+          sleep 4
+          break;;
+        [Cc]* ) 
+          echo -e "\n----------------------------------------------------------\n\nOkay, Continuing installation ....\n\n----------------------------------------------------------\n"
+          break;;
+        * ) 
+          echo -e "\nPlease answer with c or a."
+          continue;;
+    esac
+done
+fi
 
 docker pull $MW_AGENT_DOCKER_IMAGE
 dockerrun="docker run -d \
