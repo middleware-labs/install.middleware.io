@@ -126,7 +126,7 @@ sudo apt-get install ca-certificates > /dev/null
 sudo update-ca-certificates > /dev/null
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
-# sed -e 's|$MW_LOG_PATHS|'$MW_LOG_PATHS'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee -a /usr/bin/configyamls/all/otel-config.yaml > /dev/null
+sed -e 's|$MW_LOG_PATHS|'$MW_LOG_PATHS'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml > /dev/null
 
 echo "deb [arch=$MW_APT_LIST_ARCH signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
 
