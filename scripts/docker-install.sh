@@ -42,7 +42,7 @@ while true; do
           MW_LOG_PATH_DIR=""
           
           while true; do
-            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 | S - skip and continue ] : " MW_LOG_PATH_DIR
+            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 ] : " MW_LOG_PATH_DIR
             export MW_LOG_PATH_DIR
             if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
             then 

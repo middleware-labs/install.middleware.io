@@ -58,7 +58,7 @@ while true; do
           MW_LOG_PATH_DIR=""
           
           while true; do
-            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 | S - skip and continue ] : " MW_LOG_PATH_DIR
+            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 ] : " MW_LOG_PATH_DIR
             export MW_LOG_PATH_DIR
             if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
             then 
@@ -193,13 +193,13 @@ fi
 
 # Adding Cron to update + upgrade package every 5 minutes
 
-sudo mkdir -p $MW_AGENT_HOME/apt/cron
-sudo touch $MW_AGENT_HOME/apt/cron/mw-go.log
+# sudo mkdir -p $MW_AGENT_HOME/apt/cron
+# sudo touch $MW_AGENT_HOME/apt/cron/mw-go.log
 
-sudo crontab -l > cron_bkp
-sudo echo "*/5 * * * * (wget -q -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/$MW_APT_LIST' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mwservice) >> $MW_AGENT_HOME/apt/cron/melt.log 2>&1 >> $MW_AGENT_HOME/apt/cron/melt.log" >> cron_bkp
-sudo crontab cron_bkp
-sudo rm cron_bkp
+# sudo crontab -l > cron_bkp
+# sudo echo "*/5 * * * * (wget -q -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/$MW_APT_LIST' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mwservice) >> $MW_AGENT_HOME/apt/cron/melt.log 2>&1 >> $MW_AGENT_HOME/apt/cron/melt.log" >> cron_bkp
+# sudo crontab cron_bkp
+# sudo rm cron_bkp
 
 echo -e "Installation done ! \n"
 
