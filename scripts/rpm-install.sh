@@ -79,6 +79,8 @@ sudo su << EOSUDO
 
 # Running Agent as a Daemon Service
 touch /etc/systemd/system/mwservice.service
+mkdir -p $MW_AGENT_HOME/apt 
+touch $MW_AGENT_HOME/apt/executable
 
 cat << EOF > /etc/systemd/system/mwservice.service
 [Unit]
@@ -101,6 +103,7 @@ if [ ! "${TARGET}" = "" ]; then
 
 cat << EOIF > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
+export PATH=$PATH:/usr/bin/mw-go-agent-host-aws
 cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET $MW_AGENT_BINARY start
 EOIF
 
@@ -108,6 +111,7 @@ else
 
 cat << EOELSE > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
+export PATH=$PATH:/usr/bin/mw-go-agent-host-aws
 cd /usr/bin && MW_API_KEY=$MW_API_KEY $MW_AGENT_BINARY start
 EOELSE
 
