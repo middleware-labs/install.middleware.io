@@ -88,19 +88,45 @@ done
 fi
 
 docker pull $MW_AGENT_DOCKER_IMAGE
-dockerrun="docker run -d \
---name mw-agent-${MW_API_KEY:0:5} \
---pid host \
---restart always \
--e MW_API_KEY=$MW_API_KEY \
--e MW_LOG_PATHS=$MW_LOG_PATHS \
--e TARGET=$TARGET \
--v /var/run/docker.sock:/var/run/docker.sock \
--v /var/log:/var/log \
--v /tmp:/tmp \
-$MW_LOG_PATHS_BINDING \
---privileged \
---network=host $MW_AGENT_DOCKER_IMAGE api-server start"
+
+if [[ $(uname) == "Darwin" ]]; then
+
+  echo "Found a Darwin machine, adding port bindings individually ..."
+
+  HOSTNAME=eval "hostname"
+
+  dockerrun="docker run -d \
+  --hostname $HOSTNAME \
+  --name mw-agent-${MW_API_KEY:0:5} \
+  --pid host \
+  --restart always \
+  -e MW_API_KEY=$MW_API_KEY \
+  -e MW_LOG_PATHS=$MW_LOG_PATHS \
+  -e TARGET=$TARGET \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /var/log:/var/log \
+  -v /tmp:/tmp \
+  $MW_LOG_PATHS_BINDING \
+  --privileged \
+  -p 9319:9319 -p 9320:9320 -p 8006:8006  $MW_AGENT_DOCKER_IMAGE api-server start"
+
+else
+
+  dockerrun="docker run -d \
+  --name mw-agent-${MW_API_KEY:0:5} \
+  --pid host \
+  --restart always \
+  -e MW_API_KEY=$MW_API_KEY \
+  -e MW_LOG_PATHS=$MW_LOG_PATHS \
+  -e TARGET=$TARGET \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /var/log:/var/log \
+  -v /tmp:/tmp \
+  $MW_LOG_PATHS_BINDING \
+  --privileged \
+  --network=host $MW_AGENT_DOCKER_IMAGE api-server start"
+
+fi
 
 export dockerrun
 eval " $dockerrun"
