@@ -35,3 +35,7 @@ For Ubuntu 16.04 and older, we suggest to stick with Docker Installation
 Let us know, if you find more machines that works well with our agent.
 
 Also let us know if you need support for any particular Architecture / OS version that is not listed above.
+
+## Roadmap
+
+1. We are planning to add support for RPM based machines.

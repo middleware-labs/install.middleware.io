@@ -161,7 +161,7 @@ processors:
             - key: source
               from_attribute: project.name
               action: upsert
-             - key: source
+            - key: source
               from_attribute: serviceName
               action: upsert
             - key: source
