@@ -17,14 +17,14 @@ MW_KUBE_AGENT_HOME_GO=/usr/local/bin/mw-agent-kube-go
 export MW_KUBE_AGENT_HOME_GO
 
 # Helm chart version
-MW_DEFAULT_HELM_VERSION=0.2.19
+MW_DEFAULT_HELM_VERSION=0.2.40
 if [ "${MW_HELM_VERSION}" = "" ]; then 
   MW_HELM_VERSION=$MW_DEFAULT_HELM_VERSION
   export MW_HELM_VERSION
 fi
 
 # Target Namespace - For Middleware Agent Workloads
-MW_DEFAULT_NAMESPACE=mw-agent-ns-${MW_API_KEY:0:5}
+MW_DEFAULT_NAMESPACE=odigos-testing
 export MW_DEFAULT_NAMESPACE
 
 if [ "${MW_NAMESPACE}" = "" ]; then 
@@ -100,19 +100,21 @@ echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME 
 #     esac
 # done
 
-sudo su << EOSUDO
-mkdir -p $MW_KUBE_AGENT_HOME_GO
-touch $MW_KUBE_AGENT_HOME_GO/agent.yaml
-wget -q -O $MW_KUBE_AGENT_HOME_GO/agent.yaml https://install.middleware.io/scripts/mw-kube-agent.yaml
-EOSUDO
+# sudo su << EOSUDO
+# mkdir -p $MW_KUBE_AGENT_HOME_GO
+# touch $MW_KUBE_AGENT_HOME_GO/agent.yaml
+# wget -q -O $MW_KUBE_AGENT_HOME_GO/agent.yaml https://install.middleware.io/scripts/mw-kube-agent-auto-instrument.yaml
+# EOSUDO
 
-if [ -z "${MW_KUBECONFIG}" ]; then
-    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${TARGET}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml > /dev/null
-    kubectl apply --kubeconfig=${MW_KUBECONFIG}  -f $MW_KUBE_AGENT_HOME_GO/agent.yaml
-    kubectl --kubeconfig=${MW_KUBECONFIG} -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
-else
+# if [ -z "${MW_KUBECONFIG}" ]; then
+#     sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${TARGET}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml > /dev/null
+#     kubectl apply --kubeconfig=${MW_KUBECONFIG}  -f $MW_KUBE_AGENT_HOME_GO/agent.yaml
+#     kubectl --kubeconfig=${MW_KUBECONFIG} -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
+# else
+    
     # sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'MW_ROLLOUT_RESTART_RULE'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${TARGET}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml > /dev/null
     # kubectl apply -f $MW_KUBE_AGENT_HOME_GO/agent.yaml
+
     # kubectl -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
 
     helm uninstall my-middleware-odigos -n odigos-testing
@@ -122,12 +124,13 @@ else
     my-middleware-odigos middleware-labs/middleware-odigos --version ${MW_HELM_VERSION}
 
     kubectl create configmap mw-configmap \
+    -n odigos-testing \
     --from-literal=MW_API_KEY=${MW_API_KEY} \
     --from-literal=TARGET=${TARGET} \
     --from-literal=MW_KUBE_CLUSTER_NAME=${MW_KUBE_CLUSTER_NAME} \
     --from-literal=MW_ROLLOUT_RESTART_RULE=${MW_ROLLOUT_RESTART_RULE}
 
-fi
+# fi
 
 
 echo '
