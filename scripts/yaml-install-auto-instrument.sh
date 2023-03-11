@@ -17,7 +17,7 @@ MW_KUBE_AGENT_HOME_GO=/usr/local/bin/mw-agent-kube-go
 export MW_KUBE_AGENT_HOME_GO
 
 # Helm chart version
-MW_DEFAULT_HELM_VERSION=0.2.40
+MW_DEFAULT_HELM_VERSION=0.2.42
 if [ "${MW_HELM_VERSION}" = "" ]; then 
   MW_HELM_VERSION=$MW_DEFAULT_HELM_VERSION
   export MW_HELM_VERSION
