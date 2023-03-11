@@ -117,7 +117,7 @@ echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME 
 
     # kubectl -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
 
-    helm repo add middleware-labs https://helm.middleware.io
+    helm repo add middleware-vision https://helm.middleware.io
     helm uninstall mw-vision-suite -n ${MW_NAMESPACE}
     helm install \
     -n ${MW_NAMESPACE} \
