@@ -122,7 +122,7 @@ echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME 
     helm install \
     -n ${MW_NAMESPACE} \
     --create-namespace \
-    mw-vision-suite middleware-labs/middleware-odigos --version ${MW_HELM_VERSION}
+    mw-vision-suite middleware-labs/middleware-vision --version ${MW_HELM_VERSION}
 
     kubectl create configmap mw-configmap \
     -n ${MW_NAMESPACE} \
