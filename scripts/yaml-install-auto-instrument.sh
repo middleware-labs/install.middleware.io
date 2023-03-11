@@ -24,7 +24,7 @@ if [ "${MW_HELM_VERSION}" = "" ]; then
 fi
 
 # Target Namespace - For Middleware Agent Workloads
-MW_DEFAULT_NAMESPACE=odigos-testing
+MW_DEFAULT_NAMESPACE=mw-vision
 export MW_DEFAULT_NAMESPACE
 
 if [ "${MW_NAMESPACE}" = "" ]; then 
@@ -117,14 +117,14 @@ echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME 
 
     # kubectl -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
 
-    helm uninstall my-middleware-odigos -n odigos-testing
+    helm uninstall mw-vision-suite -n ${MW_NAMESPACE}
     helm install \
-    -n odigos-testing \
+    -n ${MW_NAMESPACE} \
     --create-namespace \
-    my-middleware-odigos middleware-labs/middleware-odigos --version ${MW_HELM_VERSION}
+    mw-vision-suite middleware-labs/middleware-odigos --version ${MW_HELM_VERSION}
 
     kubectl create configmap mw-configmap \
-    -n odigos-testing \
+    -n ${MW_NAMESPACE} \
     --from-literal=MW_API_KEY=${MW_API_KEY} \
     --from-literal=TARGET=${TARGET} \
     --from-literal=MW_KUBE_CLUSTER_NAME=${MW_KUBE_CLUSTER_NAME} \
