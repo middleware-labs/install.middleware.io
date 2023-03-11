@@ -135,9 +135,6 @@ echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME 
 
 
 echo '
-  MW Kube Agent Installed Successfully !
   --------------------------------------------------
-  /usr/local/bin 
-    └───mw-kube-agent-go
-            └───agent.yaml: Contains definitions for all required kubernetes components for Agent
+  MW Kubernetes Agent Installed ! Along with auto-instrumentation !!
 '
