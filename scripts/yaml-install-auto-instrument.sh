@@ -118,23 +118,28 @@ echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME 
     # kubectl -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
 
     helm repo add middleware-vision https://helm.middleware.io
-    helm uninstall mw-vision-suite -n ${MW_NAMESPACE}
+
+    if helm list --namespace default --short | grep -q "mw-vision-suite"; then 
+      echo ""
+    else 
+      helm uninstall mw-vision-suite -n ${MW_NAMESPACE}; 
+      kubectl delete configmap mw-configmap -n ${MW_NAMESPACE}
+    fi
+
+    if kubectl get configmap mw-configmap --namespace ${MW_NAMESPACE} >/dev/null 2>&1; then
+      echo "Good ! We already have mw-configmap !"
+    else
+      kubectl create configmap mw-configmap \
+      -n ${MW_NAMESPACE} \
+      --from-literal=MW_API_KEY=${MW_API_KEY} \
+      --from-literal=TARGET=${TARGET} \
+      --from-literal=MW_KUBE_CLUSTER_NAME=${MW_KUBE_CLUSTER_NAME} \
+      --from-literal=MW_ROLLOUT_RESTART_RULE=${MW_ROLLOUT_RESTART_RULE}
+    fi
+
     helm install \
     -n ${MW_NAMESPACE} \
     --create-namespace \
     mw-vision-suite middleware-labs/middleware-vision --version ${MW_HELM_VERSION}
 
-    kubectl create configmap mw-configmap \
-    -n ${MW_NAMESPACE} \
-    --from-literal=MW_API_KEY=${MW_API_KEY} \
-    --from-literal=TARGET=${TARGET} \
-    --from-literal=MW_KUBE_CLUSTER_NAME=${MW_KUBE_CLUSTER_NAME} \
-    --from-literal=MW_ROLLOUT_RESTART_RULE=${MW_ROLLOUT_RESTART_RULE}
-
 # fi
-
-
-echo '
-  --------------------------------------------------
-  MW Kubernetes Agent Installed ! Along with auto-instrumentation !!
-'
