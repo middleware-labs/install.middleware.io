@@ -1,6 +1,4 @@
 #!/bin/sh
-
-# recording agent installation attempt
 curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
 --header 'Content-Type: application/json' \
 --data-raw '{
