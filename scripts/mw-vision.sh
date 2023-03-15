@@ -15,7 +15,7 @@ MW_KUBE_AGENT_HOME_GO=/usr/local/bin/mw-agent-kube-go
 export MW_KUBE_AGENT_HOME_GO
 
 # Helm chart version
-MW_DEFAULT_HELM_VERSION=0.2.60
+MW_DEFAULT_HELM_VERSION=0.2.62
 if [ "${MW_HELM_VERSION}" = "" ]; then 
   MW_HELM_VERSION=$MW_DEFAULT_HELM_VERSION
   export MW_HELM_VERSION
@@ -40,6 +40,9 @@ fi
 # fi
 
 # Fetching cluster name
+
+kubectl create ns ${MW_NAMESPACE}
+
 CURRENT_CONTEXT="$(kubectl config current-context)"
 MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '"$CURRENT_CONTEXT"')].context.cluster}")"
 export MW_KUBE_CLUSTER_NAME
