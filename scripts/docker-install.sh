@@ -122,6 +122,7 @@ else
   -e TARGET=$TARGET \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/log:/var/log \
+  -v /var/lib/docker/containers:/var/lib/docker/containers \
   -v /tmp:/tmp \
   $MW_LOG_PATHS_BINDING \
   --privileged \
