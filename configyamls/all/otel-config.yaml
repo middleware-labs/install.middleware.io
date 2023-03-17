@@ -50,7 +50,7 @@ receivers:
                     - targets:
                         - 0.0.0.0:8888
     filelog:
-        include: [ /var/log/**/*.log*, $MW_LOG_PATHS ]
+        include: [ /var/log/**/*.log*, /var/lib/docker/container/**/*.log*, $MW_LOG_PATHS ]
         exclude:
             - /tmp/mwagent/record_time.log
         include_file_path: true
@@ -93,9 +93,9 @@ processors:
     #             - {}\n
     resource:
         attributes:
-            # - key: mw.account_key
-            #   action: upsert
-            #   value: ${MW_API_KEY}
+            - key: mw.account_key
+              action: upsert
+              value: ${MW_API_KEY}
             - key: host.id
               action: upsert
               from_attribute: host.name
@@ -107,9 +107,9 @@ processors:
               value: ${MW_AGENT_INSTALLATION_TIME}
     resource/2:
         attributes:
-            # - key: mw.account_key
-            #   action: upsert
-            #   value: ${MW_API_KEY}
+            - key: mw.account_key
+              action: upsert
+              value: ${MW_API_KEY}
             - key: service.name
               action: insert
               value: middleware-logs
@@ -118,9 +118,9 @@ processors:
               from_attribute: host.name
     resource/3:
         attributes:
-            # - key: mw.account_key
-            #   action: upsert
-            #   value: ${MW_API_KEY}
+            - key: mw.account_key
+              action: upsert
+              value: ${MW_API_KEY}
             - key: host.id
               action: upsert
               from_attribute: host.name
@@ -196,31 +196,31 @@ exporters:
             queue_size: 10000
 service:
     pipelines:
-        # metrics:
-        #     receivers:
-        #         # - hostmetrics
-        #         # - docker_stats
-        #         - otlp
-        #         # - prometheus
-        #     # processors:
-        #     #     - resourcedetection
-        #     #     - resource
-        #     #     - batch
-        #     exporters:
-        #         - logging
+        metrics:
+            receivers:
+                - hostmetrics
+                - docker_stats
+                - otlp
+                - prometheus
+            processors:
+                - resourcedetection
+                - resource
+                - batch
+            exporters:
+                - otlp/2
         logs:
             receivers:
                 - otlp
-                # - fluentforward
-                # - filelog
-            # processors:
-            #     # - filter/blanklog
-            #     - resourcedetection
-            #     - resource/2
-            #     - attributes/logs
-            #     - batch
+                - fluentforward
+                - filelog
+            processors:
+                # - filter/blanklog
+                - resourcedetection
+                - resource/2
+                - attributes/logs
+                - batch
             exporters:
-                - logging
+                - otlp/2
         traces:
             receivers:
                 - otlp
@@ -230,7 +230,7 @@ service:
                 - attributes/traces
                 - batch
             exporters:
-                - logging
+                - otlp/2
     telemetry:
         logs:
-            level: debug
+            level: warn
