@@ -41,7 +41,7 @@ fi
 
 # Fetching cluster name
 
-kubectl create ns ${MW_NAMESPACE}
+kubectl get namespace | grep -q ${MW_NAMESPACE} || kubectl create ns ${MW_NAMESPACE}
 
 CURRENT_CONTEXT="$(kubectl config current-context)"
 MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '"$CURRENT_CONTEXT"')].context.cluster}")"
@@ -50,12 +50,13 @@ export MW_KUBE_CLUSTER_NAME
 echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
 
 helm repo add middleware-vision https://helm.middleware.io
+helm repo add middleware-labs https://helm.middleware.io
 
-if helm list --namespace default --short | grep -q "mw-vision-suite"; then 
-  echo ""
-else 
+if helm list --namespace ${MW_NAMESPACE} --short | grep -q "mw-vision-suite"; then 
   helm uninstall mw-vision-suite -n ${MW_NAMESPACE}; 
   kubectl delete configmap mw-configmap -n ${MW_NAMESPACE}
+else 
+  echo ""
 fi
 
 if kubectl get configmap mw-configmap --namespace ${MW_NAMESPACE} >/dev/null 2>&1; then
