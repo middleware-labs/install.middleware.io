@@ -1,4 +1,35 @@
 #!/bin/sh
+
+
+# apiVersion: security.openshift.io/v1
+# kind: SecurityContextConstraints
+# metadata:
+#   name: custom-scc
+# allowHostDirVolumePlugin: true
+# allowHostIPC: true
+# allowHostNetwork: true
+# allowHostPID: true
+# allowHostPorts: true
+# allowPrivilegedContainer: true
+# allowedCapabilities: ["*"]
+# fsGroup:
+#   type: RunAsAny
+# runAsUser:
+#   type: RunAsAny
+# seLinuxContext:
+#   type: RunAsAny
+# supplementalGroups:
+#   type: RunAsAny
+
+# oc create -f custom-scc.yaml
+# oc adm policy add-scc-to-user custom-scc -z vision-data-collection -n mw-vision
+# oc adm policy add-scc-to-user custom-scc -z visioncart -n mw-vision
+# oc adm policy add-scc-to-user custom-scc -z vision-scheduler -n mw-vision
+# oc adm policy add-scc-to-user custom-scc -z vision-ui -n mw-vision
+# oc adm policy add-scc-to-user custom-scc -z vision-autoscaler -n mw-vision
+# oc adm policy add-scc-to-user custom-scc -z odigos-instrumentror -n mw-vision
+# oc adm policy add-scc-to-user custom-scc -z default -n mw-vision
+
 curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
 --header 'Content-Type: application/json' \
 --data-raw '{
@@ -70,7 +101,53 @@ else
   --from-literal=MW_ROLLOUT_RESTART_RULE=${MW_ROLLOUT_RESTART_RULE}
 fi
 
-helm install \
+helm install --wait \
 -n ${MW_NAMESPACE} \
 --create-namespace \
 mw-vision-suite middleware-labs/middleware-vision --version ${MW_HELM_VERSION}
+
+
+# Adding SCC for Openshift based clusters
+
+
+if kubectl api-resources | grep -q "routes"; then
+    # Cluster is OpenShift-based, execute the command here
+    echo "Current cluster is OpenShift-based"
+    echo -e "\nAdding SCC for Openshift based clusters ...\n"
+
+  if command -v oc &> /dev/null; then
+      echo "oc is installed, running command..."
+     
+      cat <<EOF > custom-scc.yaml
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: custom-scc
+allowHostDirVolumePlugin: true
+allowHostIPC: true
+allowHostNetwork: true
+allowHostPID: true
+allowHostPorts: true
+allowPrivilegedContainer: true
+allowedCapabilities: ["*"]
+fsGroup:
+  type: RunAsAny
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+EOF
+
+      oc create -f custom-scc.yaml
+      oc adm policy add-scc-to-user custom-scc -z vision-data-collection -n mw-vision
+      oc adm policy add-scc-to-user custom-scc -z visioncart -n mw-vision
+      oc adm policy add-scc-to-user custom-scc -z vision-scheduler -n mw-vision
+      oc adm policy add-scc-to-user custom-scc -z vision-ui -n mw-vision
+      oc adm policy add-scc-to-user custom-scc -z vision-autoscaler -n mw-vision
+      oc adm policy add-scc-to-user custom-scc -z odigos-instrumentor -n mw-vision
+      oc adm policy add-scc-to-user custom-scc -z default -n mw-vision
+  fi
+
+fi
