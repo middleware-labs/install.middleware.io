@@ -17,7 +17,7 @@ MW_KUBE_AGENT_HOME_GO=/usr/local/bin/mw-agent-kube-go
 export MW_KUBE_AGENT_HOME_GO
 
 # Target Namespace - For Middleware Agent Workloads
-MW_DEFAULT_NAMESPACE=mw-agent-ns-${MW_API_KEY:0:5}
+MW_DEFAULT_NAMESPACE=mw-agent-ns
 export MW_DEFAULT_NAMESPACE
 
 if [ "${MW_NAMESPACE}" = "" ]; then 

@@ -32,8 +32,8 @@ MW_PX_CLUSTER_ID=`kubectl get secret pl-cluster-secrets -n pl -o jsonpath="{.dat
 export MW_PX_CLUSTER_ID
 echo $MW_PX_CLUSTER_ID
 
-sed -e 's|MW_PX_DEPLOY_KEY_VALUE|'${MW_PX_DEPLOY_KEY}'|g' -e 's|MW_PX_API_KEY_VALUE|'${MW_PX_API_KEY}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_TARGET_VALUE|'${MW_TARGET}'|g' -e 's|MW_NAMESPACE_VALUE|mw-agent-ns-'${MW_API_KEY:0:5}'|g' otel.yaml | sudo tee otel.yaml
-sed -e 's|MW_PX_CLUSTER_ID_VALUE|'${MW_PX_CLUSTER_ID}'|g' -e 's|MW_PX_API_KEY_VALUE|'${MW_PX_API_KEY}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_TARGET_VALUE|'${MW_TARGET}'|g' -e 's|MW_NAMESPACE_VALUE|mw-agent-ns-'${MW_API_KEY:0:5}'|g' pixiecustom.yaml | sudo tee pixiecustom.yaml
+sed -e 's|MW_PX_DEPLOY_KEY_VALUE|'${MW_PX_DEPLOY_KEY}'|g' -e 's|MW_PX_API_KEY_VALUE|'${MW_PX_API_KEY}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_TARGET_VALUE|'${MW_TARGET}'|g' -e 's|MW_NAMESPACE_VALUE|mw-agent-ns|g' otel.yaml | sudo tee otel.yaml
+sed -e 's|MW_PX_CLUSTER_ID_VALUE|'${MW_PX_CLUSTER_ID}'|g' -e 's|MW_PX_API_KEY_VALUE|'${MW_PX_API_KEY}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_TARGET_VALUE|'${MW_TARGET}'|g' -e 's|MW_NAMESPACE_VALUE|mw-agent-ns|g' pixiecustom.yaml | sudo tee pixiecustom.yaml
 
 kubectl apply -f $MW_PIXIE_SCRIPT_HOME/pixiecustom.yaml
 kubectl apply -f $MW_PIXIE_SCRIPT_HOME/otel.yaml
