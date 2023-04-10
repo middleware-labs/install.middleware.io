@@ -12,35 +12,26 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
     }
 }' > /dev/null
 
+MW_AGENT_HOME=/usr/local/bin/mw-go-agent
+MW_AGENT_BINARY=mw-go-agent-host-aws
+MW_DETECTED_ARCH=$(uname -m)
+
+RPM_FILE=""
+
+echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
+
+if [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
+  RPM_FILE="mw-go-agent-host-aws-arm-0.0.1-1.aarch64.rpm"
+elif [[ $MW_DETECTED_ARCH == "aarch64" ]]; then
+  RPM_FILE="mw-go-agent-host-aws-0.0.1-1.x86_64.rpm"
+else
+  echo ""
+fi
+
 wget -q -O mw-go-agent-host-aws.rpm install.middleware.io/rpms/mw-go-agent-host-aws-0.0.1-1.x86_64.rpm
 sudo rpm -i mw-go-agent-host-aws.rpm
 export PATH=$PATH:/usr/bin/mw-go-agent-host-aws
 source ~/.bashrc
-
-# MW_LATEST_VERSION=""
-MW_AGENT_HOME=/usr/local/bin/mw-go-agent
-# MW_APT_LIST=""
-# MW_APT_LIST_ARCH=""
-MW_AGENT_BINARY=mw-go-agent-host-aws
-# MW_DETECTED_ARCH=$(dpkg --print-architecture)
-
-echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
-
-# if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
-#   MW_LATEST_VERSION=0.0.15arm64
-#   MW_AGENT_HOME=/usr/local/bin/mw-go-agent-arm
-#   MW_APT_LIST=mw-go-arm.list
-#   MW_AGENT_BINARY=mw-go-agent-host-arm
-#   MW_APT_LIST_ARCH=arm64
-# elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
-#   MW_LATEST_VERSION=0.0.15
-#   MW_AGENT_HOME=/usr/local/bin/mw-go-agent
-#   MW_APT_LIST=mw-go.list
-#   MW_AGENT_BINARY=mw-go-agent-host
-#   MW_APT_LIST_ARCH=all
-# else
-#   echo ""
-# fi
 
 export MW_LATEST_VERSION
 export MW_AUTO_START=true
