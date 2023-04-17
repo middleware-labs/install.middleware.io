@@ -1,12 +1,49 @@
 #!/bin/bash
 
+LOG_FILE="/var/log/mw-agent/rpm-installation-$(date +%s).log"
+sudo mkdir -p /var/log/mw-agent
+sudo touch "$LOG_FILE"
+exec &> >(sudo tee -a "$LOG_FILE")
+
+function send_logs {
+  status=$1
+  message=$2
+
+  payload=$(cat <<EOF
+{
+  "status": "$status",
+  "metadata": {
+    "script": "linux-rpm",
+    "status": "ok",
+    "message": "$message",
+    "script_logs": "$(sed 's/$/\\n/' "$LOG_FILE" | tr -d '\n' | sed 's/"/\\\"/g')"
+  }
+}
+EOF
+)
+
+  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+  --header 'Content-Type: application/json' \
+  --data-raw "$payload" > /dev/null
+}
+
+function on_exit {
+  if [ $? -eq 0 ]; then
+    send_logs "installed" "Script Completed"
+  else
+    send_logs "error" "Script Failed"
+  fi
+}
+
+trap on_exit EXIT
+
 # recording agent installation attempt
 curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "status": "tried",
     "metadata": {
-        "script": "linux",
+        "script": "linux-rpm",
         "status": "ok",
         "message": "agent installed"
     }
