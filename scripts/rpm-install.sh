@@ -58,16 +58,18 @@ RPM_FILE=""
 echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
 
 if [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
-  RPM_FILE="mw-go-agent-host-aws-arm-0.0.1-1.aarch64.rpm"
-elif [[ $MW_DETECTED_ARCH == "aarch64" ]]; then
   RPM_FILE="mw-go-agent-host-aws-0.0.1-1.x86_64.rpm"
+  MW_AGENT_BINARY="mw-go-agent-host-aws"
+elif [[ $MW_DETECTED_ARCH == "aarch64" ]]; then
+  RPM_FILE="mw-go-agent-host-aws-arm-0.0.1-1.aarch64.rpm"
+  MW_AGENT_BINARY="mw-go-agent-host-aws-arm"
 else
   echo ""
 fi
 
-wget -q -O mw-go-agent-host-aws.rpm install.middleware.io/rpms/mw-go-agent-host-aws-0.0.1-1.x86_64.rpm
-sudo rpm -i mw-go-agent-host-aws.rpm
-export PATH=$PATH:/usr/bin/mw-go-agent-host-aws
+wget -q -O $MW_AGENT_BINARY.rpm install.middleware.io/rpms/$RPM_FILE
+sudo rpm -i $MW_AGENT_BINARY.rpm
+export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 source ~/.bashrc
 
 export MW_LATEST_VERSION
@@ -131,7 +133,7 @@ if [ ! "${TARGET}" = "" ]; then
 
 cat << EOIF > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
-export PATH=$PATH:/usr/bin/mw-go-agent-host-aws
+export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET $MW_AGENT_BINARY start
 EOIF
 
@@ -139,7 +141,7 @@ else
 
 cat << EOELSE > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
-export PATH=$PATH:/usr/bin/mw-go-agent-host-aws
+export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 cd /usr/bin && MW_API_KEY=$MW_API_KEY $MW_AGENT_BINARY start
 EOELSE
 
