@@ -84,9 +84,9 @@ Ex. If you want to add a metric for a "host" - you will need to add "host.id" re
 | k8s.node | k8s.node.uid | K8s Node Metrics | 
 | k8s.pod | k8s.pod.uid | K8s POD metrics |
 | k8s.deployment | k8s.deployment.uid | K8s Deployment Metrics |
-| k8s.daemonset | k8s.deployment.uid | ~ |
-| k8s.replicaset | k8s.deployment.uid | ~ |
-| k8s.statefulset | k8s.deployment.uid | ~ |
+| k8s.daemonset | k8s.daemonset.uid | ~ |
+| k8s.replicaset | k8s.replicaset.uid | ~ |
+| k8s.statefulset | k8s.statefulset.uid | ~ |
 | k8s.namespace | k8s.namespace.uid | ~ |
 | service | service.name | ~ |
 | os | os.type | ~ |
