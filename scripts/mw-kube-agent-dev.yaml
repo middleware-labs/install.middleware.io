@@ -250,6 +250,10 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: NoSchedule
+      - operator: "Exists"
+        effect: "NoSchedule"
+      - operator: "Exists"
+        effect: "NoExecute"
       hostNetwork: true
       volumes:
       # volume binding for log collection 
@@ -273,8 +277,16 @@ spec:
           env:
             - name: TARGET
               value: "TARGET_VALUE"
+            - name: TARGET2
+              value: "TARGET2_VALUE"
+            - name: TARGET3
+              value: "TARGET3_VALUE"
             - name: MW_API_KEY
               value: "MW_API_KEY_VALUE"
+            - name: MW_API_KEY2
+              value: "MW_API_KEY2_VALUE"
+            - name: MW_API_KEY3
+              value: "MW_API_KEY3_VALUE"
             - name: MW_DOCKER_ENDPOINT
               value: "MW_DOCKER_ENDPOINT_VALUE"
             - name: MW_KUBE_CLUSTER_NAME
@@ -287,7 +299,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-          image: ghcr.io/middleware-labs/agent-kube-go:dev
+          image: ghcr.io/middleware-labs/agent-kube-go:master
           imagePullPolicy: Always
           name: mw-kube-agent
           securityContext:
