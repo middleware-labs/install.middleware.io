@@ -1,0 +1,18 @@
+Origin: Example Repository
+Label: Example
+Suite: stable
+Codename: stable
+Version: 1.0
+Architectures: amd64 arm64 arm7
+Components: main
+Description: An example software repository
+Date: Thu, 22 Jun 2023 13:29:20 +0000
+MD5Sum:
+ d4efd2abb914baef75e683498ad98869 407 main/binary-all/Packages
+ 1cd840419bf62451f90015e08aa2123c 318 main/binary-all/Packages.gz
+SHA1:
+ 4db0894e2f5fe529325d90bdde5a8aaac73cd92f 407 main/binary-all/Packages
+ f9107fb07132012dba11e61a4eddd1a052d05923 318 main/binary-all/Packages.gz
+SHA256:
+ 617642c31c0fd2faf1d7dcfb3265c642aa8d53a95abcba5e60fbebf1db7e02ec 407 main/binary-all/Packages
+ 52851e64278a7bf0bdd65df81fa0dfb956df04482de5dd31ee7157649f561666 318 main/binary-all/Packages.gz
