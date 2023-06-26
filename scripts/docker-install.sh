@@ -158,6 +158,8 @@ else
   --restart always \
   -e MW_API_KEY=$MW_API_KEY \
   -e MW_LOG_PATHS=$MW_LOG_PATHS \
+  -e MW_API_URL_FOR_RESTART=$MW_API_URL_FOR_RESTART \
+  -e MW_API_URL_FOR_YAML=$MW_API_URL_FOR_YAML \
   -e TARGET=$TARGET \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/log:/var/log \
