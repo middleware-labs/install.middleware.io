@@ -4,10 +4,10 @@ Architecture: arm64
 Maintainer: example <example@example.com>
 Depends: libc6
 Filename: pool/main/mw-agent_0.0.18arm64-1_all.deb
-Size: 36722120
-MD5sum: 317476740cce28a9293c03cfe55e1927
-SHA1: 9f9d67ce984c61687a1a84c4ab101570bc53b5bd
-SHA256: 3a9d1165cd652dc87bf03411ae7d9819ea68e0bdde7b5755c00074b783141b27
+Size: 36742516
+MD5sum: ec3832cc2ee8085fc39a84303fd489e6
+SHA1: 824baa230f665c527e5f4877f24b3138d008c6bb
+SHA256: 03ad971bf425a526c48aea606e5e224921e79ce6f9c79b67eb13183d038e2069
 Homepage: http://example.com
 Description: Telemetry Collector Tool
 
