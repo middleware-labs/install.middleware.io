@@ -8,6 +8,7 @@ exec &> >(sudo tee -a "$LOG_FILE")
 function send_logs {
   status=$1
   message=$2
+  host_id=$(eval hostname)
 
   payload=$(cat <<EOF
 {
@@ -16,6 +17,7 @@ function send_logs {
     "script": "linux-rpm",
     "status": "ok",
     "message": "$message",
+    "host_id": "$host_id",
     "script_logs": "$(sed 's/$/\\n/' "$LOG_FILE" | tr -d '\n' | sed 's/"/\\\"/g')"
   }
 }
