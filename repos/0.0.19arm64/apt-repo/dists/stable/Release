@@ -6,13 +6,13 @@ Version: 1.0
 Architectures: amd64 arm64 arm7
 Components: main
 Description: An example software repository
-Date: Mon, 03 Jul 2023 12:03:15 +0000
+Date: Tue, 04 Jul 2023 14:45:08 +0000
 MD5Sum:
- 76d6913f5d358e57227f5161faf0a7ed 423 main/binary-arm64/Packages
- 5a646b7f063c2c5cbc2cd00912c9d3f4 324 main/binary-arm64/Packages.gz
+ 7f11eba212693fc25ace7c657bbb90b7 423 main/binary-arm64/Packages
+ 1e85eb38faa17bc5066b802a51571d86 324 main/binary-arm64/Packages.gz
 SHA1:
- 26288ed55e0657a4ded750d36d1dd5c05b6c4591 423 main/binary-arm64/Packages
- 000c0a21844e2300e51a4788a7a4d13e54466eed 324 main/binary-arm64/Packages.gz
+ ded05109bba2d87c14835113b1a08a1de46904c9 423 main/binary-arm64/Packages
+ 5db356881e0e5187969f481da0a30af150c7a380 324 main/binary-arm64/Packages.gz
 SHA256:
- 12fd7987db1d113a9c8787dd26002727cd152ad42cdd50ece0ef82701f858709 423 main/binary-arm64/Packages
- 2157600119ac6dc37c277b1a63102d633c9cd5921e6f64b34fa29a824aa22fa8 324 main/binary-arm64/Packages.gz
+ b971f2f00350b4193ea613bdfe0c87c9a0d72022b327ee751674368fadef1c96 423 main/binary-arm64/Packages
+ 3161d06ca11522905637ea775b2881d7999d1dbe1598921cdba1ee9e93c0f170 324 main/binary-arm64/Packages.gz
