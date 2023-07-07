@@ -1,0 +1,38 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: Example Repository
+Label: Example
+Suite: stable
+Codename: stable
+Version: 1.0
+Architectures: amd64 arm64 arm7
+Components: main
+Description: An example software repository
+Date: Fri, 07 Jul 2023 07:28:15 +0000
+MD5Sum:
+ 43a0935b38a59bdfbf1a4b6518acbcd6 323 main/binary-arm64/Packages.gz
+ fa26ef56b85d9334a7d043fb6a2a0e5d 423 main/binary-arm64/Packages
+SHA1:
+ 0564f7a7953b8eae336fa070eebc9c2a8d9a7a72 323 main/binary-arm64/Packages.gz
+ 114d518fbe8b033865129efcca155d9aa530a963 423 main/binary-arm64/Packages
+SHA256:
+ ffed480907265e96ef5bdf57a52ef3cbec7342f0cd9bcc4d45df052df988d62f 323 main/binary-arm64/Packages.gz
+ 8c4a90c7c8029ee1f7a608c142b4653873f72c11b0b41ee96ae614d3e1b8ff94 423 main/binary-arm64/Packages
+-----BEGIN PGP SIGNATURE-----
+
+iQJIBAEBCgAyFiEEahels7Mp0S9JXkZI+VajTccJYqkFAmSnvpAUHGV4YW1wbGVA
+ZXhhbXBsZS5jb20ACgkQ+VajTccJYqkm6g//cMYb+ZbfqWZt5Blh7Eu5t7bajAKa
+4s0YWIdyClD29Rqyb6FCMX/UlElxJicZzEyvaUXQ+PThsqhtRf552wJNYcQ0ceuB
+nsg5L64CsGqAaaDlkg52Xd0fGX51irT8X6d1JhWL6Y2gU9OJ0PaA/obg8EQ9WNFD
+W/ics6ra9B2V+qlrfTP5GCYDFhrc79XbS8qsnGUSsDzAmjSOHYv0WpWh9pjkGaeY
+vnBUWzt5lBujMfa4diK/S7SbtyyclFtNV6VlzxWIBqjnw53C9CxocSLxy3v2mwX/
+OaBl4iDvPGNg7HupgzgM+gwUVRuy9lBF+lKqyVlvHUAkk3+i+hbTjehNup09wz1g
+uY39cMryeRtu6yW4AMeovQJBsG/yEdqpUhAIPJKjDMw0qCflUiRJtiwvMelY4AL5
+4OMvTxCLESYpHgZZ08SKUtI0oDeZqkq96h4cjn3OQ2vSQikePq7yr5kWPQwUzRj9
+5pbfyil+HDrUo3+JnH2BWbYshMxgejvkPkqqUpCwBbXCRZAlEMCmd3TK9sXGmeC1
+MaijWTUl9YbOzBozoeaz+VK9NsPZtkeA/lzLLn1ZieFxvsrRVHY6qpGQNC9j8l5Y
+0WOMQ0aDl/Ra3XhgO2ZnGI6UeWPCqpEOr0mJiU9lxTi0k/8tqoqWeaw73Cx1g/x8
+2UGECkOzBkh65/8=
+=It1f
+-----END PGP SIGNATURE-----
