@@ -67,7 +67,7 @@ if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECT
   MW_AGENT_BINARY=mw-go-agent-host-arm
   MW_APT_LIST_ARCH=arm64
 elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
-  MW_LATEST_VERSION=0.0.19
+  MW_LATEST_VERSION=0.0.20
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent
   MW_APT_LIST=mw-go.list
   MW_AGENT_BINARY=mw-go-agent-host
