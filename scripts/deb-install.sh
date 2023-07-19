@@ -61,7 +61,7 @@ MW_DETECTED_ARCH=$(dpkg --print-architecture)
 echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
 
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
-  MW_LATEST_VERSION=0.0.19arm64
+  MW_LATEST_VERSION=0.0.20arm64
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent-arm
   MW_APT_LIST=mw-go-arm.list
   MW_AGENT_BINARY=mw-go-agent-host-arm
