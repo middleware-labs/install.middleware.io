@@ -150,7 +150,7 @@ if [[ $(uname) == "Darwin" ]]; then
   -v /tmp:/tmp \
   $MW_LOG_PATHS_BINDING \
   --privileged \
-  -p 9319:9319 -p 9320:9320 -p 8006:8006  $MW_AGENT_DOCKER_IMAGE api-server start"
+  -p 9319:9319 -p 9320:9320 -p 8006:8006  $MW_AGENT_DOCKER_IMAGE mw-agent start"
 
 else
 
@@ -170,7 +170,7 @@ else
   -v /tmp:/tmp \
   $MW_LOG_PATHS_BINDING \
   --privileged \
-  --network=host $MW_AGENT_DOCKER_IMAGE api-server start"
+  --network=host $MW_AGENT_DOCKER_IMAGE mw-agent start"
 
 fi
 
