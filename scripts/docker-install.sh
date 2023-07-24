@@ -143,7 +143,7 @@ if [[ $(uname) == "Darwin" ]]; then
   -e MW_LOG_PATHS=$MW_LOG_PATHS \
   -e MW_API_URL_FOR_RESTART=$MW_API_URL_FOR_RESTART \
   -e MW_API_URL_FOR_YAML=$MW_API_URL_FOR_YAML \
-  -e TARGET=$TARGET \
+  -e MW_TARGET=$MW_TARGET \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/log:/var/log \
   -v /var/lib/docker/containers:/var/lib/docker/containers \

@@ -131,12 +131,12 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-if [ ! "${TARGET}" = "" ]; then
+if [ ! "${MW_TARGET}" = "" ]; then
 
 cat << EOIF > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
-cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET $MW_AGENT_BINARY start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_TARGET=$MW_TARGET $MW_AGENT_BINARY start
 EOIF
 
 else 
