@@ -56,9 +56,9 @@ MW_AGENT_DOCKER_IMAGE=""
 
 MW_DETECTED_ARCH=$(dpkg --print-architecture)
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "arm32" ]]; then
-  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/agent-host-go:master"
+  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:master"
 else 
-  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/agent-host-go:master"
+  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:master"
 fi
 
 
@@ -143,14 +143,14 @@ if [[ $(uname) == "Darwin" ]]; then
   -e MW_LOG_PATHS=$MW_LOG_PATHS \
   -e MW_API_URL_FOR_RESTART=$MW_API_URL_FOR_RESTART \
   -e MW_API_URL_FOR_YAML=$MW_API_URL_FOR_YAML \
-  -e TARGET=$TARGET \
+  -e MW_TARGET=$MW_TARGET \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/log:/var/log \
   -v /var/lib/docker/containers:/var/lib/docker/containers \
   -v /tmp:/tmp \
   $MW_LOG_PATHS_BINDING \
   --privileged \
-  -p 9319:9319 -p 9320:9320 -p 8006:8006  $MW_AGENT_DOCKER_IMAGE api-server start"
+  -p 9319:9319 -p 9320:9320 -p 8006:8006  $MW_AGENT_DOCKER_IMAGE mw-agent start"
 
 else
 
@@ -162,14 +162,15 @@ else
   -e MW_LOG_PATHS=$MW_LOG_PATHS \
   -e MW_API_URL_FOR_RESTART=$MW_API_URL_FOR_RESTART \
   -e MW_API_URL_FOR_YAML=$MW_API_URL_FOR_YAML \
-  -e TARGET=$TARGET \
+  -e MW_TARGET=$MW_TARGET \
+  -e MW_HOST_TAGS=$MW_HOST_TAGS \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/log:/var/log \
   -v /var/lib/docker/containers:/var/lib/docker/containers \
   -v /tmp:/tmp \
   $MW_LOG_PATHS_BINDING \
   --privileged \
-  --network=host $MW_AGENT_DOCKER_IMAGE api-server start"
+  --network=host $MW_AGENT_DOCKER_IMAGE mw-agent start"
 
 fi
 
