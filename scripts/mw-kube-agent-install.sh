@@ -65,7 +65,7 @@ export MW_KUBE_CLUSTER_NAME
 
 echo -e "\nSetting up Middleware Kubernetes agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
 
-if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ]; then
+if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "" ]; then
   echo -e "\nMiddleware Kubernetes agent is being installed using manifest files, please wait ..."
   # Home for local configs
   MW_KUBE_AGENT_HOME=/usr/local/bin/mw-kube-agent
