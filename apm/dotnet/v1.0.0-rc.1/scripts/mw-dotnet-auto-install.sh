@@ -1,5 +1,5 @@
 #!/bin/sh
-set -ex
+set -e
 
 # guess OS_TYPE if not provided
 if [ -z "$OS_TYPE" ]; then
