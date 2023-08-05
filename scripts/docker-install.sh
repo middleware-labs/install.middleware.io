@@ -144,6 +144,7 @@ if [[ $(uname) == "Darwin" ]]; then
   -e MW_API_URL_FOR_RESTART=$MW_API_URL_FOR_RESTART \
   -e MW_API_URL_FOR_YAML=$MW_API_URL_FOR_YAML \
   -e MW_TARGET=$MW_TARGET \
+  -e MW_HOST_TAGS=$MW_HOST_TAGS \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/log:/var/log \
   -v /var/lib/docker/containers:/var/lib/docker/containers \
