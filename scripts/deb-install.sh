@@ -61,13 +61,13 @@ MW_DETECTED_ARCH=$(dpkg --print-architecture)
 echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
 
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
-  MW_LATEST_VERSION=0.0.20arm64
+  MW_LATEST_VERSION=0.0.25arm64
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent-arm
   MW_APT_LIST=mw-go-arm.list
   MW_AGENT_BINARY=mw-go-agent-host-arm
   MW_APT_LIST_ARCH=arm64
 elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
-  MW_LATEST_VERSION=0.0.20
+  MW_LATEST_VERSION=0.0.25
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent
   MW_APT_LIST=mw-go.list
   MW_AGENT_BINARY=mw-go-agent-host
@@ -203,14 +203,14 @@ if [ ! "${MW_TARGET}" = "" ]; then
 
 cat << EOIF > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
-cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_TARGET=$MW_TARGET $MW_AGENT_BINARY start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_TARGET=$MW_TARGET MW_HOST_TAGS=$MW_HOST_TAGS $MW_AGENT_BINARY start
 EOIF
 
 else 
 
 cat << EOELSE > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
-cd /usr/bin && MW_API_KEY=$MW_API_KEY $MW_AGENT_BINARY start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_HOST_TAGS=$MW_HOST_TAGS $MW_AGENT_BINARY start
 EOELSE
 
 fi
