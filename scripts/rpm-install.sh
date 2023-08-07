@@ -52,19 +52,27 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
 }' > /dev/null
 
 MW_AGENT_HOME=/usr/local/bin/mw-go-agent
-MW_AGENT_BINARY=mw-go-agent-host-aws
+MW_AGENT_BINARY=mw-go-agent-host
 MW_DETECTED_ARCH=$(uname -m)
 
 RPM_FILE=""
 
 echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
 
+MW_LATEST_VERSION=0.0.25
+export MW_LATEST_VERSION
+
+if [ "${MW_VERSION}" = "" ]; then 
+  MW_VERSION=$MW_LATEST_VERSION
+  export MW_VERSION
+fi
+
 if [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
-  RPM_FILE="mw-go-agent-host-aws-0.0.1-1.x86_64.rpm"
-  MW_AGENT_BINARY="mw-go-agent-host-aws"
+  RPM_FILE="mw-go-agent-host-${MW_VERSION}-1.x86_64.rpm"
+  MW_AGENT_BINARY="mw-go-agent-host"
 elif [[ $MW_DETECTED_ARCH == "aarch64" ]]; then
-  RPM_FILE="mw-go-agent-host-aws-arm-0.0.1-1.aarch64.rpm"
-  MW_AGENT_BINARY="mw-go-agent-host-aws-arm"
+  RPM_FILE="mw-go-agent-host-arm-${MW_VERSION}-1.aarch64.rpm"
+  MW_AGENT_BINARY="mw-go-agent-host-arm"
 else
   echo ""
 fi
@@ -74,13 +82,7 @@ sudo rpm -i $MW_AGENT_BINARY.rpm
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 source ~/.bashrc
 
-export MW_LATEST_VERSION
 export MW_AUTO_START=true
-
-if [ "${MW_VERSION}" = "" ]; then 
-  MW_VERSION=$MW_LATEST_VERSION
-  export MW_VERSION
-fi
 
 MW_LOG_PATHS=""
 
@@ -136,7 +138,7 @@ if [ ! "${MW_TARGET}" = "" ]; then
 cat << EOIF > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
-cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_TARGET=$MW_TARGET $MW_AGENT_BINARY start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_TARGET=$MW_TARGET MW_HOST_TAGS=$MW_HOST_TAGS $MW_AGENT_BINARY start
 EOIF
 
 else 
@@ -144,7 +146,7 @@ else
 cat << EOELSE > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
-cd /usr/bin && MW_API_KEY=$MW_API_KEY $MW_AGENT_BINARY start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_HOST_TAGS=$MW_HOST_TAGS $MW_AGENT_BINARY start
 EOELSE
 
 fi
