@@ -1,0 +1,13 @@
+Package: mw-go-agent-host
+Version: 0.0.27
+Architecture: all
+Maintainer: example <example@example.com>
+Depends: libc6
+Filename: pool/main/mw-agent_0.0.27-1_all.deb
+Size: 44133384
+MD5sum: f9d6d37fac09affdceecd7905f865ff6
+SHA1: 4c4495af5d3cc22a2172bec2a6691dd3f4bc8ef8
+SHA256: 4ba5acb807bc60d831b160ab01081f34f1800df15bdb6ee7d2c55022fec285fb
+Homepage: http://example.com
+Description: Telemetry Collector Tool
+
