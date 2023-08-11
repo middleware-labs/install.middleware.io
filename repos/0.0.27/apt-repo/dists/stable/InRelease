@@ -9,30 +9,30 @@ Version: 1.0
 Architectures: amd64 arm64 arm7
 Components: main
 Description: An example software repository
-Date: Fri, 11 Aug 2023 09:04:35 +0000
+Date: Fri, 11 Aug 2023 10:20:49 +0000
 MD5Sum:
- b4cc8ae23a03978700d0c5681c37ec66 317 main/binary-all/Packages.gz
- 61ddfcbc8852d1a6c936494651cfc366 407 main/binary-all/Packages
+ 0b5c8d475388654fd0310741d1d6386c 323 main/binary-arm64/Packages.gz
+ ec6fc1eae57cb54b665af19bf1bb03a9 418 main/binary-arm64/Packages
 SHA1:
- 186fb2cd2282558256f626fe7d7ee5f0fd2e8fa1 317 main/binary-all/Packages.gz
- 7b3908829979700c0472f8f1569c09bce8964902 407 main/binary-all/Packages
+ 8d9c733a9e4fcf730337a9e86f4c58e075b8fe24 323 main/binary-arm64/Packages.gz
+ e4363b60b30f12667bf7a23438f31c60ff04f674 418 main/binary-arm64/Packages
 SHA256:
- 98cbde783172e77c4bfe9b43adbcf9d319c84a83c35465ce9f0f1740a888519f 317 main/binary-all/Packages.gz
- 31e275ebf9f8a8db5f31859b9ce95b2d581f12b7b2732d0f4a5fe1cfaae8b6c3 407 main/binary-all/Packages
+ ae8472852d5a28dc581efd73cfac27c12687bccb848f684dceea3c79dc964d75 323 main/binary-arm64/Packages.gz
+ 32edb81d9109c04698e998406bd6ff57e74cd858954b6985239f872034bdae17 418 main/binary-arm64/Packages
 -----BEGIN PGP SIGNATURE-----
 
-iQJIBAEBCgAyFiEEN4OB72sdRUKiN7SYkrka/qYicXwFAmTV+aYUHGV4YW1wbGVA
-ZXhhbXBsZS5jb20ACgkQkrka/qYicXzgzQ//fG8S1E5nFJ75P479+37NnQ6zI2QS
-kDT0PA25Tkqk90q4lYHEX0NJXIoJ7ioIEJn9vs9/N+EBxFRrSdt7cc4vSZjFlKUZ
-7yy5IrNRvKN+dXFG8vOhCA2TdHuTwyCnjDSjQIHXrdQvlE9/ojw7RGcCFggd5Nxh
-YRgo91otejdzXiD529e8qANhXiejQKomYWozREvqqigj9+MUEwSV588o/vXKExz3
-uhKWT2UDgL2H4ddOr9IyXefhcg29cJwNu8aGg+5CLDgSHI1FcP8HxXTtK9ycOg08
-vTsHUfSqlk/cRDPltInlSdq8lxOQS7svOQ0hHf0GiPwZCfhu8AsXK2irhN5Es97Y
-LScY4hAHIzbDtkkkO8BRpcpsKAVEpi/1XPkCamfQpUdGw0nI4bEPMtL13woiCR8v
-J/X6iNnqb8PElrslcxz/20DYJIYu+leHEbIcTpCaHZRYkG9IKA+IVa8pBCKLxlPT
-61HCNNwIfLRU9cZrmo/P2P1aEDZ7pP+HpoLSG1uzA5pxk8rHX/YnCzUFWce9PAdU
-fpj+6VvrPQHcAHjn8gXz7v7VYVfxnbGZnkqWu9uDUR9pWklne9IAxzaYzOWuJY11
-9/pJKxUI1ouj+icg9xFOml+Sqer2NsraKpknmbNQJCzNhoc+CKV1jnLJsDQM+mtY
-Ql8vMCjqc4OP28M=
-=f8xx
+iQJIBAEBCgAyFiEEXXR1TTjFIFE6hIW+ZMA6GcnF0yQFAmTWC4IUHGV4YW1wbGVA
+ZXhhbXBsZS5jb20ACgkQZMA6GcnF0yRqdQ//S24X8/NPMDMe1H/Z6VyqnqMxttJ+
+LnnUZa/YozDrMUNH795f40DQ/gf+X6SMTae5KVjV6wa5J6z78OuDN1O2WoUsGPM6
+S8L8NwBwxIMnN7+BjL8aOc9tbX4nXQsV7stfWd5Pm0ZeLcv8tm7yOHVY1RczuDk+
+oLihLBXgJyeX1lQmbcmhRMBLJ5r5AkJ4f968DiDct9koL/OY5Wufo+0kgsq1+6T9
+AuaZ/Vf6ekDl6zg+N0ErIESgGg92ED+71PI2Yi91lzTz15ZXfrsqFA2HipQW8Kt3
+tT7BYtQ2w6cCpY89XjbK7MSOqEY5nedh2fsZjqQYo53B/GK6Ul1kuClCDWxT7yOP
+7F5gLfd6eiOPb75ogSE3yovNAgPYH5xDTCPPy8wbszZhw90zoDZ8fPEjLU4t7fxK
+2xOkGdEbE8XGg6PlB2OTkDoVe+z44BxCR5emAFmZi8mr8QtFQqqGKXjDnBNirJoE
+d4XIzD79x3eIprQFkE9DtwQjUWVa7wNr/+Yx9whcAGXNQayvjFzIrIc3Bywx4lsH
+T2rguesUYjRjiN3qiOczWTzNpf9Rm0FjHwPyFy0P/jxifktMSIJ9SwYaSm1kq3Rj
+PlpbIV/XPMNTJgNh32G1TIHDsIvs1RpV3sALqo196x8k39kLW5eXC0vBZQJo6a4N
+95xG5LuTZJbjh0M=
+=tmdq
 -----END PGP SIGNATURE-----
