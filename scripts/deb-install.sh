@@ -61,13 +61,13 @@ MW_DETECTED_ARCH=$(dpkg --print-architecture)
 echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
 
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
-  MW_LATEST_VERSION=0.0.25arm64
+  MW_LATEST_VERSION=0.0.27arm64
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent-arm
   MW_APT_LIST=mw-go-arm.list
   MW_AGENT_BINARY=mw-go-agent-host-arm
   MW_APT_LIST_ARCH=arm64
 elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
-  MW_LATEST_VERSION=0.0.25
+  MW_LATEST_VERSION=0.0.27
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent
   MW_APT_LIST=mw-go.list
   MW_AGENT_BINARY=mw-go-agent-host
@@ -199,21 +199,48 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-if [ ! "${MW_TARGET}" = "" ]; then
-
-cat << EOIF > $MW_AGENT_HOME/apt/executable
+cat << EOEXECUTABLE > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
-cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_TARGET=$MW_TARGET MW_HOST_TAGS=$MW_HOST_TAGS $MW_AGENT_BINARY start
-EOIF
 
-else 
-
-cat << EOELSE > $MW_AGENT_HOME/apt/executable
-#!/bin/sh
-cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_HOST_TAGS=$MW_HOST_TAGS $MW_AGENT_BINARY start
-EOELSE
-
+# Check if MW_API_KEY is non-empty, then set the environment variable
+if [ -n "$MW_API_KEY" ]; then
+    export MW_API_KEY="$MW_API_KEY"
 fi
+
+# Check if MW_TARGET is non-empty, then set the environment variable
+if [ -n "$MW_TARGET" ]; then
+    export MW_TARGET="$MW_TARGET"
+fi
+
+# Check if MW_ENABLE_SYNTHETIC_MONITORING is non-empty, then set the environment variable
+if [ -n "$MW_ENABLE_SYNTHETIC_MONITORING" ]; then
+    export MW_ENABLE_SYNTHETIC_MONITORING="$MW_ENABLE_SYNTHETIC_MONITORING"
+fi
+
+# Check if MW_CONFIG_CHECK_INTERVAL is non-empty, then set the environment variable
+if [ -n "$MW_CONFIG_CHECK_INTERVAL" ]; then
+    export MW_CONFIG_CHECK_INTERVAL="$MW_CONFIG_CHECK_INTERVAL"
+fi
+
+# Check if MW_DOCKER_ENDPOINT is non-empty, then set the environment variable
+if [ -n "$MW_DOCKER_ENDPOINT" ]; then
+    export MW_DOCKER_ENDPOINT="$MW_DOCKER_ENDPOINT"
+fi
+
+# Check if MW_API_URL_FOR_CONFIG_CHECK is non-empty, then set the environment variable
+if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
+    export MW_API_URL_FOR_CONFIG_CHECK="$MW_API_URL_FOR_CONFIG_CHECK"
+fi
+
+# Check if MW_HOST_TAGS is non-empty, then set the environment variable
+if [ -n "$MW_HOST_TAGS" ]; then
+    export MW_HOST_TAGS="$MW_HOST_TAGS"
+fi
+
+# Start the MW_AGENT_BINARY with the configured environment variables
+$MW_AGENT_BINARY start
+
+EOEXECUTABLE
 
 chmod 777 $MW_AGENT_HOME/apt/executable
 

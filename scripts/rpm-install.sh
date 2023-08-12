@@ -133,23 +133,52 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-if [ ! "${MW_TARGET}" = "" ]; then
 
-cat << EOIF > $MW_AGENT_HOME/apt/executable
+cat << EOEXECUTABLE > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
-export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
-cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_TARGET=$MW_TARGET MW_HOST_TAGS=$MW_HOST_TAGS $MW_AGENT_BINARY start
-EOIF
 
-else 
-
-cat << EOELSE > $MW_AGENT_HOME/apt/executable
-#!/bin/sh
-export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
-cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_HOST_TAGS=$MW_HOST_TAGS $MW_AGENT_BINARY start
-EOELSE
-
+# Check if MW_API_KEY is non-empty, then set the environment variable
+if [ -n "$MW_API_KEY" ]; then
+    export MW_API_KEY="$MW_API_KEY"
 fi
+
+# Check if MW_TARGET is non-empty, then set the environment variable
+if [ -n "$MW_TARGET" ]; then
+    export MW_TARGET="$MW_TARGET"
+fi
+
+# Check if MW_ENABLE_SYNTHETIC_MONITORING is non-empty, then set the environment variable
+if [ -n "$MW_ENABLE_SYNTHETIC_MONITORING" ]; then
+    export MW_ENABLE_SYNTHETIC_MONITORING="$MW_ENABLE_SYNTHETIC_MONITORING"
+fi
+
+# Check if MW_CONFIG_CHECK_INTERVAL is non-empty, then set the environment variable
+if [ -n "$MW_CONFIG_CHECK_INTERVAL" ]; then
+    export MW_CONFIG_CHECK_INTERVAL="$MW_CONFIG_CHECK_INTERVAL"
+fi
+
+# Check if MW_DOCKER_ENDPOINT is non-empty, then set the environment variable
+if [ -n "$MW_DOCKER_ENDPOINT" ]; then
+    export MW_DOCKER_ENDPOINT="$MW_DOCKER_ENDPOINT"
+fi
+
+# Check if MW_API_URL_FOR_CONFIG_CHECK is non-empty, then set the environment variable
+if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
+    export MW_API_URL_FOR_CONFIG_CHECK="$MW_API_URL_FOR_CONFIG_CHECK"
+fi
+
+# Check if MW_HOST_TAGS is non-empty, then set the environment variable
+if [ -n "$MW_HOST_TAGS" ]; then
+    export MW_HOST_TAGS="$MW_HOST_TAGS"
+fi
+
+# Start the MW_AGENT_BINARY with the configured environment variables
+$MW_AGENT_BINARY start
+
+EOEXECUTABLE
+
+
+
 
 chmod 777 $MW_AGENT_HOME/apt/executable
 
