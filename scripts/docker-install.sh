@@ -128,23 +128,57 @@ fi
 
 docker pull $MW_AGENT_DOCKER_IMAGE
 
+dockerrun="docker run -d \
+  --name mw-agent-${MW_API_KEY:0:5} \
+  --pid host \
+  --restart always"
+
+if [ -n "$MW_API_KEY" ]; then
+    dockerrun="$dockerrun -e MW_API_KEY=$MW_API_KEY"
+fi
+
+# Check if MW_TARGET is non-empty, then set the environment variable
+if [ -n "$MW_TARGET" ]; then
+    dockerrun="$dockerrun -e MW_TARGET=$MW_TARGET"
+fi
+
+# Check if MW_ENABLE_SYNTHETIC_MONITORING is non-empty, then set the environment variable
+if [ -n "$MW_ENABLE_SYNTHETIC_MONITORING" ]; then
+    dockerrun="$dockerrun -e MW_ENABLE_SYNTHETIC_MONITORING=$MW_ENABLE_SYNTHETIC_MONITORING"
+fi
+
+# Check if MW_CONFIG_CHECK_INTERVAL is non-empty, then set the environment variable
+if [ -n "$MW_CONFIG_CHECK_INTERVAL" ]; then
+    dockerrun="$dockerrun -e MW_CONFIG_CHECK_INTERVAL=$MW_CONFIG_CHECK_INTERVAL"
+fi
+
+# Check if MW_DOCKER_ENDPOINT is non-empty, then set the environment variable
+if [ -n "$MW_DOCKER_ENDPOINT" ]; then
+    dockerrun="$dockerrun -e MW_DOCKER_ENDPOINT=$MW_DOCKER_ENDPOINT"
+fi
+
+# Check if MW_API_URL_FOR_CONFIG_CHECK is non-empty, then set the environment variable
+if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
+    dockerrun="$dockerrun -e MW_API_URL_FOR_CONFIG_CHECK=$MW_API_URL_FOR_CONFIG_CHECK"
+fi
+
+# Check if MW_HOST_TAGS is non-empty, then set the environment variable
+if [ -n "$MW_HOST_TAGS" ]; then
+    dockerrun="$dockerrun -e MW_HOST_TAGS=$MW_HOST_TAGS"
+fi
+
+# Check if MW_LOG_PATHS is non-empty, then set the environment variable
+if [ -n "$MW_LOG_PATHS" ]; then
+    dockerrun="$dockerrun -e MW_LOG_PATHS=$MW_LOG_PATHS"
+fi
+
 if [[ $(uname) == "Darwin" ]]; then
 
   echo "Found a Darwin machine, adding port bindings individually ..."
 
   HOSTNAME=eval "hostname"
 
-  dockerrun="docker run -d \
-  --hostname $HOSTNAME \
-  --name mw-agent-${MW_API_KEY:0:5} \
-  --pid host \
-  --restart always \
-  -e MW_API_KEY=$MW_API_KEY \
-  -e MW_LOG_PATHS=$MW_LOG_PATHS \
-  -e MW_API_URL_FOR_RESTART=$MW_API_URL_FOR_RESTART \
-  -e MW_API_URL_FOR_YAML=$MW_API_URL_FOR_YAML \
-  -e MW_TARGET=$MW_TARGET \
-  -e MW_HOST_TAGS=$MW_HOST_TAGS \
+  dockerrun="$dockerrun \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/log:/var/log \
   -v /var/lib/docker/containers:/var/lib/docker/containers \
@@ -155,16 +189,7 @@ if [[ $(uname) == "Darwin" ]]; then
 
 else
 
-  dockerrun="docker run -d \
-  --name mw-agent-${MW_API_KEY:0:5} \
-  --pid host \
-  --restart always \
-  -e MW_API_KEY=$MW_API_KEY \
-  -e MW_LOG_PATHS=$MW_LOG_PATHS \
-  -e MW_API_URL_FOR_RESTART=$MW_API_URL_FOR_RESTART \
-  -e MW_API_URL_FOR_YAML=$MW_API_URL_FOR_YAML \
-  -e MW_TARGET=$MW_TARGET \
-  -e MW_HOST_TAGS=$MW_HOST_TAGS \
+  dockerrun="$dockerrun \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /var/log:/var/log \
   -v /var/lib/docker/containers:/var/lib/docker/containers \
