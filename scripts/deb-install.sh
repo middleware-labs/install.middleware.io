@@ -5,6 +5,14 @@ sudo mkdir -p /var/log/mw-agent
 sudo touch "$LOG_FILE"
 exec &> >(sudo tee -a "$LOG_FILE")
 
+
+MW_TRACKING_TARGET="https://app.middleware.io"
+
+if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
+    export MW_TRACKING_TARGET="$MW_API_URL_FOR_CONFIG_CHECK"
+fi
+
+
 function send_logs {
   status=$1
   message=$2
@@ -24,7 +32,7 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+  curl -s --location --request POST $MW_TRACKING_TARGET/api/v1/agent/tracking/$MW_API_KEY \
   --header 'Content-Type: application/json' \
   --data-raw "$payload" > /dev/null
 }
@@ -40,16 +48,7 @@ function on_exit {
 trap on_exit EXIT
 
 # recording agent installation attempt
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
---header 'Content-Type: application/json' \
---data-raw '{
-    "status": "tried",
-    "metadata": {
-        "script": "linux",
-        "status": "ok",
-        "message": "agent installed"
-    }
-}' > /dev/null
+send_logs "tried" "Agent Installation Attempted"
 
 MW_LATEST_VERSION=""
 MW_AGENT_HOME=""
