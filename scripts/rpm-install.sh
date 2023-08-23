@@ -173,6 +173,7 @@ if [ -n "$MW_HOST_TAGS" ]; then
 fi
 
 # Start the MW_AGENT_BINARY with the configured environment variables
+export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 $MW_AGENT_BINARY start
 
 EOEXECUTABLE
