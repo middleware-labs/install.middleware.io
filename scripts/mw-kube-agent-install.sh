@@ -29,9 +29,9 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
 
 function on_exit {
   if [ $? -eq 0 ]; then
-    send_logs "success" "install completed"
+    send_logs "installed" "Script Completed"
   else
-    send_logs "error" "install failed"
+    send_logs "error" "Script Failed"
   fi
 }
 
