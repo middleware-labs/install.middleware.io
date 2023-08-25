@@ -37,6 +37,23 @@ EOF
   --data-raw "$payload" > /dev/null
 }
 
+function force_continue {
+  read -p "Do you still want to continue? (y|N): " response
+  case "$response" in
+    [yY])
+      echo "Continuing with the script..."
+      ;;
+    [nN])
+      echo "Exiting script..."
+      exit 1
+      ;;
+    *)
+      echo "Invalid input. Please enter 'yes' or 'no'."
+      force_continue # Recursively call the function until valid input is received.
+      ;;
+  esac
+}
+
 function on_exit {
   if [ $? -eq 0 ]; then
     send_logs "installed" "Script Completed"
@@ -49,6 +66,35 @@ trap on_exit EXIT
 
 # recording agent installation attempt
 send_logs "tried" "Agent Installation Attempted"
+
+# Check if the system is running Linux
+if [ "$(uname -s)" != "Linux" ]; then
+  echo "This machine is not running Linux, The script is designed to run on a Linux machine"
+  force_continue
+fi
+
+# Check if /etc/os-release file exists
+if [ -f /etc/os-release ]; then
+  source /etc/os-release
+  case "$ID" in
+    debian|ubuntu)
+      echo -e "\nos-release ID is $ID"
+      ;;
+    *)
+      case "$ID_LIKE" in
+        debian|ubuntu)
+          echo -e "\nos-release ID_LIKE is $ID_LIKE"
+          ;;
+        *)
+          echo "This is not a Debian-based Linux distribution."
+          force_continue
+          ;;
+      esac
+  esac
+else
+  echo "/etc/os-release file not found. Unable to determine the distribution."
+  force_continue
+fi
 
 MW_LATEST_VERSION=""
 MW_AGENT_HOME=""
@@ -150,12 +196,6 @@ sudo touch /etc/apt/sources.list.d/$MW_APT_LIST
 echo -e "Downloading data ingestion rules ...\n"
 sudo mkdir -p /usr/bin/configyamls/all
 sudo wget -q -O /usr/bin/configyamls/all/otel-config.yaml https://install.middleware.io/configyamls/all/otel-config.yaml
-sudo mkdir -p /usr/bin/configyamls/metrics
-sudo wget -q -O /usr/bin/configyamls/metrics/otel-config.yaml https://install.middleware.io/configyamls/metrics/otel-config.yaml
-sudo mkdir -p /usr/bin/configyamls/traces
-sudo wget -q -O /usr/bin/configyamls/traces/otel-config.yaml https://install.middleware.io/configyamls/traces/otel-config.yaml
-sudo mkdir -p /usr/bin/configyamls/logs
-sudo wget -q -O /usr/bin/configyamls/logs/otel-config.yaml https://install.middleware.io/configyamls/logs/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/nodocker
 sudo wget -q -O /usr/bin/configyamls/nodocker/otel-config.yaml https://install.middleware.io/configyamls/nodocker/otel-config.yaml
 sudo mkdir -p /etc/ssl/certs

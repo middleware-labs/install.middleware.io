@@ -29,6 +29,23 @@ EOF
   --data-raw "$payload" > /dev/null
 }
 
+function force_continue {
+  read -p "Do you still want to continue? (y|N): " response
+  case "$response" in
+    [yY])
+      echo "Continuing with the script..."
+      ;;
+    [nN])
+      echo "Exiting script..."
+      exit 1
+      ;;
+    *)
+      echo "Invalid input. Please enter 'yes' or 'no'."
+      force_continue # Recursively call the function until valid input is received.
+      ;;
+  esac
+}
+
 function on_exit {
   if [ $? -eq 0 ]; then
     send_logs "installed" "Script Completed"
@@ -40,16 +57,36 @@ function on_exit {
 trap on_exit EXIT
 
 # recording agent installation attempt
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
---header 'Content-Type: application/json' \
---data-raw '{
-    "status": "tried",
-    "metadata": {
-        "script": "linux-rpm",
-        "status": "ok",
-        "message": "agent installed"
-    }
-}' > /dev/null
+send_logs "tried" "Agent Installation Attempted"
+
+# Check if the system is running Linux
+if [ "$(uname -s)" != "Linux" ]; then
+  echo "This machine is not running Linux, The script is designed to run on a Linux machine"
+  force_continue
+fi
+
+# Check if /etc/os-release file exists
+if [ -f /etc/os-release ]; then
+  source /etc/os-release
+  case "$ID" in
+    rhel|centos|fedora)
+      echo -e "\nos-release ID is $ID"
+      ;;
+    *)
+      case "$ID_LIKE" in
+        rhel|centos|fedora)
+          echo -e "\nos-release ID_LIKE is $ID_LIKE"
+          ;;
+        *)
+          echo "This is not a RPM-based Linux distribution."
+          force_continue
+          ;;
+      esac
+  esac
+else
+  echo "/etc/os-release file not found. Unable to determine the distribution."
+  force_continue
+fi
 
 MW_AGENT_HOME=/usr/local/bin/mw-go-agent
 MW_AGENT_BINARY=mw-go-agent-host
