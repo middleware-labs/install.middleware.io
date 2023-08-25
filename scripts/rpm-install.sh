@@ -87,20 +87,15 @@ export MW_AUTO_START=true
 MW_LOG_PATHS=""
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
-
-
-
 echo -e "Downloading data ingestion rules ...\n"
 sudo mkdir -p /usr/bin/$MW_AGENT_BINARY/configyamls/all
 sudo wget -q -O /usr/bin/$MW_AGENT_BINARY/configyamls/all/otel-config.yaml https://install.middleware.io/configyamls/all/otel-config.yaml
-sudo mkdir -p /usr/bin/$MW_AGENT_BINARY/configyamls/metrics
-sudo wget -q -O /usr/bin/$MW_AGENT_BINARY/configyamls/metrics/otel-config.yaml https://install.middleware.io/configyamls/metrics/otel-config.yaml
-sudo mkdir -p /usr/bin/$MW_AGENT_BINARY/configyamls/traces
-sudo wget -q -O /usr/bin/$MW_AGENT_BINARY/configyamls/traces/otel-config.yaml https://install.middleware.io/configyamls/traces/otel-config.yaml
-sudo mkdir -p /usr/bin/$MW_AGENT_BINARY/configyamls/logs
-sudo wget -q -O /usr/bin/$MW_AGENT_BINARY/configyamls/logs/otel-config.yaml https://install.middleware.io/configyamls/logs/otel-config.yaml
 sudo mkdir -p /usr/bin/$MW_AGENT_BINARY/configyamls/nodocker
 sudo wget -q -O /usr/bin/$MW_AGENT_BINARY/configyamls/nodocker/otel-config.yaml https://install.middleware.io/configyamls/nodocker/otel-config.yaml
+
+sudo chmod 777 /usr/bin/$MW_AGENT_BINARY/configyamls/all/otel-config.yaml
+sudo chmod 777 /usr/bin/$MW_AGENT_BINARY/configyamls/nodocker/otel-config.yaml
+
 sudo mkdir -p /etc/ssl/certs
 sudo wget -q -O /etc/ssl/certs/MwCA.pem https://install.middleware.io/certs/MwCA.pem
 
