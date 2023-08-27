@@ -5,6 +5,14 @@ sudo mkdir -p /var/log/mw-agent
 sudo touch "$LOG_FILE"
 exec &> >(sudo tee -a "$LOG_FILE")
 
+
+MW_TRACKING_TARGET="https://app.middleware.io"
+
+if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
+    export MW_TRACKING_TARGET="$MW_API_URL_FOR_CONFIG_CHECK"
+fi
+
+
 function send_logs {
   status=$1
   message=$2
@@ -24,9 +32,26 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+  curl -s --location --request POST $MW_TRACKING_TARGET/api/v1/agent/tracking/$MW_API_KEY \
   --header 'Content-Type: application/json' \
   --data-raw "$payload" > /dev/null
+}
+
+function force_continue {
+  read -p "Do you still want to continue? (y|N): " response
+  case "$response" in
+    [yY])
+      echo "Continuing with the script..."
+      ;;
+    [nN])
+      echo "Exiting script..."
+      exit 1
+      ;;
+    *)
+      echo "Invalid input. Please enter 'yes' or 'no'."
+      force_continue # Recursively call the function until valid input is received.
+      ;;
+  esac
 }
 
 function on_exit {
@@ -40,16 +65,36 @@ function on_exit {
 trap on_exit EXIT
 
 # recording agent installation attempt
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
---header 'Content-Type: application/json' \
---data-raw '{
-    "status": "tried",
-    "metadata": {
-        "script": "linux",
-        "status": "ok",
-        "message": "agent installed"
-    }
-}' > /dev/null
+send_logs "tried" "Agent Installation Attempted"
+
+# Check if the system is running Linux
+if [ "$(uname -s)" != "Linux" ]; then
+  echo "This machine is not running Linux, The script is designed to run on a Linux machine"
+  force_continue
+fi
+
+# Check if /etc/os-release file exists
+if [ -f /etc/os-release ]; then
+  source /etc/os-release
+  case "$ID" in
+    debian|ubuntu)
+      echo -e "\nos-release ID is $ID"
+      ;;
+    *)
+      case "$ID_LIKE" in
+        debian|ubuntu)
+          echo -e "\nos-release ID_LIKE is $ID_LIKE"
+          ;;
+        *)
+          echo "This is not a Debian-based Linux distribution."
+          force_continue
+          ;;
+      esac
+  esac
+else
+  echo "/etc/os-release file not found. Unable to determine the distribution."
+  force_continue
+fi
 
 MW_LATEST_VERSION=""
 MW_AGENT_HOME=""
@@ -61,13 +106,13 @@ MW_DETECTED_ARCH=$(dpkg --print-architecture)
 echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
 
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
-  MW_LATEST_VERSION=0.0.27arm64
+  MW_LATEST_VERSION=0.0.28arm64
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent-arm
   MW_APT_LIST=mw-go-arm.list
   MW_AGENT_BINARY=mw-go-agent-host-arm
   MW_APT_LIST_ARCH=arm64
 elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
-  MW_LATEST_VERSION=0.0.27
+  MW_LATEST_VERSION=0.0.28
   MW_AGENT_HOME=/usr/local/bin/mw-go-agent
   MW_APT_LIST=mw-go.list
   MW_AGENT_BINARY=mw-go-agent-host
@@ -151,12 +196,6 @@ sudo touch /etc/apt/sources.list.d/$MW_APT_LIST
 echo -e "Downloading data ingestion rules ...\n"
 sudo mkdir -p /usr/bin/configyamls/all
 sudo wget -q -O /usr/bin/configyamls/all/otel-config.yaml https://install.middleware.io/configyamls/all/otel-config.yaml
-sudo mkdir -p /usr/bin/configyamls/metrics
-sudo wget -q -O /usr/bin/configyamls/metrics/otel-config.yaml https://install.middleware.io/configyamls/metrics/otel-config.yaml
-sudo mkdir -p /usr/bin/configyamls/traces
-sudo wget -q -O /usr/bin/configyamls/traces/otel-config.yaml https://install.middleware.io/configyamls/traces/otel-config.yaml
-sudo mkdir -p /usr/bin/configyamls/logs
-sudo wget -q -O /usr/bin/configyamls/logs/otel-config.yaml https://install.middleware.io/configyamls/logs/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/nodocker
 sudo wget -q -O /usr/bin/configyamls/nodocker/otel-config.yaml https://install.middleware.io/configyamls/nodocker/otel-config.yaml
 sudo mkdir -p /etc/ssl/certs
