@@ -106,16 +106,16 @@ MW_DETECTED_ARCH=$(dpkg --print-architecture)
 echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
 
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
-  MW_LATEST_VERSION=0.0.28arm64
-  MW_AGENT_HOME=/usr/local/bin/mw-go-agent-arm
-  MW_APT_LIST=mw-go-arm.list
-  MW_AGENT_BINARY=mw-go-agent-host-arm
+  MW_LATEST_VERSION=1.0.0arm64
+  MW_AGENT_HOME=/usr/local/bin/mw-agent
+  MW_APT_LIST=mw-agent.list
+  MW_AGENT_BINARY=mw-agent
   MW_APT_LIST_ARCH=arm64
 elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
-  MW_LATEST_VERSION=0.0.28
-  MW_AGENT_HOME=/usr/local/bin/mw-go-agent
-  MW_APT_LIST=mw-go.list
-  MW_AGENT_BINARY=mw-go-agent-host
+  MW_LATEST_VERSION=1.0.0
+  MW_AGENT_HOME=/usr/local/bin/mw-agent
+  MW_APT_LIST=mw-agent.list
+  MW_AGENT_BINARY=mw-agent
   MW_APT_LIST_ARCH=all
 else
   echo ""
@@ -314,7 +314,7 @@ echo -e "Installation done ! \n"
 #   ----------------------------------------------------
 
 #   /usr/local/bin 
-#     └───mw-go-agent
+#     └───mw-agent
 #             └───apt: Contains all the required components to run APT package on the system
 #                 └───executable: Contains the script to run agent
 #                 └───pgp-key-$MW_VERSION.public: Contains copy of public key
