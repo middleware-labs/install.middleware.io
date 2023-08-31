@@ -190,7 +190,7 @@ fi
 # Adding APT repo address & public key to system
 sudo mkdir -p $MW_AGENT_HOME/apt
 sudo touch $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public
-sudo wget -q -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public
+sudo wget -q -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/gpg-keys/mw-agent-apt-public.key
 sudo touch /etc/apt/sources.list.d/$MW_APT_LIST
 
 echo -e "Downloading data ingestion rules ...\n"
@@ -206,7 +206,7 @@ sudo update-ca-certificates > /dev/null
 echo -e "Adding Middleware Agent APT Repository ...\n"
 sed -e 's|$MW_LOG_PATHS|'$MW_LOG_PATHS'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml > /dev/null
 
-echo "deb [arch=$MW_APT_LIST_ARCH signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
+echo "deb [arch=$MW_APT_LIST_ARCH signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/apt-repo/public stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/$MW_APT_LIST" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" > /dev/null
