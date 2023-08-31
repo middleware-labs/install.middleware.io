@@ -994,3 +994,37 @@
 16:07:46.388066 db@open done T·15.808743ms
 16:07:46.388200 db@close closing
 16:07:46.388249 db@close done T·48.176µs
+=============== Aug 31, 2023 (IST) ===============
+16:09:03.242823 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+16:09:03.242938 version@stat F·[3 1] S·3KiB[736B 2KiB] Sc·[0.75 0.00]
+16:09:03.242948 db@open opening
+16:09:03.242973 journal@recovery F·1
+16:09:03.243209 journal@recovery recovering @206
+16:09:03.243544 version@stat F·[3 1] S·3KiB[736B 2KiB] Sc·[0.75 0.00]
+16:09:03.256417 db@janitor F·6 G·0
+16:09:03.256451 db@open done T·13.488614ms
+16:09:03.256662 db@close closing
+16:09:03.256717 db@close done T·54.708µs
+=============== Aug 31, 2023 (IST) ===============
+16:23:35.896882 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+16:23:35.897009 version@stat F·[3 1] S·3KiB[736B 2KiB] Sc·[0.75 0.00]
+16:23:35.897018 db@open opening
+16:23:35.897042 journal@recovery F·1
+16:23:35.897297 journal@recovery recovering @208
+16:23:35.897687 version@stat F·[3 1] S·3KiB[736B 2KiB] Sc·[0.75 0.00]
+16:23:35.909235 db@janitor F·6 G·0
+16:23:35.909262 db@open done T·12.231842ms
+16:23:36.012859 db@close closing
+16:23:36.012934 db@close done T·73.126µs
+=============== Aug 31, 2023 (IST) ===============
+16:23:44.556880 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+16:23:44.557046 version@stat F·[3 1] S·3KiB[736B 2KiB] Sc·[0.75 0.00]
+16:23:44.557063 db@open opening
+16:23:44.557102 journal@recovery F·1
+16:23:44.558180 journal@recovery recovering @210
+16:23:44.562784 memdb@flush created L0@212 N·2 S·495B "Eff..ain,v110":"U.>..ble,v109"
+16:23:44.562931 version@stat F·[4 1] S·4KiB[1KiB 2KiB] Sc·[1.00 0.00]
+16:23:44.574065 db@janitor F·7 G·0
+16:23:44.574100 db@open done T·17.027175ms
+16:23:44.574540 db@close closing
+16:23:44.574628 db@close done T·86.337µs
