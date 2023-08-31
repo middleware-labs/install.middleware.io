@@ -1543,3 +1543,138 @@
 15:31:04.156836 db@open done T·8.822231ms
 15:31:04.220680 db@close closing
 15:31:04.220761 db@close done T·79.901µs
+=============== Aug 31, 2023 (IST) ===============
+21:31:56.366067 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:31:56.366247 version@stat F·[1 1] S·7KiB[650B 7KiB] Sc·[0.25 0.00]
+21:31:56.366257 db@open opening
+21:31:56.366399 journal@recovery F·2
+21:31:56.366821 journal@recovery recovering @297
+21:31:56.366916 journal@recovery recovering @455
+21:31:56.372451 memdb@flush created L0@456 N·2 S·651B "E95..ain,v190":"U.>..ble,v189"
+21:31:56.372473 version@stat F·[2 1] S·8KiB[1KiB 7KiB] Sc·[0.50 0.00]
+21:31:56.382614 version@stat F·[2 1] S·8KiB[1KiB 7KiB] Sc·[0.50 0.00]
+21:31:56.389277 db@janitor F·47 G·42
+21:31:56.389292 db@janitor removing table-235
+21:31:56.389319 db@janitor removing manifest-225
+21:31:56.389330 db@janitor removing manifest-176
+21:31:56.389339 db@janitor removing table-222
+21:31:56.389350 db@janitor removing manifest-280
+21:31:56.389359 db@janitor removing table-445
+21:31:56.389379 db@janitor removing table-223
+21:31:56.389387 db@janitor removing journal-242
+21:31:56.389396 db@janitor removing manifest-214
+21:31:56.389405 db@janitor removing table-173
+21:31:56.389414 db@janitor removing manifest-207
+21:31:56.389422 db@janitor removing table-174
+21:31:56.389429 db@janitor removing table-221
+21:31:56.389437 db@janitor removing journal-260
+21:31:56.389446 db@janitor removing table-448
+21:31:56.389460 db@janitor removing journal-279
+21:31:56.389468 db@janitor removing table-189
+21:31:56.389477 db@janitor removing journal-213
+21:31:56.389483 db@janitor removing manifest-456
+21:31:56.389494 db@janitor removing table-241
+21:31:56.389502 db@janitor removing table-212
+21:31:56.389510 db@janitor removing table-161
+21:31:56.389518 db@janitor removing table-277
+21:31:56.389527 db@janitor removing manifest-261
+21:31:56.389535 db@janitor removing table-428
+21:31:56.389549 db@janitor removing table-278
+21:31:56.389557 db@janitor removing table-259
+21:31:56.389565 db@janitor removing journal-206
+21:31:56.389571 db@janitor removing manifest-243
+21:31:56.389579 db@janitor removing journal-165
+21:31:56.389585 db@janitor removing table-234
+21:31:56.389593 db@janitor removing table-236
+21:31:56.389601 db@janitor removing table-200
+21:31:56.389609 db@janitor removing manifest-166
+21:31:56.389616 db@janitor removing table-205
+21:31:56.389624 db@janitor removing table-451
+21:31:56.389638 db@janitor removing table-454
+21:31:56.389649 db@janitor removing table-262
+21:31:56.389658 db@janitor removing journal-224
+21:31:56.389667 db@janitor removing table-188
+21:31:56.389675 db@janitor removing journal-175
+21:31:56.389684 db@janitor removing table-164
+21:31:56.389700 db@open done T·23.439299ms
+21:31:56.389867 db@close closing
+21:31:56.389918 db@close done T·49.815µs
+=============== Aug 31, 2023 (IST) ===============
+21:32:40.809069 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:32:40.809239 version@stat F·[2 1] S·8KiB[1KiB 7KiB] Sc·[0.50 0.00]
+21:32:40.809255 db@open opening
+21:32:40.809290 journal@recovery F·1
+21:32:40.809623 journal@recovery recovering @458
+21:32:40.810531 version@stat F·[2 1] S·8KiB[1KiB 7KiB] Sc·[0.50 0.00]
+21:32:40.821265 db@janitor F·5 G·0
+21:32:40.821335 db@open done T·12.051771ms
+21:32:40.825293 db@close closing
+21:32:40.825377 db@close done T·82.346µs
+=============== Aug 31, 2023 (IST) ===============
+21:32:48.306564 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:32:48.306690 version@stat F·[2 1] S·8KiB[1KiB 7KiB] Sc·[0.50 0.00]
+21:32:48.306699 db@open opening
+21:32:48.306722 journal@recovery F·1
+21:32:48.307061 journal@recovery recovering @459
+21:32:48.322645 memdb@flush created L0@461 N·2 S·237B "E95..ain,d193":"U.>..ble,d192"
+21:32:48.323060 version@stat F·[3 1] S·8KiB[1KiB 7KiB] Sc·[0.75 0.00]
+21:32:48.333889 db@janitor F·6 G·0
+21:32:48.333935 db@open done T·27.22539ms
+21:32:48.334510 db@close closing
+21:32:48.334653 db@close done T·134.799µs
+=============== Aug 31, 2023 (IST) ===============
+21:32:54.304853 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:32:54.305019 version@stat F·[3 1] S·8KiB[1KiB 7KiB] Sc·[0.75 0.00]
+21:32:54.305033 db@open opening
+21:32:54.305075 journal@recovery F·1
+21:32:54.306420 journal@recovery recovering @462
+21:32:54.321547 memdb@flush created L0@464 N·2 S·227B "Ee9..e45,d196":"Le9..e45,d195"
+21:32:54.321772 version@stat F·[4 1] S·8KiB[1KiB 7KiB] Sc·[1.00 0.00]
+21:32:54.331067 db@janitor F·7 G·0
+21:32:54.331094 db@open done T·26.052608ms
+21:32:54.331133 table@compaction L0·4 -> L1·1 S·8KiB Q·197
+21:32:54.335058 table@build created L1@467 N·44 S·7KiB "C3f..deb,v178":"xFP..d79,v180"
+21:32:54.335088 version@stat F·[0 1] S·7KiB[0B 7KiB] Sc·[0.00 0.00]
+21:32:54.342002 table@compaction committed F-4 S-1KiB Ke·0 D·10 T·10.830456ms
+21:32:54.342102 table@remove removed @461
+21:32:54.342129 table@remove removed @456
+21:32:54.342149 table@remove removed @296
+21:32:54.342170 table@remove removed @295
+21:32:54.363439 memdb@flush N·32 S·1KiB
+21:32:54.368158 memdb@flush created L0@469 N·32 S·663B "Pal..91b,d198":"xFP..d79,d227"
+21:32:54.368204 version@stat F·[1 1] S·7KiB[663B 7KiB] Sc·[0.25 0.00]
+21:32:54.371427 memdb@flush committed F·1 T·7.95695ms
+21:32:54.371486 journal@remove removed @465
+21:32:54.371499 table@compaction range L-1 "":""
+21:32:54.371510 table@compaction L0·1 -> L1·1 S·7KiB Q·229
+21:32:54.374934 table@build created L1@470 N·12 S·2KiB "C3f..deb,v178":"xCP..32a,v24"
+21:32:54.374980 version@stat F·[0 1] S·2KiB[0B 2KiB] Sc·[0.00 0.00]
+21:32:54.378358 table@compaction committed F-1 S-4KiB Ke·0 D·64 T·6.83404ms
+21:32:54.378376 db@close closing
+21:32:54.378441 table@remove removed @469
+21:32:54.378473 table@remove removed @467
+21:32:54.378495 db@close done T·118.86µs
+=============== Aug 31, 2023 (IST) ===============
+21:33:18.877948 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:33:18.878079 version@stat F·[0 1] S·2KiB[0B 2KiB] Sc·[0.00 0.00]
+21:33:18.878089 db@open opening
+21:33:18.878111 journal@recovery F·1
+21:33:18.881437 journal@recovery recovering @468
+21:33:18.882559 version@stat F·[0 1] S·2KiB[0B 2KiB] Sc·[0.00 0.00]
+21:33:18.893677 db@janitor F·4 G·1
+21:33:18.893697 db@janitor removing table-464
+21:33:18.893745 db@open done T·15.650707ms
+21:33:18.893998 db@close closing
+21:33:18.894076 db@close done T·72.85µs
+=============== Aug 31, 2023 (IST) ===============
+21:57:45.058032 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:57:45.058191 version@stat F·[0 1] S·2KiB[0B 2KiB] Sc·[0.00 0.00]
+21:57:45.058205 db@open opening
+21:57:45.058237 journal@recovery F·1
+21:57:45.058524 journal@recovery recovering @471
+21:57:45.063824 memdb@flush created L0@473 N·1 S·271B "La2..e65,v230":"La2..e65,v230"
+21:57:45.063994 version@stat F·[1 1] S·3KiB[271B 2KiB] Sc·[0.25 0.00]
+21:57:45.074282 db@janitor F·4 G·0
+21:57:45.074298 db@open done T·16.088228ms
+21:57:45.183241 db@close closing
+21:57:45.183287 db@close done T·45.226µs
