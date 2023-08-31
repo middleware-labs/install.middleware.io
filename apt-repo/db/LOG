@@ -1028,3 +1028,77 @@
 16:23:44.574100 db@open done T·17.027175ms
 16:23:44.574540 db@close closing
 16:23:44.574628 db@close done T·86.337µs
+=============== Aug 31, 2023 (UTC) ===============
+11:03:22.374758 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:03:22.374968 version@stat F·[4 1] S·4KiB[1KiB 2KiB] Sc·[1.00 0.00]
+11:03:22.374987 db@open opening
+11:03:22.375062 journal@recovery F·1
+11:03:22.376158 journal@recovery recovering @213
+11:03:22.377862 version@stat F·[4 1] S·4KiB[1KiB 2KiB] Sc·[1.00 0.00]
+11:03:22.380020 db@janitor F·17 G·10
+11:03:22.380029 db@janitor removing manifest-166
+11:03:22.380047 db@janitor removing table-174
+11:03:22.380062 db@janitor removing table-164
+11:03:22.380078 db@janitor removing manifest-176
+11:03:22.380091 db@janitor removing manifest-207
+11:03:22.380106 db@janitor removing journal-175
+11:03:22.380119 db@janitor removing journal-165
+11:03:22.380131 db@janitor removing journal-206
+11:03:22.380143 db@janitor removing table-161
+11:03:22.380157 db@janitor removing table-173
+11:03:22.380182 db@open done T·5.188902ms
+11:03:22.380225 table@compaction L0·4 -> L1·1 S·4KiB Q·111
+11:03:22.380980 db@close closing
+11:03:22.381523 table@build created L1@217 N·21 S·2KiB "C69..deb,v3":"xFP..32a,v19"
+11:03:22.381535 table@build exiting
+11:03:22.381539 table@build revert @217
+11:03:22.381635 db@close done T·653.813µs
+=============== Aug 31, 2023 (UTC) ===============
+11:03:22.400428 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:03:22.400594 version@stat F·[4 1] S·4KiB[1KiB 2KiB] Sc·[1.00 0.00]
+11:03:22.400612 db@open opening
+11:03:22.400654 journal@recovery F·1
+11:03:22.401103 journal@recovery recovering @215
+11:03:22.406392 version@stat F·[4 1] S·4KiB[1KiB 2KiB] Sc·[1.00 0.00]
+11:03:22.408699 db@janitor F·7 G·0
+11:03:22.408723 db@open done T·8.09346ms
+11:03:22.408774 table@compaction L0·4 -> L1·1 S·4KiB Q·111
+11:03:22.409211 db@close closing
+11:03:22.409690 table@build created L1@219 N·21 S·2KiB "C69..deb,v3":"xFP..32a,v19"
+11:03:22.409702 table@build exiting
+11:03:22.409707 table@build revert @219
+11:03:22.409790 db@close done T·577.711µs
+=============== Aug 31, 2023 (UTC) ===============
+11:03:22.434326 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:03:22.434489 version@stat F·[4 1] S·4KiB[1KiB 2KiB] Sc·[1.00 0.00]
+11:03:22.434507 db@open opening
+11:03:22.434564 journal@recovery F·1
+11:03:22.434908 journal@recovery recovering @217
+11:03:22.436596 version@stat F·[4 1] S·4KiB[1KiB 2KiB] Sc·[1.00 0.00]
+11:03:22.438496 db@janitor F·7 G·0
+11:03:22.438530 db@open done T·4.01678ms
+11:03:22.438556 table@compaction L0·4 -> L1·1 S·4KiB Q·111
+11:03:22.440628 table@build created L1@221 N·21 S·2KiB "C69..deb,v3":"xFP..32a,v19"
+11:03:22.440655 version@stat F·[0 1] S·2KiB[0B 2KiB] Sc·[0.00 0.00]
+11:03:22.441380 table@compaction committed F-4 S-1KiB Ke·0 D·8 T·2.799756ms
+11:03:22.441430 table@remove removed @212
+11:03:22.441443 table@remove removed @205
+11:03:22.441453 table@remove removed @200
+11:03:22.441491 table@remove removed @189
+11:03:22.441510 table@remove removed @188
+11:03:22.597757 transaction@flush created L0@222 N·5 S·960B "Cdf..deb,v112":"xFP..227,v114"
+11:03:22.597786 version@stat F·[1 1] S·3KiB[960B 2KiB] Sc·[0.25 0.00]
+11:03:22.598177 db@close closing
+11:03:22.598242 db@close done T·62.902µs
+=============== Aug 31, 2023 (UTC) ===============
+11:03:22.620528 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:03:22.620703 version@stat F·[1 1] S·3KiB[960B 2KiB] Sc·[0.25 0.00]
+11:03:22.620732 db@open opening
+11:03:22.620789 journal@recovery F·1
+11:03:22.624313 journal@recovery recovering @219
+11:03:22.625264 memdb@flush created L0@223 N·2 S·335B "Ee9..e45,v118":"Le9..e45,v117"
+11:03:22.625528 version@stat F·[2 1] S·4KiB[1KiB 2KiB] Sc·[0.50 0.00]
+11:03:22.626940 db@janitor F·5 G·0
+11:03:22.626960 db@open done T·6.220723ms
+11:03:24.332859 db@close closing
+11:03:24.333258 db@close done T·397.108µs
