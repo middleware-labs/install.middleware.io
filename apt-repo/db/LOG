@@ -1423,3 +1423,123 @@
 13:46:53.011428 db@open done T·3.767101ms
 13:46:53.066216 db@close closing
 13:46:53.066269 db@close done T·52.402µs
+=============== Aug 31, 2023 (UTC) ===============
+15:31:02.488925 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:31:02.489273 version@stat F·[1 1] S·7KiB[626B 6KiB] Sc·[0.25 0.00]
+15:31:02.489298 db@open opening
+15:31:02.489443 journal@recovery F·1
+15:31:02.493063 journal@recovery recovering @279
+15:31:02.503705 memdb@flush created L0@281 N·2 S·626B "Eda..ain,v173":"U.>..ble,v172"
+15:31:02.504349 version@stat F·[2 1] S·7KiB[1KiB 6KiB] Sc·[0.50 0.00]
+15:31:02.603557 db@janitor F·37 G·32
+15:31:02.603600 db@janitor removing table-188
+15:31:02.603636 db@janitor removing manifest-166
+15:31:02.603672 db@janitor removing table-259
+15:31:02.603693 db@janitor removing journal-260
+15:31:02.603711 db@janitor removing table-221
+15:31:02.603728 db@janitor removing table-223
+15:31:02.603757 db@janitor removing manifest-214
+15:31:02.603777 db@janitor removing table-174
+15:31:02.603796 db@janitor removing table-205
+15:31:02.603812 db@janitor removing table-235
+15:31:02.603843 db@janitor removing table-164
+15:31:02.603861 db@janitor removing table-262
+15:31:02.603881 db@janitor removing manifest-176
+15:31:02.603906 db@janitor removing journal-224
+15:31:02.603923 db@janitor removing table-189
+15:31:02.603939 db@janitor removing manifest-207
+15:31:02.603956 db@janitor removing journal-175
+15:31:02.603972 db@janitor removing table-234
+15:31:02.603989 db@janitor removing journal-165
+15:31:02.604002 db@janitor removing journal-213
+15:31:02.604016 db@janitor removing manifest-225
+15:31:02.604032 db@janitor removing table-200
+15:31:02.604048 db@janitor removing manifest-261
+15:31:02.604065 db@janitor removing journal-242
+15:31:02.604081 db@janitor removing manifest-243
+15:31:02.604097 db@janitor removing table-236
+15:31:02.604114 db@janitor removing journal-206
+15:31:02.604127 db@janitor removing table-222
+15:31:02.604143 db@janitor removing table-241
+15:31:02.604159 db@janitor removing table-161
+15:31:02.604175 db@janitor removing table-173
+15:31:02.604190 db@janitor removing table-212
+15:31:02.604225 db@open done T·114.900784ms
+15:31:02.651439 db@close closing
+15:31:02.651607 db@close done T·164.5µs
+=============== Aug 31, 2023 (UTC) ===============
+15:31:02.669157 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:31:02.669335 version@stat F·[2 1] S·7KiB[1KiB 6KiB] Sc·[0.50 0.00]
+15:31:02.669359 db@open opening
+15:31:02.669406 journal@recovery F·1
+15:31:02.669792 journal@recovery recovering @282
+15:31:02.695903 memdb@flush created L0@284 N·2 S·237B "Eda..ain,d176":"U.>..ble,d175"
+15:31:02.696162 version@stat F·[3 1] S·7KiB[1KiB 6KiB] Sc·[0.75 0.00]
+15:31:02.850583 db@janitor F·6 G·0
+15:31:02.850780 db@open done T·181.40919ms
+15:31:02.851505 db@close closing
+15:31:02.851644 db@close done T·134.9µs
+=============== Aug 31, 2023 (UTC) ===============
+15:31:03.150567 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:31:03.150879 version@stat F·[3 1] S·7KiB[1KiB 6KiB] Sc·[0.75 0.00]
+15:31:03.150907 db@open opening
+15:31:03.150996 journal@recovery F·1
+15:31:03.151539 journal@recovery recovering @285
+15:31:03.153916 version@stat F·[3 1] S·7KiB[1KiB 6KiB] Sc·[0.75 0.00]
+15:31:03.549067 db@janitor F·6 G·0
+15:31:03.549143 db@open done T·398.207537ms
+15:31:03.963361 transaction@flush created L0@289 N·5 S·971B "C3f..deb,v178":"xFP..d79,v180"
+15:31:03.963396 version@stat F·[4 1] S·8KiB[2KiB 6KiB] Sc·[1.00 0.00]
+15:31:03.964419 db@close closing
+15:31:03.964423 table@compaction L0·4 -> L1·1 S·8KiB Q·184
+15:31:03.964467 table@build exiting
+15:31:03.965200 db@close done T·777.103µs
+=============== Aug 31, 2023 (UTC) ===============
+15:31:03.981446 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:31:03.981681 version@stat F·[4 1] S·8KiB[2KiB 6KiB] Sc·[1.00 0.00]
+15:31:03.981708 db@open opening
+15:31:03.981778 journal@recovery F·1
+15:31:03.982554 journal@recovery recovering @287
+15:31:03.983749 memdb@flush created L0@290 N·2 S·443B "Ee9..e45,v184":"Le9..e45,v183"
+15:31:03.984784 version@stat F·[5 1] S·9KiB[2KiB 6KiB] Sc·[1.25 0.00]
+15:31:03.987369 db@janitor F·8 G·0
+15:31:03.987440 db@open done T·5.69792ms
+15:31:03.987453 table@compaction L0·5 -> L1·1 S·9KiB Q·185
+15:31:03.987929 db@close closing
+15:31:03.988928 table@build created L1@293 N·46 S·7KiB "C3f..deb,v178":"xFP..d79,v180"
+15:31:03.988945 table@build exiting
+15:31:03.988950 table@build revert @293
+15:31:03.989070 db@close done T·1.139004ms
+=============== Aug 31, 2023 (UTC) ===============
+15:31:04.008781 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:31:04.009053 version@stat F·[5 1] S·9KiB[2KiB 6KiB] Sc·[1.25 0.00]
+15:31:04.009079 db@open opening
+15:31:04.009130 journal@recovery F·1
+15:31:04.009570 journal@recovery recovering @291
+15:31:04.011433 version@stat F·[5 1] S·9KiB[2KiB 6KiB] Sc·[1.25 0.00]
+15:31:04.014618 db@janitor F·8 G·0
+15:31:04.014674 db@open done T·5.55532ms
+15:31:04.014700 table@compaction L0·5 -> L1·1 S·9KiB Q·185
+15:31:04.016170 table@build created L1@295 N·46 S·7KiB "C3f..deb,v178":"xFP..d79,v180"
+15:31:04.016200 version@stat F·[0 1] S·7KiB[0B 7KiB] Sc·[0.00 0.00]
+15:31:04.016824 table@compaction committed F-5 S-2KiB Ke·0 D·8 T·2.062307ms
+15:31:04.016928 table@remove removed @290
+15:31:04.016977 table@remove removed @289
+15:31:04.017001 table@remove removed @284
+15:31:04.017027 table@remove removed @281
+15:31:04.017050 table@remove removed @278
+15:31:04.017075 table@remove removed @277
+15:31:04.119616 db@close closing
+15:31:04.119690 db@close done T·72.9µs
+=============== Aug 31, 2023 (UTC) ===============
+15:31:04.147712 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:31:04.147968 version@stat F·[0 1] S·7KiB[0B 7KiB] Sc·[0.00 0.00]
+15:31:04.148005 db@open opening
+15:31:04.148088 journal@recovery F·1
+15:31:04.151789 journal@recovery recovering @293
+15:31:04.153686 memdb@flush created L0@296 N·2 S·650B "E95..ain,v187":"U.>..ble,v186"
+15:31:04.153929 version@stat F·[1 1] S·7KiB[650B 7KiB] Sc·[0.25 0.00]
+15:31:04.156811 db@janitor F·4 G·0
+15:31:04.156836 db@open done T·8.822231ms
+15:31:04.220680 db@close closing
+15:31:04.220761 db@close done T·79.901µs
