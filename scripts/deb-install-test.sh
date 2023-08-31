@@ -109,13 +109,13 @@ if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECT
   MW_LATEST_VERSION=1.0.0arm64
   MW_AGENT_HOME=/usr/local/bin/mw-agent
   MW_APT_LIST=mw-agent.list
-  MW_AGENT_BINARY=mw-agent-host-arm
+  MW_AGENT_BINARY=mw-agent
   MW_APT_LIST_ARCH=arm64
 elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
   MW_LATEST_VERSION=1.0.0
   MW_AGENT_HOME=/usr/local/bin/mw-agent
   MW_APT_LIST=mw-agent.list
-  MW_AGENT_BINARY=mw-agent-host
+  MW_AGENT_BINARY=mw-agent
   MW_APT_LIST_ARCH=all
 else
   echo ""
