@@ -330,3 +330,6 @@ echo -e "Installation done ! \n"
 #                 └─── mwservice.service: Service Entry for MW Agent
 # '
 # EOSUDO
+
+
+# ssh -i "mock-key-pair.pem" ubuntu@ec2-3-112-44-129.ap-northeast-1.compute.amazonaws.com
