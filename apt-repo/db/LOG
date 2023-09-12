@@ -1,0 +1,35 @@
+=============== Sep 13, 2023 (IST) ===============
+14:44:46.073984 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:44:46.081791 db@open opening
+14:44:46.082244 version@stat F·[] S·0B[] Sc·[]
+14:44:46.085636 db@janitor F·2 G·0
+14:44:46.085658 db@open done T·3.845079ms
+14:44:46.085915 memdb@flush N·0 S·0B
+14:44:46.085920 memdb@flush skipping
+14:44:46.085944 journal@remove removed @1
+14:44:46.085952 table@compaction range L-1 "":""
+14:44:46.085959 db@close closing
+14:44:46.085993 db@close done T·32.264µs
+=============== Sep 13, 2023 (IST) ===============
+14:44:56.544667 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:44:56.544788 version@stat F·[] S·0B[] Sc·[]
+14:44:56.544798 db@open opening
+14:44:56.544817 journal@recovery F·1
+14:44:56.545105 journal@recovery recovering @2
+14:44:56.545559 version@stat F·[] S·0B[] Sc·[]
+14:44:56.556356 db@janitor F·2 G·0
+14:44:56.556374 db@open done T·11.569541ms
+14:44:56.556470 db@close closing
+14:44:56.556502 db@close done T·30.932µs
+=============== Sep 13, 2023 (IST) ===============
+14:45:02.686436 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:45:02.686589 version@stat F·[] S·0B[] Sc·[]
+14:45:02.686602 db@open opening
+14:45:02.686633 journal@recovery F·1
+14:45:02.687014 journal@recovery recovering @3
+14:45:02.692702 memdb@flush created L0@5 N·1 S·299B "L7d..773,v1":"L7d..773,v1"
+14:45:02.693628 version@stat F·[1] S·299B[299B] Sc·[0.25]
+14:45:02.703602 db@janitor F·3 G·0
+14:45:02.703619 db@open done T·17.011338ms
+14:45:02.802488 db@close closing
+14:45:02.802546 db@close done T·55.603µs
