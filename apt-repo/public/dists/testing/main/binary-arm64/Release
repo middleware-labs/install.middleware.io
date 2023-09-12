@@ -1,0 +1,6 @@
+Origin: . testing
+Label: . testing
+Archive: testing
+Suite: testing
+Architecture: arm64
+Component: main

@@ -1,0 +1,28 @@
+Package: mw-agent
+Maintainer: example <example@example.com>
+Architecture: all
+Version: 0.0.999
+Depends: libc6
+Filename: pool/main/m/mw-agent/mw-agent_0.0.999-1_all.deb
+Size: 44136088
+MD5sum: 6b080027cccbfbfb1aa33ccc89b89287
+SHA1: 6dafcd204a5f3044e11b11643aba0ee39ba43cf0
+SHA256: d90432e4b05f3759b1f3b44ba921337ccb6bcc79cd2e6c994ebb544e73af3d99
+SHA512: 09a198e7b202fe8b5df0c30b89ac36bb9f0d024ec28b90b3d07300f93cca1b8479c56e99c24c492450b89e4f166c83496ff4e9a43d0d7a80007ffe2637352a28
+Description: Telemetry Collector Tool
+Homepage: http://example.com
+
+Package: mw-agent
+Maintainer: middleware <dev@middleware.io>
+Architecture: amd64
+Version: 0.0.800
+Depends: libc6
+Filename: pool/main/m/mw-agent/mw-agent_0.0.800-1_amd64.deb
+Size: 18462328
+MD5sum: 790a35b23e1db32767fe85bcdb6d5114
+SHA1: 34b089610ef78813754b77d5c76f089953f25df3
+SHA256: bbc982ec49ae71c913fd6af5bd1fb3659962e2137e153d77d1a5b62eab4c4d08
+SHA512: 19edad59900173a7859d78f877771af4701ae173de0e28f1fbce6828342ac9eae228c963f265b4ce1f3ccfa045e8db95f2a65d9b0d7e629dc320bed40ecb6cb6
+Description: Middleware Agent
+Homepage: https://middleware.io
+
