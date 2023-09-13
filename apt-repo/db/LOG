@@ -33,3 +33,60 @@
 14:45:02.703619 db@open done T·17.011338ms
 14:45:02.802488 db@close closing
 14:45:02.802546 db@close done T·55.603µs
+=============== Sep 13, 2023 (UTC) ===============
+09:22:29.361260 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+09:22:29.361460 version@stat F·[1] S·299B[299B] Sc·[0.25]
+09:22:29.361480 db@open opening
+09:22:29.361516 journal@recovery F·1
+09:22:29.362300 journal@recovery recovering @6
+09:22:29.363742 memdb@flush created L0@8 N·2 S·507B "E43..ain,v4":"U.>..ble,v3"
+09:22:29.364199 version@stat F·[2] S·806B[806B] Sc·[0.50]
+09:22:29.366099 db@janitor F·4 G·0
+09:22:29.366131 db@open done T·4.631978ms
+09:22:29.366768 db@close closing
+09:22:29.366820 db@close done T·51.301µs
+=============== Sep 13, 2023 (UTC) ===============
+09:22:29.393321 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+09:22:29.393539 version@stat F·[2] S·806B[806B] Sc·[0.50]
+09:22:29.393558 db@open opening
+09:22:29.393600 journal@recovery F·1
+09:22:29.394030 journal@recovery recovering @9
+09:22:29.395921 version@stat F·[2] S·806B[806B] Sc·[0.50]
+09:22:29.398711 db@janitor F·4 G·0
+09:22:29.398750 db@open done T·5.167187ms
+09:22:29.577498 transaction@flush created L0@13 N·5 S·968B "Cee..deb,v6":"xFP..a82,v8"
+09:22:29.577530 version@stat F·[3] S·1KiB[1KiB] Sc·[0.75]
+09:22:29.578100 db@close closing
+09:22:29.578196 db@close done T·91.802µs
+=============== Sep 13, 2023 (UTC) ===============
+09:22:29.594246 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+09:22:29.594436 version@stat F·[3] S·1KiB[1KiB] Sc·[0.75]
+09:22:29.594454 db@open opening
+09:22:29.594494 journal@recovery F·1
+09:22:29.595012 journal@recovery recovering @11
+09:22:29.596080 memdb@flush created L0@14 N·2 S·361B "E7d..773,v12":"L7d..773,v11"
+09:22:29.596548 version@stat F·[4] S·2KiB[2KiB] Sc·[1.00]
+09:22:29.599178 db@janitor F·6 G·0
+09:22:29.599224 db@open done T·4.737979ms
+09:22:29.599260 table@compaction L0·4 -> L1·0 S·2KiB Q·13
+09:22:29.599460 db@close closing
+09:22:29.599548 db@close done T·86.201µs
+=============== Sep 13, 2023 (UTC) ===============
+09:22:29.626634 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+09:22:29.626858 version@stat F·[4] S·2KiB[2KiB] Sc·[1.00]
+09:22:29.626877 db@open opening
+09:22:29.626918 journal@recovery F·1
+09:22:29.627298 journal@recovery recovering @15
+09:22:29.629006 version@stat F·[4] S·2KiB[2KiB] Sc·[1.00]
+09:22:29.631017 db@janitor F·6 G·0
+09:22:29.631042 db@open done T·4.14907ms
+09:22:29.631100 table@compaction L0·4 -> L1·0 S·2KiB Q·13
+09:22:29.632171 table@build created L1@19 N·9 S·1KiB "Cee..deb,v6":"xFP..a82,v8"
+09:22:29.632199 version@stat F·[0 1] S·1KiB[0B 1KiB] Sc·[0.00 0.00]
+09:22:29.632837 table@compaction committed F-3 S-765B Ke·0 D·1 T·1.698828ms
+09:22:29.632926 table@remove removed @14
+09:22:29.632951 table@remove removed @13
+09:22:29.632973 table@remove removed @8
+09:22:29.632993 table@remove removed @5
+09:22:31.388321 db@close closing
+09:22:31.388372 db@close done T·48.5µs
