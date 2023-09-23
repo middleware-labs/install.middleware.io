@@ -1,0 +1,6 @@
+[example-repo]
+name=Example Repo
+baseurl=https://install.middleware.io/rpm-repo/packages
+enabled=1
+gpgcheck=1
+gpgkey=https://install.middleware.io/gpg-keys/mw-agent-yum-public.key
