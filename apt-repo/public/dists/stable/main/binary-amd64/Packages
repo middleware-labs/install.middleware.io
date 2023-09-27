@@ -12,3 +12,17 @@ SHA512: c173651fa9399369cb3c574e8f7caa6bd727063df3665ca2b41e7c767ef21058e3669e95
 Description: Middleware Agent
 Homepage: https://middleware.io
 
+Package: mw-agent
+Maintainer: middleware <dev@middleware.io>
+Architecture: amd64
+Version: 0.0.876
+Depends: libc6
+Filename: pool/main/m/mw-agent/mw-agent_0.0.876-1_amd64.deb
+Size: 18519636
+MD5sum: 4887fcc487b693e5e3ad86c30f3eb840
+SHA1: d8ba20247693f8ab48985def1e5b91c904d54151
+SHA256: e23fc791fc80c86731df9c8c6b86a6301a105836f79df27a84ac20178ac501f2
+SHA512: 80203e1d287ab9e460c41dc28c162b8df77d7ca679435c7a66e3f6b5c758e613147d85dee3ebee1e27abb3c4a0face2f00038491e004131bc473c873c427dc17
+Description: Middleware Agent
+Homepage: https://middleware.io
+
