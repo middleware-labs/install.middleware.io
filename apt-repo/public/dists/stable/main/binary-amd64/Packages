@@ -1,6 +1,20 @@
 Package: mw-agent
 Maintainer: middleware <dev@middleware.io>
 Architecture: amd64
+Version: 1.0.1
+Depends: libc6
+Filename: pool/main/m/mw-agent/mw-agent_1.0.1-1_amd64.deb
+Size: 18521232
+MD5sum: 882f2579b1ab134a0cad4e4ca10eb333
+SHA1: 94aa6129e21e36eea20495181bca4fac837e80fb
+SHA256: 80b1eea1933c9fca4264d6bd3894bdc30f1286269e8d192a10c025801321e2d4
+SHA512: 416d6f8264b61a65fae262b2778fd72d6e425be6f3fcba3c5d3521cf02c4ca950636454e199afa7796f64cbe5add7e0c98076ae0018ff971500825e77228a55e
+Description: Middleware Agent
+Homepage: https://middleware.io
+
+Package: mw-agent
+Maintainer: middleware <dev@middleware.io>
+Architecture: amd64
 Version: 1.0.0
 Depends: libc6
 Filename: pool/main/m/mw-agent/mw-agent_1.0.0-1_amd64.deb
