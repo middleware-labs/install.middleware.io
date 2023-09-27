@@ -88,8 +88,8 @@ else
   force_continue
 fi
 
-MW_AGENT_HOME=/usr/local/bin/mw-go-agent
-MW_AGENT_BINARY=mw-go-agent-host
+MW_AGENT_HOME=/usr/local/bin/mw-agent
+MW_AGENT_BINARY=mw-agent
 MW_DETECTED_ARCH=$(uname -m)
 
 RPM_FILE=""
@@ -105,17 +105,20 @@ if [ "${MW_VERSION}" = "" ]; then
 fi
 
 if [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
-  RPM_FILE="mw-go-agent-host-${MW_VERSION}-1.x86_64.rpm"
-  MW_AGENT_BINARY="mw-go-agent-host"
+  RPM_FILE="mw-agent-${MW_VERSION}-1.x86_64.rpm"
+  MW_AGENT_BINARY="mw-agent"
 elif [[ $MW_DETECTED_ARCH == "aarch64" ]]; then
-  RPM_FILE="mw-go-agent-host-arm-${MW_VERSION}-1.aarch64.rpm"
-  MW_AGENT_BINARY="mw-go-agent-host-arm"
+  RPM_FILE="mw-agent-${MW_VERSION}-1.aarch64.rpm"
+  MW_AGENT_BINARY="mw-agent"
 else
   echo ""
 fi
 
-wget -q -O $MW_AGENT_BINARY.rpm install.middleware.io/rpms/$RPM_FILE
-sudo rpm -i $MW_AGENT_BINARY.rpm
+# wget -q -O $MW_AGENT_BINARY.rpm install.middleware.io/rpms/$RPM_FILE
+# sudo rpm -i $MW_AGENT_BINARY.rpm
+yum-config-manager --add-repo https://9cd8-2401-4900-1f3f-b85-3ff0-45bc-eb51-5b64.ngrok-free.app/example.repo
+yum install -y mw-agent
+
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 source ~/.bashrc
 
@@ -140,15 +143,15 @@ sudo wget -q -O /etc/ssl/certs/MwCA.pem https://install.middleware.io/certs/MwCA
 MW_USER=$(whoami)
 export MW_USER
 
-sudo su << EOSUDO
+# sudo su << EOSUDO
 
 
 # Running Agent as a Daemon Service
-touch /etc/systemd/system/mwservice.service
-mkdir -p $MW_AGENT_HOME/apt 
-touch $MW_AGENT_HOME/apt/executable
+sudo touch /etc/systemd/system/mwservice.service
+sudo mkdir -p $MW_AGENT_HOME/apt 
+sudo touch $MW_AGENT_HOME/apt/executable
 
-cat << EOF > /etc/systemd/system/mwservice.service
+sudo cat << EOF > /etc/systemd/system/mwservice.service
 [Unit]
 Description=Melt daemon!
 [Service]
@@ -166,7 +169,7 @@ WantedBy=multi-user.target
 EOF
 
 
-cat << EOEXECUTABLE > $MW_AGENT_HOME/apt/executable
+sudo cat << EOEXECUTABLE > $MW_AGENT_HOME/apt/executable
 #!/bin/sh
 
 # Check if MW_API_KEY is non-empty, then set the environment variable
@@ -213,9 +216,9 @@ EOEXECUTABLE
 
 
 
-chmod 777 $MW_AGENT_HOME/apt/executable
+sudo chmod 777 $MW_AGENT_HOME/apt/executable
 
-EOSUDO
+# EOSUDO
 
 sudo systemctl daemon-reload
 sudo systemctl enable mwservice
