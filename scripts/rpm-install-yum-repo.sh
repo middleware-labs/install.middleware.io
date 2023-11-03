@@ -74,6 +74,7 @@ baseurl=https://raw.githubusercontent.com/middleware-labs/yum.middleware.io/mast
 enabled=1
 gpgcheck=0
 EOF
+fi
 
 sudo yum update
 sudo yum install mw-agent
