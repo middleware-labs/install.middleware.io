@@ -77,7 +77,7 @@ EOF
 fi
 
 sudo yum update
-sudo yum install --nogpgcheck --y mw-agent
+sudo yum install --nogpgcheck -y mw-agent
 
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 source ~/.bashrc
