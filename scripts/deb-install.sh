@@ -217,6 +217,7 @@ $MW_AGENT_BINARY start
 EOEXECUTABLE
 
 chmod 777 $MW_AGENT_HOME/apt/executable
+chmod 777 /etc/mw-agent/otel-config.yaml
 
 EOSUDO
 
