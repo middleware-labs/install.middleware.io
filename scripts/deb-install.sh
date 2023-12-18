@@ -158,7 +158,7 @@ touch /etc/systemd/system/mwservice.service
 
 cat << EOF > /etc/systemd/system/mwservice.service
 [Unit]
-Description=Melt daemon!
+Description=Middleware Agent daemon!
 [Service]
 
 #Code to execute
