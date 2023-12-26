@@ -24,7 +24,7 @@ Description=Melt daemon!
 
 [Service]
 WorkingDirectory=/usr/bin
-ExecStart=mw-agent start --api-key $MW_API_KEY --target $MW_TARGET
+ExecStart=/usr/bin/mw-agent start --api-key $MW_API_KEY --target $MW_TARGET
 Type=simple
 TimeoutStopSec=10
 Restart=on-failure
