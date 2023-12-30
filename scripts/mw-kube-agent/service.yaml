@@ -1,0 +1,30 @@
+# Exposing service for Middleware Agent Daemonset
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-service
+  namespace: "NAMESPACE_VALUE"
+spec:
+  type: NodePort
+  ports:
+    - port: 443
+      name: "grpc"
+      targetPort: 8443
+    - port: 9319
+      name: "grpc2"
+      targetPort: 9319
+    - port: 9320
+      name: "http"
+      targetPort: 9320
+    - port: 8006
+      name: "fluent"
+      targetPort: 8006
+    - protocol: TCP
+      name: "dlv"
+      port: 4040
+      targetPort: 4040
+  selector:
+    # k8s-app: mw-app
+    k8s-app-daemon: mw-app-daemon

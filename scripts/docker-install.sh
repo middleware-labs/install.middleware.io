@@ -52,11 +52,9 @@ MW_LOG_PATHS=""
 MW_AGENT_DOCKER_IMAGE=""
 
 MW_DETECTED_ARCH=$(dpkg --print-architecture)
-if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "arm32" ]]; then
-  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:master"
-else 
-  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:master"
-fi
+
+MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:master"
+
 
 
 if [[ $(which docker) && $(docker --version) ]]; then

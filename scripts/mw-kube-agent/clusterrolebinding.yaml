@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mw-cluster-role-binding-NAMESPACE_VALUE
+  namespace: "NAMESPACE_VALUE"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mw-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: mw-service-account
+    namespace: "NAMESPACE_VALUE"
