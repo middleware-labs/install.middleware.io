@@ -51,8 +51,8 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
     }
 }' > /dev/null
 
-MW_AGENT_HOME=/usr/local/bin/mw-go-agent
-MW_AGENT_BINARY=mw-go-agent-host
+MW_AGENT_HOME=/usr/local/bin/mw-agent
+MW_AGENT_BINARY=mw-agent
 MW_DETECTED_ARCH=$(uname -m)
 
 RPM_FILE=""
@@ -68,17 +68,18 @@ if [ "${MW_VERSION}" = "" ]; then
 fi
 
 if [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
-  RPM_FILE="mw-go-agent-host-${MW_VERSION}-1.x86_64.rpm"
-  MW_AGENT_BINARY="mw-go-agent-host"
+  RPM_FILE="mw-agent-${MW_VERSION}-1.x86_64.rpm"
+  MW_AGENT_BINARY="mw-agent"
 elif [[ $MW_DETECTED_ARCH == "aarch64" ]]; then
-  RPM_FILE="mw-go-agent-host-arm-${MW_VERSION}-1.aarch64.rpm"
-  MW_AGENT_BINARY="mw-go-agent-host-arm"
+  RPM_FILE="mw-agent-${MW_VERSION}-1.aarch64.rpm"
+  MW_AGENT_BINARY="mw-agent"
 else
   echo ""
 fi
 
-wget -q -O $MW_AGENT_BINARY.rpm install.middleware.io/rpms/$RPM_FILE
-sudo rpm -i $MW_AGENT_BINARY.rpm
+echo "yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE"
+wget -q -O $RPM_FILE yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE
+sudo rpm -i $RPM_FILE
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 source ~/.bashrc
 
@@ -173,10 +174,10 @@ $MW_AGENT_BINARY start
 
 EOEXECUTABLE
 
-
-
-
+mkdir -p /etc/mw-agent
+touch /etc/mw-agent/otel-config.yaml
 chmod 777 $MW_AGENT_HOME/apt/executable
+chmod 777 /etc/mw-agent/otel-config.yaml
 
 EOSUDO
 
