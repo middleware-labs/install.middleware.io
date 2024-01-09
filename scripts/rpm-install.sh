@@ -81,7 +81,7 @@ RPM_FILE=""
 
 echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
 
-MW_LATEST_VERSION=1.1.0
+MW_LATEST_VERSION="1.3.0"
 export MW_LATEST_VERSION
 
 if [ "${MW_VERSION}" = "" ]; then 
