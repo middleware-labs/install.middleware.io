@@ -1,5 +1,27 @@
 #!/bin/bash
 
+# Function to check if a command exists
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Check if required commands are available
+required_commands=("sudo" "mkdir" "touch" "exec" "tee" "date" "curl" "uname" "source" "sed" "tr" "wget" "systemctl" "chmod" "rpm")
+missing_commands=()
+
+for cmd in "${required_commands[@]}"; do
+  if ! command_exists "$cmd"; then
+    missing_commands+=("$cmd")
+  fi
+done
+
+if [ ${#missing_commands[@]} -gt 0 ]; then
+  echo "Error: The following required commands are missing: ${missing_commands[*]}"
+  echo "Please install them and run the script again."
+  exit 1
+fi
+
+
 LOG_FILE="/var/log/mw-agent/rpm-installation-$(date +%s).log"
 sudo mkdir -p /var/log/mw-agent
 sudo touch "$LOG_FILE"
@@ -26,7 +48,7 @@ EOF
 
   curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
   --header 'Content-Type: application/json' \
-  --data-raw "$payload" > /dev/null
+  --data "$payload" > /dev/null
 }
 
 function on_exit {
@@ -42,7 +64,7 @@ trap on_exit EXIT
 # recording agent installation attempt
 curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
 --header 'Content-Type: application/json' \
---data-raw '{
+--data '{
     "status": "tried",
     "metadata": {
         "script": "linux-rpm",
