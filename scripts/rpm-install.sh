@@ -119,9 +119,6 @@ sudo wget -q -O /usr/bin/$MW_AGENT_BINARY/configyamls/nodocker/otel-config.yaml 
 sudo chmod 777 /usr/bin/$MW_AGENT_BINARY/configyamls/all/otel-config.yaml
 sudo chmod 777 /usr/bin/$MW_AGENT_BINARY/configyamls/nodocker/otel-config.yaml
 
-sudo mkdir -p /etc/ssl/certs
-sudo wget -q -O /etc/ssl/certs/MwCA.pem https://install.middleware.io/certs/MwCA.pem
-
 
 MW_USER=$(whoami)
 export MW_USER
