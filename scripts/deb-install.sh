@@ -153,12 +153,6 @@ sudo touch $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public
 sudo wget -q -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key
 sudo touch /etc/apt/sources.list.d/$MW_APT_LIST
 
-
-sudo mkdir -p /etc/ssl/certs
-sudo wget -q -O /etc/ssl/certs/MwCA.pem https://apt.middleware.io/certs/MwCA.pem
-sudo apt-get install ca-certificates > /dev/null
-sudo update-ca-certificates > /dev/null
-
 echo -e "Adding Middleware Agent APT Repository ...\n"
 # sed -e 's|$MW_LOG_PATHS|'$MW_LOG_PATHS'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml > /dev/null
 
