@@ -1,4 +1,61 @@
 #!/bin/sh
+
+# detecting architecture
+arch=$(uname -m)
+
+if [ "$arch" == "x86_64" ]; then
+    arch="amd64"
+elif [ "$arch" == "aarch64" ]; then
+    arch="arm64"
+else 
+    arch="amd64"
+fi
+
+# Function to check if a command exists
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Check if required commands are available
+required_commands=("sudo" "mkdir" "touch" "exec" "tee" "date" "curl" "kubectl" "sed" "wget")
+missing_commands=()
+
+for cmd in "${required_commands[@]}"; do
+  if ! command_exists "$cmd"; then
+    missing_commands+=("$cmd")
+  fi
+done
+
+if [ ${#missing_commands[@]} -gt 0 ]; then
+  echo "Error: The following required commands are missing: ${missing_commands[*]}"
+  echo "Please install them and run the script again."
+  exit 1
+fi
+
+# Check if kubectl is installed
+if command -v kubectl &> /dev/null
+then
+    echo "kubectl is already present in the system. skipping to next step ..."
+else
+    echo -e "kubectl is not installed. Install it now... Then re-run the script\n"
+    echo -e "Fetching instructions to help you with kubectl Installation ...\n"
+    latest_kubectl_version=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+    
+    # Installation steps for kubectl (assuming Linux, for other OS, adjust accordingly)
+    echo "1. Download the kubectl binary:"
+    echo "   For Linux:"
+    echo "     curl -LO https://dl.k8s.io/release/$latest_kubectl_version/bin/linux/$arch/kubectl"
+    echo "   For macOS:"
+    echo "     curl -LO https://dl.k8s.io/release/$latest_kubectl_version/bin/darwin/$arch/kubectl"
+
+    echo "2. Make the kubectl binary executable:"
+    echo "   chmod +x ./kubectl"
+
+    echo "3. Move the kubectl binary to a directory in your PATH:"
+    echo "   sudo mv ./kubectl /usr/local/bin/kubectl"
+    exit 0
+fi
+
 set -e errexit
 LOG_FILE="/var/log/mw-kube-agent/mw-kube-agent-install-$(date +%s).log"
 sudo mkdir -p /var/log/mw-kube-agent
