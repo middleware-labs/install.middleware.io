@@ -51,7 +51,14 @@ spec:
             - mw-agent
             - start
             - --otel-config-file
-            - /app/otel-config-daemonset.yaml            
+            - /app/otel-config-daemonset.yaml
+          resources:
+            limits:
+              cpu: 200m
+              memory: 250Mi
+            requests:
+              cpu: 100m
+              memory: 150Mi        
           env:
             - name: MW_TARGET
               value: "TARGET_VALUE"
