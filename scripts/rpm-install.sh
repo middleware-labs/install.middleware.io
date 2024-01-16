@@ -89,6 +89,12 @@ if [ "${MW_VERSION}" = "" ]; then
   export MW_VERSION
 fi
 
+MW_DEFAULT_SKIP_CERTIFICATE_CHECK="no"
+if [ "${MW_SKIP_CERTIFICATE_CHECK}" = "" ]; then 
+  MW_SKIP_CERTIFICATE_CHECK=$MW_DEFAULT_SKIP_CERTIFICATE_CHECK
+  export MW_SKIP_CERTIFICATE_CHECK
+fi
+
 if [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
   RPM_FILE="mw-agent-${MW_VERSION}-1.x86_64.rpm"
   MW_AGENT_BINARY="mw-agent"
@@ -100,7 +106,11 @@ else
 fi
 
 echo "yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE"
-wget -q -O $RPM_FILE yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE
+if [[ $MW_SKIP_CERTIFICATE_CHECK == "yes" ]]; then
+  wget -q -O $RPM_FILE yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE --no-check-certificate
+else 
+  wget -q -O $RPM_FILE yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE 
+fi
 sudo rpm -i $RPM_FILE
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
 source ~/.bashrc
