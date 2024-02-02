@@ -129,11 +129,9 @@ if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INST
   export MW_KUBE_AGENT_HOME
   
   # Fetch install manifest 
-  sudo su << EOSUDO
-  mkdir -p $MW_KUBE_AGENT_HOME
-  touch $MW_KUBE_AGENT_HOME/agent.yaml
-  wget -q -O $MW_KUBE_AGENT_HOME/agent.yaml https://install.middleware.io/scripts/mw-kube-agent.yaml
-EOSUDO
+  sudo mkdir -p $MW_KUBE_AGENT_HOME
+  sudo touch $MW_KUBE_AGENT_HOME/agent.yaml
+  sudo wget -q -O $MW_KUBE_AGENT_HOME/agent.yaml https://install.middleware.io/scripts/mw-kube-agent.yaml
 
   if [ -z "${MW_KUBECONFIG}" ]; then
     sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${MW_TARGET}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
