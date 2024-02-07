@@ -386,7 +386,5 @@ spec:
             name: varlibdockercontainers
             readOnly: true
           resources: {}
-      imagePullSecrets:
-        - name: gh-regcred
       restartPolicy: Always
       serviceAccountName: mw-service-account
