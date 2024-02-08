@@ -223,7 +223,12 @@ fi
 
 # Check if MW_HOST_TAGS is non-empty, then set the environment variable
 if [ -n "$MW_HOST_TAGS" ]; then
-    export MW_HOST_TAGS="$MW_HOST_TAGS"
+        export MW_HOST_TAGS="$MW_HOST_TAGS"
+fi
+
+# Check if MW_FETCH_ACCOUNT_OTEL_CONFIG is non-empty, then set the environment variable
+if [ -n "$MW_FETCH_ACCOUNT_OTEL_CONFIG" ]; then
+    export MW_FETCH_ACCOUNT_OTEL_CONFIG="$MW_FETCH_ACCOUNT_OTEL_CONFIG"
 fi
 
 # Start the MW_AGENT_BINARY with the configured environment variables
