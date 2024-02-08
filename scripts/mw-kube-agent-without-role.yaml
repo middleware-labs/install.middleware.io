@@ -58,8 +58,6 @@ spec:
           imagePullPolicy: Always
           name: mw-kube-agent
           resources: {}
-      imagePullSecrets:
-        - name: gh-regcred
       restartPolicy: Always
       serviceAccountName: mw-service-account
 ---
