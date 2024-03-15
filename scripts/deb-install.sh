@@ -117,7 +117,7 @@ else
   force_continue
 fi
 
-MW_LATEST_VERSION="1.3.0"
+MW_LATEST_VERSION="1.5.0"
 MW_AGENT_HOME=/usr/local/bin/mw-agent
 MW_APT_LIST=mw-agent.list
 MW_APT_LIST_ARCH=""
