@@ -95,6 +95,8 @@ EOSUDO
           -e "s|MW_API_KEY_VALUE|${MW_API_KEY}|g" \
           -e "s|TARGET_VALUE|${MW_TARGET}|g" \
           -e "s|NAMESPACE_VALUE|${MW_NAMESPACE}|g" \
+          -e "s|MW_API_URL_FOR_CONFIG_CHECK_VALUE|${MW_API_URL_FOR_CONFIG_CHECK}|g" \
+          -e "s|MW_CONFIG_CHECK_INTERVAL_VALUE|${MW_CONFIG_CHECK_INTERVAL}|g" \
     ) --kubeconfig "${MW_KUBECONFIG}"
   done
 
