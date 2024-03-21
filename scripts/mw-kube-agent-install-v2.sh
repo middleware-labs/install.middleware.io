@@ -82,6 +82,8 @@ EOSUDO
   echo "correct..."
 
   kubectl --kubeconfig "${MW_KUBECONFIG}" create namespace ${MW_NAMESPACE}
+  sudo wget -q -O otel-config-deployment.yaml https://install.middleware.io/scripts/otel-config-deployment.yaml
+  sudo wget -q -O otel-config-daemonset.yaml https://install.middleware.io/scripts/otel-config-daemonset.yaml
   kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-deployment-otel-config --from-file=otel-config=otel-config-deployment.yaml --namespace=${MW_NAMESPACE}
   kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-daemonset-otel-config --from-file=otel-config=otel-config-daemonset.yaml --namespace=${MW_NAMESPACE}     
   for file in "$MW_KUBE_AGENT_HOME"/*.yaml; do
