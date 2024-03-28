@@ -53,8 +53,24 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
 MW_DEFAULT_NAMESPACE=mw-agent-ns
 export MW_DEFAULT_NAMESPACE
 
+MW_DEFAULT_API_URL_FOR_CONFIG_CHECK=http://app.middleware.io
+export MW_DEFAULT_API_URL_FOR_CONFIG_CHECK
+
+MW_DEFAULT_CONFIG_CHECK_INTERVAL="*/1 * * * *"
+export MW_DEFAULT_CONFIG_CHECK_INTERVAL
+
 if [ "${MW_NAMESPACE}" = "" ]; then 
   MW_NAMESPACE=$MW_DEFAULT_NAMESPACE
+  export MW_NAMESPACE
+fi
+
+if [ "${MW_API_URL_FOR_CONFIG_CHECK}" = "" ]; then 
+  MW_API_URL_FOR_CONFIG_CHECK=$MW_DEFAULT_API_URL_FOR_CONFIG_CHECK
+  export MW_NAMESPACE
+fi
+
+if [ "${MW_CONFIG_CHECK_INTERVAL}" = "" ]; then 
+  MW_CONFIG_CHECK_INTERVAL=$MW_DEFAULT_CONFIG_CHECK_INTERVAL
   export MW_NAMESPACE
 fi
 
@@ -79,15 +95,12 @@ if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INST
   ls -l $MW_KUBE_AGENT_HOME
 EOSUDO
 
-  echo "correct..."
-
   kubectl --kubeconfig "${MW_KUBECONFIG}" create namespace ${MW_NAMESPACE}
   sudo wget -q -O otel-config-deployment.yaml https://install.middleware.io/scripts/otel-config-deployment.yaml
   sudo wget -q -O otel-config-daemonset.yaml https://install.middleware.io/scripts/otel-config-daemonset.yaml
   kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-deployment-otel-config --from-file=otel-config=otel-config-deployment.yaml --namespace=${MW_NAMESPACE}
   kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-daemonset-otel-config --from-file=otel-config=otel-config-daemonset.yaml --namespace=${MW_NAMESPACE}     
   for file in "$MW_KUBE_AGENT_HOME"/*.yaml; do
-    echo "something $file"
     kubectl apply -f <( \
       cat "$file" | \
       sed -e "s|MW_KUBE_CLUSTER_NAME_VALUE|${MW_KUBE_CLUSTER_NAME}|g" \
