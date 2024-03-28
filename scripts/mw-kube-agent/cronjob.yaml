@@ -20,7 +20,7 @@ spec:
               effect: NoSchedule
           containers:
             - name: mw-kube-agent
-              image: ghcr.io/middleware-labs/mw-kube-updater:master
+              image: ghcr.io/middleware-labs/mw-kube-agent:1.5.0
               imagePullPolicy: Always
               args:
                 - mw-agent
