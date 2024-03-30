@@ -69,7 +69,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-          image: ghcr.io/middleware-labs/mw-kube-agent:1.6.1
+          image: ghcr.io/middleware-labs/mw-kube-agent:MW_VERSION_VALUE
           imagePullPolicy: Always
           name: mw-kube-agent
           securityContext:

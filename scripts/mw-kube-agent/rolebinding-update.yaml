@@ -3,13 +3,13 @@ kind: RoleBinding
 metadata:
   labels:
     k8s-app: mw-app
-  name: mw-role-binding
+  name: mw-role-binding-update
   namespace: "NAMESPACE_VALUE"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: mw-role
+  name: mw-role-update
 subjects:
   - kind: ServiceAccount
-    name: mw-service-account
+    name: mw-service-account-update
     namespace: "NAMESPACE_VALUE"
