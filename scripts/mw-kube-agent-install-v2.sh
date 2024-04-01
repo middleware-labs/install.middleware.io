@@ -98,7 +98,18 @@ export MW_KUBE_AGENT_HOME
 # Fetch install manifest 
 sudo su << EOSUDO
 mkdir -p $MW_KUBE_AGENT_HOME
-cp -r ./mw-kube-agent/* $MW_KUBE_AGENT_HOME
+wget -O $MW_KUBE_AGENT_HOME/clusterrole.yaml https://install.middleware.io/scripts/mw-kube-agent/clusterrole.yaml
+wget -O $MW_KUBE_AGENT_HOME/clusterrolebinding.yaml https://install.middleware.io/scripts/mw-kube-agent/clusterrolebinding.yaml
+wget -O $MW_KUBE_AGENT_HOME/cronjob.yaml https://install.middleware.io/scripts/mw-kube-agent/cronjob.yaml
+wget -O $MW_KUBE_AGENT_HOME/daemonset.yaml https://install.middleware.io/scripts/mw-kube-agent/daemonset.yaml
+wget -O $MW_KUBE_AGENT_HOME/deployment.yaml https://install.middleware.io/scripts/mw-kube-agent/deployment.yaml
+wget -O $MW_KUBE_AGENT_HOME/role-update.yaml https://install.middleware.io/scripts/mw-kube-agent/role-update.yaml
+wget -O $MW_KUBE_AGENT_HOME/role.yaml https://install.middleware.io/scripts/mw-kube-agent/role.yaml
+wget -O $MW_KUBE_AGENT_HOME/rolebinding-update.yaml https://install.middleware.io/scripts/mw-kube-agent/rolebinding-update.yaml
+wget -O $MW_KUBE_AGENT_HOME/rolebinding.yaml https://install.middleware.io/scripts/mw-kube-agent/rolebinding.yaml
+wget -O $MW_KUBE_AGENT_HOME/service.yaml https://install.middleware.io/scripts/mw-kube-agent/service.yaml
+wget -O $MW_KUBE_AGENT_HOME/serviceaccount-update.yaml https://install.middleware.io/scripts/mw-kube-agent/serviceaccount-update.yaml
+wget -O $MW_KUBE_AGENT_HOME/serviceaccount.yaml https://install.middleware.io/scripts/mw-kube-agent/serviceaccount.yaml
 ls -l $MW_KUBE_AGENT_HOME
 EOSUDO
 
