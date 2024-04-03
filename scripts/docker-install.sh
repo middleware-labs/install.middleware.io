@@ -49,12 +49,14 @@ trap on_exit EXIT
 send_logs "tried" "Agent Installation Attempted"
 
 MW_LOG_PATHS=""
-MW_AGENT_DOCKER_IMAGE=""
+
 
 MW_DETECTED_ARCH=$(dpkg --print-architecture)
 
-MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:master"
-
+if [ "${MW_AGENT_DOCKER_IMAGE}" = "" ]; then 
+  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:master"
+fi
+export MW_AGENT_DOCKER_IMAGE
 
 
 if [[ $(which docker) && $(docker --version) ]]; then
