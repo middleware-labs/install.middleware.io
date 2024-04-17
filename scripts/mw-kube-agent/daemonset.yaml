@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         app: mw-app
+        k8s-app: mw-app
     spec:
       tolerations:
       # these tolerations are to have the daemonset runnable on control plane nodes
