@@ -26,5 +26,4 @@ spec:
       port: 4040
       targetPort: 4040
   selector:
-    # k8s-app: mw-app
-    k8s-app-daemon: mw-app-daemon
+    k8s-app: mw-app
