@@ -89,6 +89,7 @@ export MW_KUBE_CLUSTER_NAME
 
 echo -e "\nSetting up Middleware Kubernetes agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
 
+if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "" ]; then
 
 echo -e "\nMiddleware Kubernetes agent is being installed using manifest files, please wait ..."
 # Home for local configs
@@ -133,6 +134,13 @@ for file in "$MW_KUBE_AGENT_HOME"/*.yaml; do
         -e "s|MW_VERSION_VALUE|${MW_VERSION}|g" \
   ) --kubeconfig "${MW_KUBECONFIG}"
 done
+
+elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
+  helm repo add middleware-labs https://helm.middleware.io
+  echo "Installing Middleware K8s Agent v2 via Helm chart ..."
+  helm install --set mw.target=${MW_TARGET} --set mw.apiKey=${MW_API_KEY} --wait mw-kube-agent middleware-labs/mw-kube-agent-v2 \
+  -n ${MW_NAMESPACE} --create-namespace 
+fi
 
 echo "Middleware Kubernetes agent successfully installed !"
 
