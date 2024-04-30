@@ -43,7 +43,7 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
 --data-raw '{
     "status": "tried",
     "metadata": {
-        "script": "kubernetes",
+        "script": "kubernetes-v2",
         "status": "ok",
         "message": "agent installed"
     }
