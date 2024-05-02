@@ -106,7 +106,7 @@ echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostn
 if [ -f /etc/os-release ]; then
   source /etc/os-release
   case "$ID" in
-    rhel|centos|fedora|almalinux|rockylinux|amzn|ol|sles)
+    rhel|centos|fedora|almalinux|rocky|amzn|ol|sles)
       echo "os-release ID is $ID"
       ;;
     *)
