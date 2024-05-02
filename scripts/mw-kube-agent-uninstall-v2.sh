@@ -65,6 +65,8 @@ export MW_KUBE_CLUSTER_NAME
 
 echo -e "\nUninstalling Middleware Kubernetes agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
 
+if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "" ]; then
+
 echo -e "\nMiddleware Kubernetes agent is being uninstalled using manifest files, please wait ..."
 # Home for local configs
 MW_KUBE_AGENT_HOME=/usr/local/bin/mw-kube-agent
@@ -91,7 +93,11 @@ kubectl --kubeconfig "${MW_KUBECONFIG}" delete configmap mw-deployment-otel-conf
 kubectl --kubeconfig "${MW_KUBECONFIG}" delete configmap mw-daemonset-otel-config --namespace=${MW_NAMESPACE}
 kubectl --kubeconfig "${MW_KUBECONFIG}" delete namespace ${MW_NAMESPACE}
 
+elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
+  echo "Removing Middleware K8s Agent v2 Helm chart ..."
+  helm uninstall mw-kube-agent --namespace=${MW_NAMESPACE}
 
+fi
 
 echo "Middleware Kubernetes agent successfully uninstalled !"
 
