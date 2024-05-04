@@ -138,7 +138,7 @@ done
 elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
   helm repo add middleware-labs https://helm.middleware.io
   echo "Installing Middleware K8s Agent v2 via Helm chart ..."
-  helm install --set mw.target=${MW_TARGET} --set mw.apiKey=${MW_API_KEY} --wait mw-kube-agent middleware-labs/mw-kube-agent-v2 \
+  helm install --set mw.target=${MW_TARGET} --set mw.apiKey=${MW_API_KEY} --set clusterMetadata.name=${MW_KUBE_CLUSTER_NAME} --set mw.apiKey=${MW_API_KEY} --wait mw-kube-agent middleware-labs/mw-kube-agent-v2 \
   -n ${MW_NAMESPACE} --create-namespace 
 fi
 
