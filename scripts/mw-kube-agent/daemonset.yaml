@@ -26,6 +26,7 @@ spec:
         effect: "NoSchedule"
       - operator: "Exists"
         effect: "NoExecute"
+      hostNetwork: true
       volumes:
         - name: mw-daemonset-otel-config-volume
           configMap:
