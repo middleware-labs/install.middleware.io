@@ -6,7 +6,7 @@ command_exists() {
 }
 
 # Check if required commands are available
-required_commands=("sudo" "mkdir" "touch" "exec" "tee" "date" "curl" "uname" "source" "sed" "tr" "wget" "systemctl" "chmod" "dpkg" "apt-get")
+required_commands=("sudo" "mkdir" "touch" "tee" "date" "curl" "uname" "source" "sed" "tr" "systemctl" "chmod" "dpkg" "apt-get")
 missing_commands=()
 
 for cmd in "${required_commands[@]}"; do
@@ -24,11 +24,8 @@ fi
 LOG_FILE="/var/log/mw-agent/apt-installation-$(date +%s).log"
 sudo mkdir -p /var/log/mw-agent
 sudo touch "$LOG_FILE"
-exec &> >(sudo tee -a "$LOG_FILE")
-
 
 MW_TRACKING_TARGET="https://app.middleware.io"
-
 if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
     export MW_TRACKING_TARGET="$MW_API_URL_FOR_CONFIG_CHECK"
 fi
@@ -43,7 +40,7 @@ function send_logs {
 {
   "status": "$status",
   "metadata": {
-    "script": "linux",
+    "script": "linux-deb",
     "status": "ok",
     "message": "$message",
     "host_id": "$host_id",
@@ -90,24 +87,33 @@ send_logs "tried" "Agent Installation Attempted"
 
 # Check if the system is running Linux
 if [ "$(uname -s)" != "Linux" ]; then
-  echo "This machine is not running Linux, The script is designed to run on a Linux machine"
+  echo "This machine is not running Linux, The script is designed to run on a Linux machine."
   force_continue
 fi
+
+MW_LATEST_VERSION="1.6.5"
+export MW_LATEST_VERSION
+# Check if MW_VERSION is provided
+if [ "${MW_VERSION}" = "" ]; then 
+  MW_VERSION=$MW_LATEST_VERSION
+fi
+export MW_VERSION
+echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostname) at $(date)" | sudo tee -a "$LOG_FILE"
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
   source /etc/os-release
   case "$ID" in
     debian|ubuntu)
-      echo -e "\nos-release ID is $ID"
+      echo "os-release ID is $ID"
       ;;
     *)
       case "$ID_LIKE" in
         debian|ubuntu)
-          echo -e "\nos-release ID_LIKE is $ID_LIKE"
+          echo  "os-release ID_LIKE is $ID_LIKE"
           ;;
         *)
-          echo "This is not a Debian-based Linux distribution."
+          echo "This is not a Debian based Linux distribution."
           force_continue
           ;;
       esac
@@ -117,15 +123,15 @@ else
   force_continue
 fi
 
-MW_LATEST_VERSION="1.5.0"
-MW_AGENT_HOME=/usr/local/bin/mw-agent
-MW_APT_LIST=mw-agent.list
+if [ "${MW_DETECTED_ARCH}" = "" ]; then 
+  MW_DETECTED_ARCH=$(dpkg --print-architecture)
+  echo -e "cpu architecture detected: '"${MW_DETECTED_ARCH}"'"
+else 
+  echo -e "cpu architecture provided: '"${MW_DETECTED_ARCH}"'"
+fi
+export MW_DETECTED_ARCH
+
 MW_APT_LIST_ARCH=""
-MW_AGENT_BINARY=mw-agent
-MW_DETECTED_ARCH=$(dpkg --print-architecture)
-
-echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
-
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
   MW_APT_LIST_ARCH=arm64
 elif [[ $MW_DETECTED_ARCH == "amd64" || $MW_DETECTED_ARCH == "i386" || $MW_DETECTED_ARCH == "i486" || $MW_DETECTED_ARCH == "i586" || $MW_DETECTED_ARCH == "i686" || $MW_DETECTED_ARCH == "x32" ]]; then
@@ -134,118 +140,77 @@ else
   echo ""
 fi
 
-export MW_LATEST_VERSION
-export MW_AUTO_START=true
+if [ "${MW_AGENT_HOME}" = "" ]; then 
+  MW_AGENT_HOME=/opt/mw-agent
+fi
+export MW_AGENT_HOME
 
-if [ "${MW_VERSION}" = "" ]; then 
-  MW_VERSION=$MW_LATEST_VERSION
-  export MW_VERSION
+if [ "${MW_KEYRING_LOCATION}" = "" ]; then 
+  MW_KEYRING_LOCATION=/usr/share/keyrings
+fi
+export MW_KEYRING_LOCATION
+
+if [ "${MW_APT_LIST}" = "" ]; then 
+  MW_APT_LIST=mw-agent.list
+fi
+export MW_APT_LIST
+
+MW_AGENT_BINARY=mw-agent
+if [ "${MW_AGENT_BINARY}" = "" ]; then 
+  MW_AGENT_BINARY=mw-agent
 fi
 
-MW_LOG_PATHS=""
+export MW_AGENT_BINARY
+
+if [ "${MW_AUTO_START}" = "" ]; then 
+  MW_AUTO_START=true
+fi
+export MW_AUTO_START
+
+if [ "${MW_API_KEY}" = "" ]; then 
+  echo "MW_API_KEY environment variable is required and is not set."
+  force_continue
+fi
+export MW_API_KEY
+
+if [ "${MW_TARGET}" = "" ]; then 
+  echo "MW_TARGET environment variable is required and is not set."
+  force_continue
+fi
+export MW_TARGET
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 
-
 # Adding APT repo address & public key to system
-sudo mkdir -p $MW_AGENT_HOME/apt
-sudo touch $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public
-sudo wget -q -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key
-sudo touch /etc/apt/sources.list.d/$MW_APT_LIST
+sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --dearmor -o ${MW_KEYRING_LOCATION}/middleware-keyring.gpg
+sudo touch /etc/apt/sources.list.d/${MW_APT_LIST}
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
-# sed -e 's|$MW_LOG_PATHS|'$MW_LOG_PATHS'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml > /dev/null
-
-echo "deb [arch=$MW_APT_LIST_ARCH signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
+echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
 
 # Updating apt list on system
-sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/$MW_APT_LIST" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" > /dev/null
+sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" > /dev/null
 
 # Installing Agent
-echo -e "Installing Middleware Agent Binary ...\n"
-sudo apt-get install -y $MW_AGENT_BINARY=$MW_VERSION
-
-sudo su << EOSUDO
-
-
-# Running Agent as a Daemon Service
-touch /etc/systemd/system/mwservice.service
-
-cat << EOF > /etc/systemd/system/mwservice.service
-[Unit]
-Description=Middleware Agent daemon!
-[Service]
-
-#Code to execute
-#Can be the path to an executable or code itself
-WorkingDirectory=$MW_AGENT_HOME/apt
-ExecStart=$MW_AGENT_HOME/apt/executable
-Type=simple
-TimeoutStopSec=10
-Restart=on-failure
-RestartSec=5
-[Install]
-WantedBy=multi-user.target
-EOF
-
-cat << EOEXECUTABLE > $MW_AGENT_HOME/apt/executable
-#!/bin/sh
-
-# Check if MW_API_KEY is non-empty, then set the environment variable
-if [ -n "$MW_API_KEY" ]; then
-    export MW_API_KEY="$MW_API_KEY"
+echo -e "Installing Middleware Agent Service ...\n"
+sudo -E apt-get install -y ${MW_AGENT_BINARY}=${MW_VERSION}
+# Check for errors
+if [ $? -ne 0 ]; then
+  echo "Error: Failed to install Middleware Agent."
+  exit $?
 fi
-
-# Check if MW_TARGET is non-empty, then set the environment variable
-if [ -n "$MW_TARGET" ]; then
-    export MW_TARGET="$MW_TARGET"
-fi
-
-# Check if MW_ENABLE_SYNTHETIC_MONITORING is non-empty, then set the environment variable
-if [ -n "$MW_ENABLE_SYNTHETIC_MONITORING" ]; then
-    export MW_ENABLE_SYNTHETIC_MONITORING="$MW_ENABLE_SYNTHETIC_MONITORING"
-fi
-
-# Check if MW_CONFIG_CHECK_INTERVAL is non-empty, then set the environment variable
-if [ -n "$MW_CONFIG_CHECK_INTERVAL" ]; then
-    export MW_CONFIG_CHECK_INTERVAL="$MW_CONFIG_CHECK_INTERVAL"
-fi
-
-# Check if MW_DOCKER_ENDPOINT is non-empty, then set the environment variable
-if [ -n "$MW_DOCKER_ENDPOINT" ]; then
-    export MW_DOCKER_ENDPOINT="$MW_DOCKER_ENDPOINT"
-fi
-
-# Check if MW_API_URL_FOR_CONFIG_CHECK is non-empty, then set the environment variable
-if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
-    export MW_API_URL_FOR_CONFIG_CHECK="$MW_API_URL_FOR_CONFIG_CHECK"
-fi
-
-# Check if MW_HOST_TAGS is non-empty, then set the environment variable
-if [ -n "$MW_HOST_TAGS" ]; then
-        export MW_HOST_TAGS="$MW_HOST_TAGS"
-fi
-
-# Check if MW_FETCH_ACCOUNT_OTEL_CONFIG is non-empty, then set the environment variable
-if [ -n "$MW_FETCH_ACCOUNT_OTEL_CONFIG" ]; then
-    export MW_FETCH_ACCOUNT_OTEL_CONFIG="$MW_FETCH_ACCOUNT_OTEL_CONFIG"
-fi
-
-# Start the MW_AGENT_BINARY with the configured environment variables
-$MW_AGENT_BINARY start
-
-EOEXECUTABLE
-
-chmod 777 $MW_AGENT_HOME/apt/executable
-chmod 777 /etc/mw-agent/otel-config.yaml
-
-EOSUDO
 
 sudo systemctl daemon-reload
-sudo systemctl enable mwservice
 
-if [ "${MW_AUTO_START}" = true ]; then	
-    sudo systemctl start mwservice
+sudo systemctl enable mw-agent
+#check for errors
+if [ $? -ne 0 ]; then
+  echo "Error: Failed to enable Middleware Agent service."
+  exit $?
 fi
 
-echo -e "Installation done ! \n"
+if [ "${MW_AUTO_START}" = true ]; then
+    sudo systemctl start mw-agent
+fi
+
+echo -e "Middleware Agent installation completed successfully.\n"
