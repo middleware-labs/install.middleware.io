@@ -34,6 +34,8 @@ spec:
                   value: "MW_CONFIG_CHECK_INTERVAL_VALUE"
                 - name: MW_KUBE_CLUSTER_NAME
                   value: "MW_KUBE_CLUSTER_NAME_VALUE"
+                - name: MW_NAMESPACE
+                  value: "NAMESPACE_VALUE"
                 - name: MW_API_KEY
                   value: "MW_API_KEY_VALUE"
               securityContext:
