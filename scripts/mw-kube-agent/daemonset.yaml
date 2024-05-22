@@ -63,6 +63,8 @@ spec:
               value: "MW_DOCKER_ENDPOINT_VALUE"
             - name: MW_KUBE_CLUSTER_NAME
               value: "MW_KUBE_CLUSTER_NAME_VALUE"
+            - name: MW_NAMESPACE
+              value: "NAMESPACE_VALUE"
             - name: K8S_NODE_NAME
               valueFrom:
                 fieldRef:
