@@ -1,0 +1,31 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: my-instrumentation
+  namespace: mw-agent-ns
+spec:
+  exporter:
+    endpoint: http://mw-service.mw-agent-ns:9319
+  propagators:
+    - tracecontext
+    - baggage
+    - b3
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1.0"
+  python:
+    env:
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://mw-service.mw-agent-ns:9320
+  go:
+    env:
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://mw-service.mw-agent-ns:9320
+  dotnet:
+    env:
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://mw-service.mw-agent-ns:9320
+  java:
+    env:
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://mw-service.mw-agent-ns:9319
