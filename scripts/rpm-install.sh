@@ -92,7 +92,7 @@ if [ "$(uname -s)" != "Linux" ]; then
   force_continue
 fi
 
-MW_LATEST_VERSION="1.6.5"
+MW_LATEST_VERSION="1.6.6"
 export MW_LATEST_VERSION
 
 # Check if MW_VERSION is provided
