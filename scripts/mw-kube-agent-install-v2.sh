@@ -1,11 +1,9 @@
 #!/bin/sh
 set -e errexit
-LOG_FILE="/var/log/mw-kube-agent/mw-kube-agent-install-$(date +%s).log"
-sudo mkdir -p /var/log/mw-kube-agent
-sudo touch "$LOG_FILE"
-exec &> >(sudo tee -a "$LOG_FILE")
+LOG_FILE="/var/log/mw-kube-agent/mw-kube-agent-uninstall-$(date +%s).log"
+sudo sh -c 'mkdir -p /var/log/mw-kube-agent && touch "$0" && exec > "$0" 2>&1' "$LOG_FILE"
 
-function send_logs {
+send_logs() {
   status=$1
   message=$2
 
@@ -22,12 +20,12 @@ function send_logs {
 EOF
 )
 
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/"$MW_API_KEY" \
   --header 'Content-Type: application/json' \
   --data-raw "$payload" > /dev/null
 }
 
-function on_exit {
+on_exit() {
   if [ $? -eq 0 ]; then
     send_logs "installed" "Script Completed"
   else
@@ -38,7 +36,7 @@ function on_exit {
 trap on_exit EXIT
 
 # recording agent installation attempt
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/"$MW_API_KEY" \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "status": "tried",
@@ -84,20 +82,22 @@ fi
 
 # Fetching cluster name
 CURRENT_CONTEXT="$(kubectl config current-context)"
-MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '"$CURRENT_CONTEXT"')].context.cluster}")"
+MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '$CURRENT_CONTEXT')].context.cluster}")"
 export MW_KUBE_CLUSTER_NAME
 
-echo -e "\nSetting up Middleware Kubernetes agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
+printf "\nSetting up Middleware Kubernetes agent ...\n\n\tcluster : %s \n\tcontext : %s\n" "$MW_KUBE_CLUSTER_NAME" "$CURRENT_CONTEXT"
+
 
 if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "" ]; then
 
-echo -e "\nMiddleware Kubernetes agent is being installed using manifest files, please wait ..."
+printf "\nMiddleware Kubernetes agent is being installed using manifest files, please wait ..."
 # Home for local configs
 MW_KUBE_AGENT_HOME=/usr/local/bin/mw-kube-agent
 export MW_KUBE_AGENT_HOME
 
 # Fetch install manifest 
 sudo su << EOSUDO
+sudo rm -rf $MW_KUBE_AGENT_HOME
 mkdir -p $MW_KUBE_AGENT_HOME
 wget -O $MW_KUBE_AGENT_HOME/clusterrole.yaml https://install.middleware.io/scripts/mw-kube-agent/clusterrole.yaml
 wget -O $MW_KUBE_AGENT_HOME/clusterrolebinding.yaml https://install.middleware.io/scripts/mw-kube-agent/clusterrolebinding.yaml
@@ -114,32 +114,40 @@ wget -O $MW_KUBE_AGENT_HOME/serviceaccount.yaml https://install.middleware.io/sc
 ls -l $MW_KUBE_AGENT_HOME
 EOSUDO
 
-kubectl --kubeconfig "${MW_KUBECONFIG}" create namespace ${MW_NAMESPACE}
+# Check if the namespace already exists
+if kubectl --kubeconfig "$MW_KUBECONFIG" get namespace "$MW_NAMESPACE" > /dev/null 2>&1; then
+    echo "Namespace '${MW_NAMESPACE}' already exists. Skipping creation."
+else
+    # If namespace doesn't exist, create it
+    kubectl --kubeconfig "$MW_KUBECONFIG" create namespace "$MW_NAMESPACE"
+    echo "Namespace '${MW_NAMESPACE}' created successfully."
+fi
+
 sudo wget -q -O otel-config-deployment.yaml https://install.middleware.io/scripts/otel-config-deployment.yaml
 sudo wget -q -O otel-config-daemonset.yaml https://install.middleware.io/scripts/otel-config-daemonset.yaml
-kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-deployment-otel-config --from-file=otel-config=otel-config-deployment.yaml --namespace=${MW_NAMESPACE}
-kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-daemonset-otel-config --from-file=otel-config=otel-config-daemonset.yaml --namespace=${MW_NAMESPACE}     
+kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-deployment-otel-config --from-file=otel-config=otel-config-deployment.yaml --namespace="$MW_NAMESPACE"
+kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-daemonset-otel-config --from-file=otel-config=otel-config-daemonset.yaml --namespace="$MW_NAMESPACE"     
+
 for file in "$MW_KUBE_AGENT_HOME"/*.yaml; do
-  kubectl apply -f <( \
-    cat "$file" | \
-    sed -e "s|MW_KUBE_CLUSTER_NAME_VALUE|${MW_KUBE_CLUSTER_NAME}|g" \
-        -e "s|MW_ROLLOUT_RESTART_RULE|${MW_ROLLOUT_RESTART_RULE}|g" \
-        -e "s|MW_LOG_PATHS|${MW_LOG_PATHS}|g" \
-        -e "s|MW_DOCKER_ENDPOINT_VALUE|${MW_DOCKER_ENDPOINT}|g" \
-        -e "s|MW_API_KEY_VALUE|${MW_API_KEY}|g" \
-        -e "s|TARGET_VALUE|${MW_TARGET}|g" \
-        -e "s|NAMESPACE_VALUE|${MW_NAMESPACE}|g" \
-        -e "s|MW_API_URL_FOR_CONFIG_CHECK_VALUE|${MW_API_URL_FOR_CONFIG_CHECK}|g" \
-        -e "s|MW_CONFIG_CHECK_INTERVAL_VALUE|${MW_CONFIG_CHECK_INTERVAL}|g" \
-        -e "s|MW_VERSION_VALUE|${MW_VERSION}|g" \
-  ) --kubeconfig "${MW_KUBECONFIG}"
+  sed -e "s|MW_KUBE_CLUSTER_NAME_VALUE|$MW_KUBE_CLUSTER_NAME|g" \
+      -e "s|MW_ROLLOUT_RESTART_RULE|$MW_ROLLOUT_RESTART_RULE|g" \
+      -e "s|MW_LOG_PATHS|$MW_LOG_PATHS|g" \
+      -e "s|MW_DOCKER_ENDPOINT_VALUE|$MW_DOCKER_ENDPOINT|g" \
+      -e "s|MW_API_KEY_VALUE|$MW_API_KEY|g" \
+      -e "s|TARGET_VALUE|$MW_TARGET|g" \
+      -e "s|NAMESPACE_VALUE|${MW_NAMESPACE}|g" \
+      -e "s|MW_API_URL_FOR_CONFIG_CHECK_VALUE|$MW_API_URL_FOR_CONFIG_CHECK|g" \
+      -e "s|MW_CONFIG_CHECK_INTERVAL_VALUE|$MW_CONFIG_CHECK_INTERVAL|g" \
+      -e "s|MW_VERSION_VALUE|$MW_VERSION|g" \
+    "$file" |kubectl apply -f - --kubeconfig "${MW_KUBECONFIG}"
 done
+
 
 elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
   helm repo add middleware-labs https://helm.middleware.io
   echo "Installing Middleware K8s Agent v2 via Helm chart ..."
-  helm install --set mw.target=${MW_TARGET} --set mw.apiKey=${MW_API_KEY} --set clusterMetadata.name=${MW_KUBE_CLUSTER_NAME} --set mw.apiKey=${MW_API_KEY} --wait mw-kube-agent middleware-labs/mw-kube-agent-v2 \
-  -n ${MW_NAMESPACE} --create-namespace 
+  helm install --set mw.target="$MW_TARGET" --set mw.apiKey="$MW_API_KEY" --set clusterMetadata.name="$MW_KUBE_CLUSTER_NAME" --set mw.apiKey="$MW_API_KEY" --wait mw-kube-agent middleware-labs/mw-kube-agent-v2 \
+  -n "$MW_NAMESPACE" --create-namespace 
 fi
 
 echo "Middleware Kubernetes agent successfully installed !"
