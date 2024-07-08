@@ -50,13 +50,13 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/"$MW_API_KEY" \
   --header 'Content-Type: application/json' \
   --data "$payload" > /dev/null
 }
 
 function force_continue {
-  read -p "Do you still want to continue? (y|N): " response
+  read -r -p "Do you still want to continue? (y|N): " response
   case "$response" in
     [yY])
       echo "Continuing with the script..."
@@ -80,6 +80,20 @@ function on_exit {
   fi
 }
 
+get_latest_mw_agent_version() {
+  repo="middleware-labs/mw-agent"
+
+  # Fetch the latest release version from GitHub API
+  latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+  # Check if the version was fetched successfully
+  if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
+    latest_version="1.6.6"
+  fi
+
+  echo "$latest_version"
+}
+
 trap on_exit EXIT
 
 # recording agent installation attempt
@@ -92,7 +106,7 @@ if [ "$(uname -s)" != "Linux" ]; then
   force_continue
 fi
 
-MW_LATEST_VERSION="1.6.6"
+MW_LATEST_VERSION=$(get_latest_mw_agent_version)
 export MW_LATEST_VERSION
 
 # Check if MW_VERSION is provided
@@ -127,9 +141,9 @@ fi
 
 if [ "${MW_DETECTED_ARCH}" = "" ]; then 
   MW_DETECTED_ARCH=$(uname -m)
-  echo -e "cpu architecture detected: '"${MW_DETECTED_ARCH}"'"
+  echo -e "cpu architecture detected: '$MW_DETECTED_ARCH'"
 else 
-  echo -e "cpu architecture provided: '"${MW_DETECTED_ARCH}"'"
+  echo -e "cpu architecture provided: '$MW_DETECTED_ARCH'"
 fi
 export MW_DETECTED_ARCH
 
@@ -170,24 +184,30 @@ fi
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 echo "yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE"
-curl -L -q -s -o $RPM_FILE yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE $skip_certificate_check
+curl -L -q -s -o "$RPM_FILE" yum.middleware.io/"$MW_DETECTED_ARCH"/Packages/"$RPM_FILE" $skip_certificate_check
 
 echo -e "Installing Middleware Agent Service ...\n"
 
-sudo -E rpm -U $RPM_FILE
 # Check for errors
-if [ $? -ne 0 ]; then
+if ! sudo -E rpm -U "$RPM_FILE"; then
   echo "Error: Failed to install Middleware Agent."
-  exit $?
+  exit 1
 fi
 
 sudo systemctl daemon-reload
 
-sudo systemctl enable mw-agent
+# Adding mw-agent to PATH
+if ! grep -q "/opt/mw-agent/bin" ~/.bashrc; then
+  echo "export PATH=/opt/mw-agent/bin:$PATH" >> ~/.bashrc
+  echo "/opt/mw-agent/bin added to PATH in ~/.bashrc"
+else
+  echo "/opt/mw-agent/bin is already in the PATH"
+fi
+
 #check for errors
-if [ $? -ne 0 ]; then
+if ! sudo systemctl enable mw-agent; then
   echo "Error: Failed to enable Middleware Agent service."
-  exit $?
+  exit 1
 fi
 
 if [ "${MW_AUTO_START}" = true ]; then
