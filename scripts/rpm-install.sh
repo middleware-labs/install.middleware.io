@@ -186,9 +186,17 @@ echo -e "\nThe host agent will monitor all '.log' files inside your /var/log dir
 echo "yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE"
 curl -L -q -s -o "$RPM_FILE" yum.middleware.io/"$MW_DETECTED_ARCH"/Packages/"$RPM_FILE" $skip_certificate_check
 
-echo -e "Installing Middleware Agent Service ...\n"
+# Remove mw-agent if present
+if rpm -q mw-agent &>/dev/null; then
+  echo "Removing existing Middleware Agent..."
+  if ! sudo -E rpm -e mw-agent; then
+    echo "Error: Failed to remove existing Middleware Agent."
+    exit 1
+  fi
+fi
 
-# Check for errors
+# Install the new package
+echo "Installing Middleware Agent..."
 if ! sudo -E rpm -U "$RPM_FILE"; then
   echo "Error: Failed to install Middleware Agent."
   exit 1
