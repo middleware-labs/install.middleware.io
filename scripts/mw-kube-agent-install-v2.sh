@@ -33,6 +33,20 @@ on_exit() {
   fi
 }
 
+get_latest_mw_agent_version() {
+  repo="middleware-labs/mw-agent"
+
+  # Fetch the latest release version from GitHub API
+  latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+  # Check if the version was fetched successfully
+  if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
+    latest_version="1.6.6"
+  fi
+
+  echo "$latest_version"
+}
+
 trap on_exit EXIT
 
 # recording agent installation attempt
@@ -57,7 +71,7 @@ export MW_DEFAULT_API_URL_FOR_CONFIG_CHECK
 MW_DEFAULT_CONFIG_CHECK_INTERVAL="*/1 * * * *"
 export MW_DEFAULT_CONFIG_CHECK_INTERVAL
 
-MW_LATEST_VERSION="1.6.6"
+MW_LATEST_VERSION=$(get_latest_mw_agent_version)
 export MW_LATEST_VERSION
 
 if [ "${MW_VERSION}" = "" ]; then 
