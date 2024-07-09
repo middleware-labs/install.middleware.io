@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Function to setup YUM local repository
+setup_repo() {
+  echo "[mw-agent]" | sudo tee /etc/yum.repos.d/mw-agent.repo
+  echo "name=mw-agent" | sudo tee -a /etc/yum.repos.d/mw-agent.repo
+  echo "baseurl=https://naman47vyas.github.io/yum.mw-agent/" | sudo tee -a /etc/yum.repos.d/mw-agent.repo
+  echo "gpgcheck=0" | sudo tee -a /etc/yum.repos.d/mw-agent.repo
+  echo "enabled=1" | sudo tee -a /etc/yum.repos.d/mw-agent.repo
+}
+
+
 # Function to check if a command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -99,6 +109,8 @@ trap on_exit EXIT
 # recording agent installation attempt
 # recording agent installation attempt
 send_logs "tried" "Agent Installation Attempted"
+
+setup_repo
 
 # Check if the system is running Linux
 if [ "$(uname -s)" != "Linux" ]; then
