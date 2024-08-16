@@ -5,6 +5,29 @@ sudo mkdir -p /var/log/mw-kube-agent
 sudo touch "$LOG_FILE"
 exec &> >(sudo tee -a "$LOG_FILE")
 
+# Get the OS and architecture# detecting architecture
+arch=$(uname -m)
+os=$(uname -s)
+
+if [ "$arch" == "x86_64" ]; then
+    arch="amd64"
+elif [ "$arch" == "aarch64" ]; then
+    arch="arm64"
+else 
+    arch="amd64"
+fi
+
+if [ "$os" == "Linux" ]; then
+    os="linux"
+elif [ "$os" == "Darwin" ]; then
+    os="darwin"
+elif [[ "$os" == *"MINGW"* || "$os" == *"CYGWIN"* ]]; then
+    os="windows"
+else
+    echo "Unsupported OS: $os"
+    exit 1
+fi
+
 function send_logs {
   status=$1
   message=$2
@@ -57,7 +80,7 @@ if [ -z "$MW_CERT_MANAGER_NAMESPACE" ]; then
 fi
 
 if [ -z "$MW_OTEL_OPERATOR_VERSION" ]; then
-   MW_OTEL_OPERATOR_VERSION="0.101.0"
+   MW_OTEL_OPERATOR_VERSION="0.107.0"
 fi
 
 check_pods_running_and_ready() {
@@ -128,19 +151,8 @@ if [ -n "${MW_INSTALL_CERT_MANAGER}" ] && [ "${MW_INSTALL_CERT_MANAGER}" = "true
     check_pods_running_and_ready $MW_CERT_MANAGER_NAMESPACE
 
     echo -e "\n-->Checking if the cert-manager webhook server is ready. This may take a few minutes..."
-    
-    # detecting architecture
-    arch=$(uname -m)
 
-    if [ "$arch" == "x86_64" ]; then
-        arch="amd64"
-    elif [ "$arch" == "aarch64" ]; then
-        arch="arm64"
-    else 
-        arch="amd64"
-    fi
-
-    curl -fsSL -o cmctl https://github.com/cert-manager/cmctl/releases/latest/download/cmctl_linux_$arch
+    curl -fsSL -o cmctl https://github.com/cert-manager/cmctl/releases/latest/download/cmctl_${os}_$arch
     chmod +x cmctl
     sudo mv cmctl $MW_KUBE_AGENT_HOME/cmctl
     $MW_KUBE_AGENT_HOME/cmctl check api --wait=2m
@@ -148,7 +160,6 @@ fi
 
 # Install OpenTelemetry Kubernetes Operator
 echo -e "\n-->Setting up OpenTelemetry operator ..."
-#kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
 kubectl apply -f https://install.middleware.io/manifests/autoinstrumentation/opentelemetry-operator-${MW_OTEL_OPERATOR_VERSION}.yaml 
 
 # Check if all operator pods in the opentelemetry-operator-system namespace are running

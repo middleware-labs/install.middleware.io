@@ -1,7 +1,7 @@
 apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
 metadata:
-  name: my-instrumentation
+  name: mw-autoinstrumentation
   namespace: mw-agent-ns
 spec:
   exporter:
