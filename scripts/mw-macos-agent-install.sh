@@ -89,10 +89,14 @@ fi
 # recording agent installation attempt
 send_logs "tried" "Agent Installation Attempted" "$MW_API_KEY"
 
-# Check if the MacBook is Intel-based
-if [ "$(uname -m)" != "arm64" ]; then
-    echo -e "${RED}Error: This installer is only supported on ARM-based MacBooks. ${NC}" | sudo tee -a "$LOG_FILE"
-    exit 1
+# Store the architecture in a variable
+arch=$(uname -m)
+
+# Determine the correct package to download based on the architecture
+if [ "$arch" == "arm64" ]; then
+    package="mw-macos-agent-setup-arm64.pkg"
+else
+    package="mw-macos-agent-setup-amd64.pkg"
 fi
 
 # Write the environment variables to /tmp/mw_agent_cfg.txt
@@ -101,8 +105,8 @@ sudo -E echo "api-key: $MW_API_KEY" | sudo tee "$input_file" > /dev/null
 sudo -E echo "target: $MW_TARGET" | sudo tee -a "$input_file" > /dev/null
 
 # Get the installer from Middleware
-echo -e "Downloading Middleware Agent..." | sudo tee -a "$LOG_FILE"
-if ! sudo curl -L -q -# -o mw-macos-agent-setup.pkg "https://github.com/middleware-labs/mw-agent/releases/latest/download/mw-macos-agent-setup.pkg"; then
+echo -e "Downloading Middleware Agent for $arch platform..." | sudo tee -a "$LOG_FILE"
+if ! sudo curl -L -q -# -o $package "https://github.com/middleware-labs/mw-agent/releases/latest/download/$package"; then
     echo "${RED}Failed to download Middleware macOS installer${NC}" | sudo tee -a "$LOG_FILE"
     exit 1
 fi
@@ -131,7 +135,7 @@ spinner $!
 
 # Check if the installer command was successful
 if [ $? -eq 0 ]; then
-    echo -e "\n${GREEN}Middleware Agent is successfully installed. MW Agent will continue to run in the background and send telemetry data to your Middleware account ${MW_TARGET}. ${NC}" | sudo tee -a "$LOG_FILE"
+    echo -e "\n${GREEN}Middleware Agent is successfully installed. Middleware Agent will continue to run in the background and send telemetry data to your Middleware account ${MW_TARGET}. ${NC}" | sudo tee -a "$LOG_FILE"
     echo -e "\n${GREEN}Configuration for Middleware Agent can be found at /opt/mw-agent/agent-config.yaml. ${NC}" | sudo tee -a "$LOG_FILE"
 else
     echo -e "\n${RED}Error: Failed to install Middleware Agent. ${NC}" | sudo tee -a "$LOG_FILE"
