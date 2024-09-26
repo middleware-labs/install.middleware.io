@@ -130,7 +130,7 @@ spinner() {
 }
 
 # Run the installer command to install MiddlewareAgent.pkg
-sudo installer -pkg ./mw-macos-agent-setup.pkg -target / > /dev/null 2>&1 &
+sudo installer -pkg $package -target / > /dev/null 2>&1 &
 spinner $!
 
 # Check if the installer command was successful
