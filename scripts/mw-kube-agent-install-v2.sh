@@ -102,31 +102,23 @@ export MW_KUBE_CLUSTER_NAME
 printf "\nSetting up Middleware Kubernetes agent ...\n\n\tcluster : %s \n\tcontext : %s\n" "$MW_KUBE_CLUSTER_NAME" "$CURRENT_CONTEXT"
 
 
-if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "" ]; then
-
-printf "\nMiddleware Kubernetes agent is being installed using manifest files, please wait ..."
 # Home for local configs
 MW_KUBE_AGENT_HOME=/usr/local/bin/mw-kube-agent
 export MW_KUBE_AGENT_HOME
 
 # Fetch install manifest 
-sudo su << EOSUDO
 sudo rm -rf $MW_KUBE_AGENT_HOME
-mkdir -p $MW_KUBE_AGENT_HOME
-wget -O $MW_KUBE_AGENT_HOME/clusterrole.yaml https://install.middleware.io/scripts/mw-kube-agent/clusterrole.yaml
-wget -O $MW_KUBE_AGENT_HOME/clusterrolebinding.yaml https://install.middleware.io/scripts/mw-kube-agent/clusterrolebinding.yaml
-wget -O $MW_KUBE_AGENT_HOME/cronjob.yaml https://install.middleware.io/scripts/mw-kube-agent/cronjob.yaml
-wget -O $MW_KUBE_AGENT_HOME/daemonset.yaml https://install.middleware.io/scripts/mw-kube-agent/daemonset.yaml
-wget -O $MW_KUBE_AGENT_HOME/deployment.yaml https://install.middleware.io/scripts/mw-kube-agent/deployment.yaml
-wget -O $MW_KUBE_AGENT_HOME/role-update.yaml https://install.middleware.io/scripts/mw-kube-agent/role-update.yaml
-wget -O $MW_KUBE_AGENT_HOME/role.yaml https://install.middleware.io/scripts/mw-kube-agent/role.yaml
-wget -O $MW_KUBE_AGENT_HOME/rolebinding-update.yaml https://install.middleware.io/scripts/mw-kube-agent/rolebinding-update.yaml
-wget -O $MW_KUBE_AGENT_HOME/rolebinding.yaml https://install.middleware.io/scripts/mw-kube-agent/rolebinding.yaml
-wget -O $MW_KUBE_AGENT_HOME/service.yaml https://install.middleware.io/scripts/mw-kube-agent/service.yaml
-wget -O $MW_KUBE_AGENT_HOME/serviceaccount-update.yaml https://install.middleware.io/scripts/mw-kube-agent/serviceaccount-update.yaml
-wget -O $MW_KUBE_AGENT_HOME/serviceaccount.yaml https://install.middleware.io/scripts/mw-kube-agent/serviceaccount.yaml
-ls -l $MW_KUBE_AGENT_HOME
-EOSUDO
+sudo mkdir -p $MW_KUBE_AGENT_HOME
+BASE_URL="https://install.middleware.io/scripts/mw-kube-agent"
+
+# Download necessary files
+for file in clusterrole.yaml clusterrolebinding.yaml cronjob.yaml daemonset.yaml deployment.yaml \
+            role-update.yaml role.yaml rolebinding-update.yaml update-configmap-job.yaml rolebinding.yaml \
+            service.yaml serviceaccount-update.yaml serviceaccount.yaml; do
+    sudo wget -O "$MW_KUBE_AGENT_HOME/$file" "$BASE_URL/$file"
+done
+
+ls -l "$MW_KUBE_AGENT_HOME"
 
 # Check if the namespace already exists
 if kubectl --kubeconfig "$MW_KUBECONFIG" get namespace "$MW_NAMESPACE" > /dev/null 2>&1; then
@@ -142,7 +134,27 @@ sudo wget -q -O otel-config-daemonset.yaml https://install.middleware.io/scripts
 kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-deployment-otel-config --from-file=otel-config=otel-config-deployment.yaml --namespace="$MW_NAMESPACE"
 kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-daemonset-otel-config --from-file=otel-config=otel-config-daemonset.yaml --namespace="$MW_NAMESPACE"     
 
-for file in "$MW_KUBE_AGENT_HOME"/*.yaml; do
+
+
+# Apply YAML files in specific order
+ordered_files="
+    serviceaccount.yaml
+    serviceaccount-update.yaml
+    role.yaml
+    role-update.yaml
+    rolebinding.yaml
+    rolebinding-update.yaml
+    serviceaccount.yaml
+    clusterrole.yaml
+    clusterrolebinding.yaml
+    update-configmap-job.yaml
+    service.yaml
+    deployment.yaml
+    daemonset.yaml
+    cronjob.yaml
+"
+
+for file in $ordered_files; do
   sed -e "s|MW_KUBE_CLUSTER_NAME_VALUE|$MW_KUBE_CLUSTER_NAME|g" \
       -e "s|MW_ROLLOUT_RESTART_RULE|$MW_ROLLOUT_RESTART_RULE|g" \
       -e "s|MW_LOG_PATHS|$MW_LOG_PATHS|g" \
@@ -153,15 +165,14 @@ for file in "$MW_KUBE_AGENT_HOME"/*.yaml; do
       -e "s|MW_API_URL_FOR_CONFIG_CHECK_VALUE|$MW_API_URL_FOR_CONFIG_CHECK|g" \
       -e "s|MW_CONFIG_CHECK_INTERVAL_VALUE|$MW_CONFIG_CHECK_INTERVAL|g" \
       -e "s|MW_VERSION_VALUE|$MW_VERSION|g" \
-    "$file" |kubectl apply -f - --kubeconfig "${MW_KUBECONFIG}"
+    "$MW_KUBE_AGENT_HOME/$file" |kubectl apply -f - --kubeconfig "${MW_KUBECONFIG}"
+
+    # If the current file is the job, wait for it to complete
+    if [ "$file" = "update-configmap-job.yaml" ]; then
+      printf "\nFetching the lastest settings for your account ..."
+      job_name=$(kubectl get job -o jsonpath='{.items[0].metadata.name}' --namespace "${MW_NAMESPACE}" --kubeconfig "${MW_KUBECONFIG}")
+      kubectl wait --for=condition=complete --timeout=15s job/"$job_name" --namespace "${MW_NAMESPACE}" --kubeconfig "${MW_KUBECONFIG}"
+    fi
 done
-
-
-elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
-  helm repo add middleware-labs https://helm.middleware.io
-  echo "Installing Middleware K8s Agent v2 via Helm chart ..."
-  helm install --set mw.target="$MW_TARGET" --set mw.apiKey="$MW_API_KEY" --set clusterMetadata.name="$MW_KUBE_CLUSTER_NAME" --set mw.apiKey="$MW_API_KEY" --wait mw-kube-agent middleware-labs/mw-kube-agent-v2 \
-  -n "$MW_NAMESPACE" --create-namespace 
-fi
 
 echo "Middleware Kubernetes agent successfully installed !"

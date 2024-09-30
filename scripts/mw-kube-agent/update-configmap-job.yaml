@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mw-kube-agent-update-configmap
+  namespace: mw-agent-ns
+spec:
+  template:
+    spec:
+      containers:
+      - name: mw-kube-agent-update-configmap-container
+        image: ghcr.io/middleware-labs/mw-kube-agent:0.0.103
+        args:
+          - mw-agent
+          - force-update-configmaps
+        env:
+          - name: MW_TARGET
+            value: "TARGET_VALUE"
+          - name: MW_API_URL_FOR_CONFIG_CHECK
+            value: "MW_API_URL_FOR_CONFIG_CHECK_VALUE"
+          - name: MW_KUBE_CLUSTER_NAME
+            value: "MW_KUBE_CLUSTER_NAME_VALUE"
+          - name: MW_NAMESPACE
+            value: "NAMESPACE_VALUE"
+          - name: MW_API_KEY
+            value: "MW_API_KEY_VALUE"
+      restartPolicy: Never
+      serviceAccountName: mw-service-account-update
