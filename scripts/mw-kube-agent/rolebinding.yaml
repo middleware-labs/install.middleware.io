@@ -3,7 +3,7 @@ kind: RoleBinding
 metadata:
   labels:
     k8s-app: mw-app
-  name: mw-role-binding-update
+  name: mw-role-binding
   namespace: "NAMESPACE_VALUE"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
