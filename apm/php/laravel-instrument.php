@@ -13,7 +13,8 @@ $opentelemetry_packages = [
     'open-telemetry/api',
     'open-telemetry/sdk',
     'open-telemetry/exporter-otlp',
-    'open-telemetry/opentelemetry-auto-laravel'
+    'open-telemetry/opentelemetry-auto-laravel',
+    'Middleware/laravel-apm'
 ];
 
 // Main execution
@@ -57,16 +58,49 @@ function run(array $command_parts): void
     exit($result_code);
 }
 
+function check_extensions() {
+    $flag = false;
+    
+    $extensions = [
+        'zlib',
+        'mbstring',
+        'simplexml',
+        'json',
+        'dom',
+        'openssl',
+        'phar',
+        'fileinfo',
+        'pcre',
+        'xmlwriter',
+        'gd'
+    ];
+
+    colorLog("Checking PHP extensions...");
+
+    foreach ($extensions as $extension) {
+        if (!extension_loaded($extension)) {
+            colorLog("$extension: Not installed", "w");
+            $flag = true;
+        }
+    }
+
+    if ($flag) {
+        throw new RuntimeException("\nPlease install Above mentioned extensions first.");
+    }
+    colorLog("All required extensions are installed");
+}
+
 function check_preconditions(): void
 {
     if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '<')) {
         throw new RuntimeException("PHP " . MIN_PHP_VERSION . " or higher is required");
     }
+    check_extensions();
     if (!command_exists('composer')) {
         throw new RuntimeException('composer is not installed');
     }
     if (!command_exists('phpize')) {
-        throw new RuntimeException('php-sdk is not installed');
+        throw new RuntimeException('php-sdk (php-dev) is not installed');
     }
     if (!file_exists('composer.json')) {
         throw new RuntimeException('Project does not contain composer.json');
