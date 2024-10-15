@@ -44,7 +44,7 @@ function install(array $dependencies, array $packages): void
     unlink('pickle.phar');
 
     if (check_postconditions()) {
-        colorLog("opentelemetry extension has been successfully installed", 's');
+        colorLog("Middleware APM has been successfully installed", 's');
     }
 }
 
@@ -93,11 +93,12 @@ function check_extensions() {
 
 function check_preconditions(): void
 {
+    $composer_path = getenv('COMPOSER_PATH');
     if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '<')) {
         throw new RuntimeException("PHP " . MIN_PHP_VERSION . " or higher is required");
     }
     check_extensions();
-    if (!command_exists('composer')) {
+    if (empty($composer_path) && !command_exists('composer')) {
         throw new RuntimeException('composer is not installed');
     }
     if (!command_exists('phpize')) {
@@ -122,10 +123,13 @@ function make_basic_setup(array $dependencies, array $packages): void
         create_ini_file(trim(shell_exec('php-config --ini-dir')));
     }
 
-    execute_command("composer config --no-plugins allow-plugins.php-http/discovery false --no-interaction");
-    execute_command("composer config minimum-stability dev --no-interaction");
+    // get full composer path
+    $composer_path = getenv('COMPOSER_PATH');
+    $composer = empty($composer_path) ? getCmdOutput("composer") : $composer_path;
+    execute_command("$composer config --no-plugins allow-plugins.php-http/discovery false --no-interaction");
+    execute_command("$composer config minimum-stability dev --no-interaction");
 
-    $require_cmd = "composer require " . implode(' ', $dependencies) . " " .
+    $require_cmd = "$composer require " . implode(' ', $dependencies) . " " .
         implode(' ', array_map(fn($pkg) => "$pkg", $packages)) .
         " --with-all-dependencies --no-interaction";
 
@@ -188,8 +192,13 @@ function set_env(): void
 // Utility functions
 function command_exists(string $command): bool
 {
-    $os_cmd = PHP_OS_FAMILY === 'Windows' ? 'where' : 'command -v';
-    return !empty(shell_exec("$os_cmd $command"));
+  return !empty(getCmdOutput($command));
+}
+
+function getCmdOutput(string $cmd)
+{
+  $os_cmd = PHP_OS_FAMILY === 'Windows' ? 'where' : 'command -v';
+  return trim(shell_exec("$os_cmd $cmd"));
 }
 
 function colorLog(string $message, string $type = 'i'): void
