@@ -14,6 +14,7 @@ $opentelemetry_packages = [
     'open-telemetry/sdk',
     'open-telemetry/exporter-otlp',
     'open-telemetry/opentelemetry-auto-laravel',
+    'open-telemetry/extension-propagator-b3',
     'Middleware/laravel-apm'
 ];
 
@@ -220,5 +221,5 @@ function execute_command(string $cmd): void
 
 function usage(string $script_name): void
 {
-    colorLog("Usage: $script_name [install|run] [<run command>]");
+    colorLog("Usage: $script_name install");
 }
