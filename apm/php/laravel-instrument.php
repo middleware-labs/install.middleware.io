@@ -6,6 +6,7 @@ declare(strict_types=1);
 // Constants
 const MIN_PHP_VERSION = '8.0.0';
 const PICKLE_URL = 'https://github.com/FriendsOfPHP/pickle/releases/latest/download/pickle.phar';
+const COMPOSER_URL = 'https://getcomposer.org/download/latest-stable/composer.phar';
 
 // Configuration
 $dependencies = ['guzzlehttp/guzzle'];
@@ -41,7 +42,7 @@ function install(array $dependencies, array $packages): void
 {
     check_preconditions();
     make_basic_setup($dependencies, $packages);
-    unlink('pickle.phar');
+    cleanup_files(['pickle.phar', 'composer.phar']);
 
     if (check_postconditions()) {
         colorLog("Middleware APM has been successfully installed", 's');
@@ -86,28 +87,83 @@ function check_extensions() {
     }
 
     if ($flag) {
-        throw new RuntimeException("\nPlease install Above mentioned extensions first.");
+        throw new RuntimeException("\nPlease install the above mentioned extensions first.");
     }
     colorLog("All required extensions are installed");
 }
 
 function check_preconditions(): void
 {
-    $composer_path = getenv('COMPOSER_PATH');
     if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '<')) {
         throw new RuntimeException("PHP " . MIN_PHP_VERSION . " or higher is required");
     }
     check_extensions();
-    if (empty($composer_path) && !command_exists('composer')) {
-        throw new RuntimeException('composer is not installed');
-    }
+    ensure_composer();
     if (!command_exists('phpize')) {
         throw new RuntimeException('php-sdk (php-dev) is not installed');
     }
     if (!file_exists('composer.json')) {
         throw new RuntimeException('Project does not contain composer.json');
     }
-    file_put_contents('pickle.phar', file_get_contents(PICKLE_URL));
+    download_file(PICKLE_URL, 'pickle.phar');
+    make_executable('pickle.phar');
+}
+
+function ensure_composer(): void
+{
+    $composer_path = getenv('COMPOSER_PATH');
+    if (empty($composer_path) && !command_exists('composer')) {
+        colorLog("Composer not found. Downloading composer.phar...", 'i');
+        download_file(COMPOSER_URL, 'composer.phar');
+        make_executable('composer.phar');
+        colorLog("Composer downloaded successfully.", 's');
+    }
+}
+
+function download_file(string $url, string $destination): void
+{
+    $max_attempts = 3;
+    $attempt = 0;
+    while ($attempt < $max_attempts) {
+        try {
+            $content = file_get_contents($url);
+            if ($content === false) {
+                throw new RuntimeException("Failed to download file from $url");
+            }
+            if (file_put_contents($destination, $content) === false) {
+                throw new RuntimeException("Failed to write file to $destination");
+            }
+            return;
+        } catch (Exception $e) {
+            $attempt++;
+            if ($attempt >= $max_attempts) {
+                throw new RuntimeException("Failed to download file after $max_attempts attempts: " . $e->getMessage());
+            }
+            colorLog("Download attempt $attempt failed. Retrying...", 'w');
+            sleep(2);
+        }
+    }
+}
+
+function make_executable(string $file): void
+{
+    if (PHP_OS_FAMILY !== 'Windows') {
+        if (!chmod($file, 0755)) {
+            throw new RuntimeException("Failed to make $file executable");
+        }
+    }
+}
+
+function get_composer_command(): string
+{
+    $composer_path = getenv('COMPOSER_PATH');
+    if (!empty($composer_path)) {
+        return $composer_path;
+    }
+    if (command_exists('composer')) {
+        return 'composer';
+    }
+    return 'php composer.phar';
 }
 
 function is_opentelemetry_installed(): bool
@@ -123,9 +179,7 @@ function make_basic_setup(array $dependencies, array $packages): void
         create_ini_file(trim(shell_exec('php-config --ini-dir')));
     }
 
-    // get full composer path
-    $composer_path = getenv('COMPOSER_PATH');
-    $composer = empty($composer_path) ? getCmdOutput("composer") : $composer_path;
+    $composer = get_composer_command();
     execute_command("$composer config --no-plugins allow-plugins.php-http/discovery false --no-interaction");
     execute_command("$composer config minimum-stability dev --no-interaction");
 
@@ -134,6 +188,19 @@ function make_basic_setup(array $dependencies, array $packages): void
         " --with-all-dependencies --no-interaction";
 
     execute_command($require_cmd);
+}
+
+function cleanup_files(array $files): void
+{
+    foreach ($files as $file) {
+        if (file_exists($file)) {
+            if (!unlink($file)) {
+                colorLog("Warning: Failed to remove temporary file: $file", 'w');
+            } else {
+                colorLog("Removed temporary file: $file", 'i');
+            }
+        }
+    }
 }
 
 function check_postconditions(): bool
@@ -158,8 +225,8 @@ function check_postconditions(): bool
         }
     }
 
-    if ($ext_dir_line == null || !file_exists(explode(" ", $ext_dir_line)[0] . $extension_file)) {
-        colorLog("ERROR : opentelemetry has not been installed correctly", 'e');
+    if ($ext_dir_line === null || !file_exists(explode(" ", $ext_dir_line)[0] . $extension_file)) {
+        colorLog("ERROR: opentelemetry has not been installed correctly", 'e');
         return false;
     }
 
@@ -192,13 +259,14 @@ function set_env(): void
 // Utility functions
 function command_exists(string $command): bool
 {
-  return !empty(getCmdOutput($command));
+    return !empty(getCmdOutput($command));
 }
 
 function getCmdOutput(string $cmd)
 {
-  $os_cmd = PHP_OS_FAMILY === 'Windows' ? 'where' : 'command -v';
-  return trim(shell_exec("$os_cmd $cmd"));
+    $os_cmd = PHP_OS_FAMILY === 'Windows' ? 'where' : 'command -v';
+    $output = shell_exec("$os_cmd $cmd");
+    return $output === null ? "" : trim($output);
 }
 
 function colorLog(string $message, string $type = 'i'): void
@@ -210,13 +278,33 @@ function colorLog(string $message, string $type = 'i'): void
 
 function create_ini_file(string $ini_dir): void
 {
-    $filename = $ini_dir . DIRECTORY_SEPARATOR . 'opentelemetry.ini';
-    if (file_exists($filename)) {
+    $ini_files = [];
+    $cliIni =  $ini_dir . DIRECTORY_SEPARATOR . 'opentelemetry.ini';
+    array_push($ini_files, $ini_dir . DIRECTORY_SEPARATOR . 'opentelemetry.ini');
+    if (file_exists($cliIni)) {
         return;
     }
 
-    $content = PHP_OS_FAMILY === 'Windows' ? 'extension=php_opentelemetry.dll' : 'extension=opentelemetry';
-    file_put_contents($filename, $content);
+    if (strpos($ini_dir, '/cli/conf.d') !== false) {
+        $apacheConfd = str_replace('/cli/conf.d', '/apache2/conf.d', $ini_dir);
+        $apacheIni =  $apacheConfd . DIRECTORY_SEPARATOR . 'opentelemetry.ini';
+        if (file_exists($apacheConfd) && !file_exists($apacheIni)) {
+            array_push($ini_files, $apacheConfd . DIRECTORY_SEPARATOR . 'opentelemetry.ini');
+        }
+
+        $fpmConfd = str_replace('/cli/conf.d', '/fpm/conf.d', $ini_dir);
+        if (file_exists(($fpmConfd))) {
+            array_push($ini_files, $fpmConfd . DIRECTORY_SEPARATOR . 'opentelemetry.ini');
+        }
+    }
+
+    $content = PHP_OS_FAMILY === 'Windows' ? 'extension=php_opentelemetry.dll' : 'extension=opentelemetry.so';
+
+    foreach ($ini_files as $filename) {
+        if (file_put_contents($filename, $content) === false) {
+            throw new RuntimeException("Failed to write to INI file: $filename");
+        }
+    }
 }
 
 function execute_command(string $cmd): void

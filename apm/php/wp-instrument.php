@@ -57,7 +57,7 @@ function create_ini_file(string $ini_dir): void
         return;
     }
 
-    $content = PHP_OS_FAMILY === "Windows" ? "extension=php_opentelemetry.dll" : "extension=opentelemetry";
+    $content = PHP_OS_FAMILY === "Windows" ? "extension=php_opentelemetry.dll" : "extension=opentelemetry.so";
     if (file_put_contents($filename, $content) === false) {
         throw new RuntimeException("Error creating $filename");
     }
@@ -198,19 +198,108 @@ function findPhpApacheConfigDir()
     return null;
 }
 
+function check_extensions() {
+    $flag = false;
+    
+    $extensions = [
+        'zlib',
+        'mbstring',
+        'simplexml',
+        'json',
+        'dom',
+        'openssl',
+        'phar',
+        'fileinfo',
+        'pcre',
+        'xmlwriter',
+        'gd'
+    ];
+
+    colorLog("Checking PHP extensions...");
+
+    foreach ($extensions as $extension) {
+        if (!extension_loaded($extension)) {
+            colorLog("$extension: Not installed", "w");
+            $flag = true;
+        }
+    }
+
+    if ($flag) {
+        throw new RuntimeException("\nPlease install the above mentioned extensions first.");
+    }
+    colorLog("All required extensions are installed");
+}
+
 // check system requirements
 function check_preconditions(): void
 {
     if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '<')) {
         throw new RuntimeException("PHP " . MIN_PHP_VERSION . " or higher is required");
     }
-    if (!command_exists('composer')) {
-        throw new RuntimeException('composer is not installed');
-    }
+    check_extensions();
+    ensure_composer();
     if (!command_exists('phpize')) {
         throw new RuntimeException('php-sdk is not installed');
     }
-    file_put_contents('pickle.phar', file_get_contents(PICKLE_URL));
+    download_file(PICKLE_URL, 'pickle.phar');
+    make_executable('pickle.phar');
+}
+
+function ensure_composer(): void
+{
+    $composer_path = getenv('COMPOSER_PATH');
+    if (empty($composer_path) && !command_exists('composer')) {
+        colorLog("Composer not found. Downloading composer.phar...", 'i');
+        download_file(COMPOSER_URL, 'composer.phar');
+        make_executable('composer.phar');
+        colorLog("Composer downloaded successfully.", 's');
+    }
+}
+
+function download_file(string $url, string $destination): void
+{
+    $max_attempts = 3;
+    $attempt = 0;
+    while ($attempt < $max_attempts) {
+        try {
+            $content = file_get_contents($url);
+            if ($content === false) {
+                throw new RuntimeException("Failed to download file from $url");
+            }
+            if (file_put_contents($destination, $content) === false) {
+                throw new RuntimeException("Failed to write file to $destination");
+            }
+            return;
+        } catch (Exception $e) {
+            $attempt++;
+            if ($attempt >= $max_attempts) {
+                throw new RuntimeException("Failed to download file after $max_attempts attempts: " . $e->getMessage());
+            }
+            colorLog("Download attempt $attempt failed. Retrying...", 'w');
+            sleep(2);
+        }
+    }
+}
+
+function get_composer_command(): string
+{
+    $composer_path = getenv('COMPOSER_PATH');
+    if (!empty($composer_path)) {
+        return $composer_path;
+    }
+    if (command_exists('composer')) {
+        return 'composer';
+    }
+    return 'php composer.phar';
+}
+
+function make_executable(string $file): void
+{
+    if (PHP_OS_FAMILY !== 'Windows') {
+        if (!chmod($file, 0755)) {
+            throw new RuntimeException("Failed to make $file executable");
+        }
+    }
 }
 
 // downloads and copies otel files to /var/www/otel
@@ -229,14 +318,16 @@ function setup()
 
     create_ini_file($configDir);
 
-    $composerCmd = 'composer init --name "middleware-labs/wp-auto-instrumentation" ' .
+    $composer = get_composer_command();
+
+    $composerCmd = "$composer init --name \"middleware-labs/wp-auto-instrumentation\" " .
         '--require "open-telemetry/opentelemetry-auto-wordpress:^0.0.15" ' .
         '--require "open-telemetry/sdk:^1.0" ' .
         '--require "open-telemetry/exporter-otlp:^1.0" ' .
         '--require "php-http/guzzle7-adapter:^1.0" --no-interaction';
 
     execute_command($composerCmd);
-    execute_command("composer install --no-interaction");
+    execute_command("$composer install --no-interaction");
 
     // copy content inside vendor to /var/www/otel/
     copyOrMoveDirectory("vendor", "/var/www/otel", "move");
