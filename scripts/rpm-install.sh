@@ -177,6 +177,15 @@ if [ "${MW_TARGET}" = "" ]; then
 fi
 export MW_TARGET
 
+if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
+  export MW_API_URL_FOR_SYNTHETIC_MONITORING
+fi
+
+if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
+  export MW_AGENT_FEATURES_SYNTHETIC_MONITORING
+fi
+
+
 skip_certificate_check=""
 if [ "${MW_SKIP_CERTIFICATE_CHECK}" = "yes" ]; then 
   skip_certificate_check="--no-check-certificate"
