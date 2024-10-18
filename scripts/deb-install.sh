@@ -193,6 +193,15 @@ if [ "${MW_TARGET}" = "" ]; then
 fi
 export MW_TARGET
 
+if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
+  export MW_API_URL_FOR_SYNTHETIC_MONITORING
+fi
+
+if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
+  export MW_AGENT_FEATURES_SYNTHETIC_MONITORING
+fi
+
+
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 
 # Adding APT repo address & public key to system
