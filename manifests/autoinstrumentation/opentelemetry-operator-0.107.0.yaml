@@ -12436,7 +12436,6 @@ spec:
   dnsNames:
   - opentelemetry-operator-webhook-service.opentelemetry-operator-system.svc
   - opentelemetry-operator-webhook-service.opentelemetry-operator-system.svc.cluster.local
-  - opentelemetry-operator-controller-manager-webhook.opentelemetry-operator-system.svc.cluster.local
   issuerRef:
     kind: Issuer
     name: opentelemetry-operator-selfsigned-issuer
@@ -12488,7 +12487,7 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: opentelemetry-operator-controller-manager-webhook
+      name: opentelemetry-operator-webhook-service
       namespace: opentelemetry-operator-system
       path: /mutate-opentelemetry-io-v1alpha1-instrumentation
   failurePolicy: Fail
