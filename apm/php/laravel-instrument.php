@@ -14,7 +14,7 @@ $opentelemetry_packages = [
     'open-telemetry/api',
     'open-telemetry/sdk',
     'open-telemetry/exporter-otlp',
-    'open-telemetry/opentelemetry-auto-laravel',
+    'middleware-labs/contrib-auto-laravel',
     'open-telemetry/extension-propagator-b3',
     'Middleware/laravel-apm'
 ];
