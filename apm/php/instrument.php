@@ -7,6 +7,7 @@ const MIN_PHP_VERSION = '8.0.0';
 const PICKLE_URL = 'https://github.com/FriendsOfPHP/pickle/releases/latest/download/pickle.phar';
 const COMPOSER_URL = 'https://getcomposer.org/download/latest-stable/composer.phar';
 const APACHE_ENV_FILE = '/etc/apache2/envvars';
+const AGENT_CONFIG_PATH = '/etc/mw-agent/agent-config.yaml';
 
 const INI_SCANDIR = 'Scan this dir for additional .ini files';
 const INI_MAIN = 'Loaded Configuration File';
@@ -25,6 +26,15 @@ const CMD_CONFIG_GET = 'config get';
 const CMD_CONFIG_SET = 'config set';
 const CMD_CONFIG_LIST = 'config list';
 
+// apm installation track statuses
+const APM_TRIED = 'apm_tried';
+const APM_INSTALLED = 'apm_installed';
+const APM_FAILED = 'apm_failed';
+
+$PROJECT_TYPE = detect_project_type();
+
+$LOGS = [];
+
 // Common OpenTelemetry packages
 $common_packages = [
     'open-telemetry/sdk:^1.0',
@@ -36,9 +46,9 @@ $common_packages = [
 $project_packages = [
     PROJECT_TYPE_LARAVEL => [
         'guzzlehttp/guzzle',
-        'open-telemetry/api',
+        'open-telemetry/api:^1.1',
         'middleware-labs/contrib-auto-laravel',
-        'open-telemetry/extension-propagator-b3',
+        'open-telemetry/extension-propagator-b3:^1.1',
         'Middleware/laravel-apm'
     ],
     PROJECT_TYPE_WORDPRESS => [
@@ -55,16 +65,20 @@ if ($argc < 2) {
 try {
     match ($argv[1]) {
         'install' => install(),
-        'run' => run(array_slice($argv, 2)),
+        'help' => usage($argv[0]),
         default => throw new InvalidArgumentException("Invalid mode"),
     };
 } catch (Exception $e) {
     colorLog($e->getMessage(), 'e');
     usage($argv[0]);
+
+    trackEvent(APM_FAILED, 'PostInstall tracking', $PROJECT_TYPE);
+
     exit(1);
 }
 
-function detect_project_type(): string {
+function detect_project_type(): string
+{
     // Check for Laravel
     if (file_exists('artisan') && file_exists('composer.json')) {
         $composer_json = json_decode(file_get_contents('composer.json'), true);
@@ -81,56 +95,97 @@ function detect_project_type(): string {
     throw new RuntimeException("Unable to detect project type. Make sure you're in a Laravel or WordPress project root directory.");
 }
 
-function install(): void {
-    $project_type = detect_project_type();
-    colorLog("Detected project type: " . strtoupper($project_type), 's');
-    
+function getLaravelVersion()
+{
+    if (file_exists('artisan') && file_exists('composer.json')) {
+        $composer_json = json_decode(file_get_contents('composer.json'), true);
+        if (isset($composer_json['require']['laravel/framework'])) {
+            return $composer_json['require']['laravel/framework'];
+        }
+    }
+
+    return "";
+}
+
+function getWordpressVersion()
+{
+    $version_file = './wp-includes/version.php';
+
+    if (file_exists($version_file)) {
+        $version_content = file_get_contents($version_file);
+        if (preg_match('/\$wp_version\s*=\s*\'([^\']+)\'/', $version_content, $matches)) {
+            return $matches[1];
+        }
+    }
+
+    return "";
+}
+
+function getLinuxType()
+{
+    $osReleaseFile = '/etc/os-release';
+
+    if (file_exists($osReleaseFile)) {
+        $content = parse_ini_file($osReleaseFile);
+
+        if (isset($content['NAME'])) {
+            return $content['NAME'];
+        }
+    }
+
+    return "Unknown Linux distribution";
+}
+
+function install(): void
+{
+    global $PROJECT_TYPE;
+
+    set_env();
+    // $project_type = detect_project_type();
+    colorLog("Detected project type: " . strtoupper($PROJECT_TYPE), 's');
+
+    trackEvent(APM_TRIED, 'PreInstall tracking');
+
     $selectedBinaries = require_binaries_or_exit();
     check_preconditions($selectedBinaries);
     $fl = install_common_components($selectedBinaries);
-    
+
     // Install project-specific components
-    match ($project_type) {
+    match ($PROJECT_TYPE) {
         PROJECT_TYPE_LARAVEL => install_laravel_specific(),
         PROJECT_TYPE_WORDPRESS => install_wordpress_specific(),
     };
-    
-    colorLog("Middleware APM has been successfully installed for " . strtoupper($project_type), 's');
+
+    colorLog("Middleware APM has been successfully installed for " . strtoupper($PROJECT_TYPE), 's');
+
+    trackEvent(APM_INSTALLED, 'PostInstall tracking');
 }
 
-function run(array $command_parts): void {
-    if (empty($command_parts)) {
-        throw new InvalidArgumentException("No command provided for 'run' mode");
-    }
-    set_env();
-    $command = implode(' ', $command_parts);
-    passthru($command, $result_code);
-    exit($result_code);
-}
-
-function usage(string $script_name): void {
+function usage(string $script_name): void
+{
     colorLog("Usage: $script_name install");
     colorLog("This script will automatically detect if you're in a Laravel or WordPress project and perform the appropriate installation.");
 }
 
-function install_common_components($selectedBinaries): bool {
+function install_common_components($selectedBinaries): bool
+{
     // Install Opentelemetry extension
     $flag = install_opentelemetry($selectedBinaries);
-
-    set_env();
 
     return $flag;
 }
 
-function get_project_packages(string $project_type): array {
+function get_project_packages(string $project_type): array
+{
     global $common_packages, $project_packages;
     return array_merge($common_packages, $project_packages[$project_type]);
 }
 
-function install_laravel_specific(): void {
+function install_laravel_specific(): void
+{
     $packages = get_project_packages(PROJECT_TYPE_LARAVEL);
     $composer = get_composer_command();
-    
+
     // Configure composer
     execute_command("$composer config --no-plugins allow-plugins.php-http/discovery false --no-interaction");
     execute_command("$composer config minimum-stability dev --no-interaction");
@@ -140,10 +195,11 @@ function install_laravel_specific(): void {
     execute_command($require_cmd);
 }
 
-function install_wordpress_specific(): void {
+function install_wordpress_specific(): void
+{
     $packages = get_project_packages(PROJECT_TYPE_WORDPRESS);
     $composer = get_composer_command();
-    
+
     // Initialize new composer project for WordPress
     $composerCmd = "$composer init --name \"middleware-labs/wp-auto-instrumentation\" " .
         '--no-interaction';
@@ -166,7 +222,8 @@ function install_wordpress_specific(): void {
     configure_wordpress($configDir);
 }
 
-function configure_wordpress(string $configDir): void {
+function configure_wordpress(string $configDir): void
+{
     colorLog("PHP Apache configuration directory: $configDir", "i");
 
     $content = "auto_prepend_file=/var/www/otel/autoload.php";
@@ -238,7 +295,7 @@ function resolve_command_full_path($command)
 
 function search_php_binaries($prefix = '')
 {
-    echo "Searching for available php binaries, this operation might take a while.\n";
+    colorLog("Searching for available php binaries, this operation might take a while.");
 
     $resolvedPaths = [];
 
@@ -460,7 +517,8 @@ function install_opentelemetry($selectedBinaries)
     return $flag;
 }
 
-function get_ini_files(array $phpProperties) {
+function get_ini_files(array $phpProperties)
+{
     $ini_files = [];
 
     $ini_dir = $phpProperties[INI_SCANDIR];
@@ -469,7 +527,7 @@ function get_ini_files(array $phpProperties) {
         array_push($ini_files, $phpProperties[INI_MAIN]);
         return $ini_files;
     }
-    
+
     array_push($ini_files, $ini_dir . DIRECTORY_SEPARATOR . 'opentelemetry.ini');
 
     if (strpos($ini_dir, '/cli/conf.d') !== false) {
@@ -594,6 +652,7 @@ function setApacheEnvVariable()
     exec('service apache2 restart', $output, $resultCode);
 
     if ($resultCode !== 0) {
+        $out = shell_exec('httpd -k restart');
         throw new RuntimeException("Failed to restart Apache. Output: " . implode("\n", $output));
     }
 
@@ -601,14 +660,16 @@ function setApacheEnvVariable()
 }
 
 
-function set_env(): void {
+function set_env(): void
+{
     $env_vars = [
         'OTEL_PHP_AUTOLOAD_ENABLED' => getenv('OTEL_PHP_AUTOLOAD_ENABLED') ?: 'true',
         'OTEL_TRACES_EXPORTER' => getenv('OTEL_TRACES_EXPORTER') ?: 'otlp',
         'OTEL_EXPORTER_OTLP_PROTOCOL' => getenv('OTEL_EXPORTER_OTLP_PROTOCOL') ?: 'http/json',
-        'OTEL_PROPAGATORS' => getenv('OTEL_PROPAGATORS') ?: 'baggage,tracecontext',
+        'OTEL_PROPAGATORS' => getenv('OTEL_PROPAGATORS') ?: 'baggage,tracecontext,b3multi',
         'OTEL_SERVICE_NAME' => getenv("OTEL_SERVICE_NAME") ?: getenv('MW_SERVICE_NAME') ?: 'service-' . getmypid(),
-        'OTEL_EXPORTER_OTLP_ENDPOINT' => getenv("OTEL_EXPORTER_OTLP_ENDPOINT") ?: getenv("MW_TARGET") ?: 'http://localhost:9320'
+        'OTEL_EXPORTER_OTLP_ENDPOINT' => getenv("OTEL_EXPORTER_OTLP_ENDPOINT") ?: getenv("MW_TARGET") ?: 'http://localhost:9320',
+        'COMPOSER_ALLOW_SUPERUSER' => 1
     ];
 
     foreach ($env_vars as $key => $value) {
@@ -638,7 +699,7 @@ function check_extensions($binary)
         'gd'
     ];
 
-    colorLog("Checking PHP extensions...");
+    colorLog("Checking PHP extensions for $binary...");
 
     foreach ($extensions as $extName) {
         if (!in_array($extName, array_map("trim", explode("\n", $installed_extensions)))) {
@@ -676,20 +737,28 @@ function check_preconditions($selectedBinaries): void
     if (!command_exists('phpize')) {
         throw new RuntimeException('php-sdk (php-dev) is not installed');
     }
-   
+
     download_file(PICKLE_URL, 'pickle.phar');
     make_executable('pickle.phar');
 }
 
 function colorLog(string $message, string $type = 'i'): void
 {
+    global $LOGS;
+
     $colors = ['e' => '31', 's' => '32', 'w' => '33', 'i' => '36'];
     $labels = ['e' => '[ERROR]', 's' => '[SUCCESS]', 'w' => '[WARN]', 'i' => '[INFO]'];
 
+    $timestamp = date('Y-m-d H:i:s');
     $color = $colors[$type] ?? '0';
     $label = $labels[$type] ?? '[LOG]';
 
-    echo "\033[{$color}m$label $message\033[0m\n";
+    $log = "[$timestamp] $label $message\n";
+
+    // store logs
+    array_push($LOGS, $log);
+
+    echo "\033[{$color}m$log\033[0m\n";
 }
 
 function command_exists(string $command): bool
@@ -741,8 +810,16 @@ function make_executable(string $file): void
 function execute_command(string $cmd): void
 {
     colorLog($cmd);
-    passthru($cmd, $result_code);
+    $output = null;
+    $result_code = null;
+    exec($cmd, $output, $result_code);
+    // passthru($cmd, $result_code);
     if ($result_code > 0) {
+        $out = "";
+        foreach ($output as $line) {
+            $out += "$line\n";
+        }
+        colorLog($out, 'e');
         throw new RuntimeException("Command failed with exit code {$result_code}");
     }
 }
@@ -810,4 +887,137 @@ function copyOrMoveDirectory(string $source, string $destination, string $mode =
             throw new RuntimeException("Failed to remove source directory: $source");
         }
     }
+}
+
+function read_agent_config($config_path)
+{
+    try {
+        if (file_exists($config_path)) {
+            $file_content = file_get_contents($config_path);
+            if ($file_content === false) {
+                colorLog("APM Tracking: Unable to read config file", "e");
+                return null;
+            }
+
+            $lines = explode("\n", $file_content);
+            $api_key = "";
+            $target = "";
+
+            foreach ($lines as $line) {
+                // Skip comments and empty lines
+                $line = trim($line);
+                if (empty($line) || strpos($line, '#') === 0) {
+                    continue;
+                }
+
+                // Look for api-key
+                if (strpos($line, 'api-key:') !== false) {
+                    $api_key = trim(explode('api-key:', $line)[1]);
+                }
+
+                // Look for target
+                if (strpos($line, 'target:') !== false) {
+                    $target = trim(explode('target:', $line)[1]);
+                }
+            }
+
+
+            return [
+                'api_key' => $api_key,
+                'target' => $target
+            ];
+        } else {
+            colorLog("APM Tracking: Config file not found", "e");
+        }
+    } catch (Exception $e) {
+        colorLog("APM Tracking: Error reading config file: " . $e->getMessage(), "e");
+    }
+
+    return null;
+}
+
+function makeRequest($url, $data, $timeout = 5)
+{
+    $ch = curl_init();
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $data,
+        CURLOPT_TIMEOUT => $timeout,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($data)
+        ]
+    ]);
+
+    try {
+        $response = curl_exec($ch);
+        if ($response === false) {
+            colorLog('Warning: Request failed - ' . curl_error($ch), 'e');
+        } else {
+            colorLog("Successfully tracked event");
+        }
+    } catch (Exception $e) {
+        colorLog('Warning: Request failed - ' . $e->getMessage(), 'e');
+    } finally {
+        curl_close($ch);
+    }
+}
+
+function trackEvent($status = APM_TRIED, $reason = 'PreInstall tracking')
+{
+    global $PROJECT_TYPE, $LOGS;
+
+    $config = read_agent_config(AGENT_CONFIG_PATH);
+    $config['project_type'] = $PROJECT_TYPE;
+
+    if (empty($config) || empty($config['api_key']) || empty($config['target'])) {
+        colorLog("Invalid configuration: Missing API key or URL", "e");
+        return;
+    }
+
+    $payload = [
+        'status' => $status,
+        'metadata' => [
+            'host_id' => gethostname(),
+            'os_type' => PHP_OS,
+            'apm_type' => "PHP",
+            'apm_data' => [
+                'service_name' => getenv('OTEL_SERVICE_NAME'),
+                'script' => 'php-install',
+                'os_version' => php_uname('r'),
+                'php_version' => PHP_VERSION,
+                'reason' => $reason,
+                'framework_type' => $config['project_type'],
+                'linux_distro' => getLinuxType(),
+            ]
+        ]
+    ];
+
+    if ($reason === 'PostInstall tracking') {
+        $payload["metadata"]["message"] = $LOGS;
+    }
+
+    $version = '';
+
+    if ($config['project_type'] === PROJECT_TYPE_LARAVEL) {
+        $version = getLaravelVersion();
+    } else if ($config['project_type'] === PROJECT_TYPE_WORDPRESS) {
+        $version = getWordpressVersion();
+    }
+
+    $payload['apm_data']['framework_version'] = $version;
+
+    $data = json_encode($payload);
+
+    // Build the URL
+    $baseUrl = rtrim($config['target'], '/');
+    $pathSuffix = 'api/v1/apm/tracking/' . $config['api_key'];
+    $url = $baseUrl . '/' . $pathSuffix;
+
+    makeRequest($url, $data);
 }
