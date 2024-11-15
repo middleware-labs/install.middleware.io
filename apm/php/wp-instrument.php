@@ -3,6 +3,7 @@
 const MIN_PHP_VERSION = '8.0.0';
 const PICKLE_URL = 'https://github.com/FriendsOfPHP/pickle/releases/latest/download/pickle.phar';
 const APACHE_ENV_FILE = '/etc/apache2/envvars';
+const COMPOSER_URL = 'https://getcomposer.org/download/latest-stable/composer.phar';
 
 function setApacheEnvVariable()
 {
@@ -334,6 +335,8 @@ function setup()
 
     // set ini directory
     set_ini($configDir);
+
+    colorLog("APM Installation done, Please set environment variables and restart apache Server.", "s");
 }
 
 // set otel.php.in and add prepand autoload code to it.
@@ -344,13 +347,13 @@ function set_ini(string $configDir): void
     $content = "auto_prepend_file=/var/www/otel/autoload.php";
     file_put_contents("$configDir/mw.wordpress.ini", $content);
 
-    setApacheEnvVariable();
+    // setApacheEnvVariable();
 }
 
 try {
     check_preconditions();
     setup();
-    colorLog("Setup completed successfully. Please check your Apache configuration.", 's');
+    colorLog("Setup completed successfully.", 's');
 } catch (Exception $e) {
     colorLog($e->getMessage(), 'e');
     exit(1);
