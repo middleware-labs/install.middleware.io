@@ -26,18 +26,28 @@ jobs:
       - name: Get changed files
         id: changed-files
         run: |
-          files=$(git diff --name-only HEAD^ HEAD | grep '\.sh$' || echo "")
-          echo "files=$files" >> $GITHUB_OUTPUT
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          git diff --name-only HEAD^ HEAD | grep '\.sh$' || echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         # $GITHUB_OUTPUT is used to set the "files" output for this step.
+
 
       - name: Run ShellCheck on changed files
         if: steps.changed-files.outputs.files != ''
         run: |
+          # Print files being checked
           echo "Checking files: ${{ steps.changed-files.outputs.files }}"
-          for file in ${{ steps.changed-files.outputs.files }}; do
-            echo "Checking $file..."
-            if ! shellcheck "$file"; then
-              echo "::error file=$file::ShellCheck found issues in $file"
-              exit 1
-            fi
-          done
+          FILES="${{ steps.changed-files.outputs.files }}"
+          # Check if FILES is not empty
+          if [ -n "$FILES" ]; then
+            while IFS= read -r file; do
+                if [ -n "$file" ]; then
+                    echo "Checking $file..."
+                    if ! shellcheck "$file"; then
+                        # If shellcheck fails, output error in GitHub Actions format
+                        echo "::error file=$file::ShellCheck found issues in $file"
+                        exit 1
+                    fi
+                fi
+            done <<< "$FILES"
+          fi
