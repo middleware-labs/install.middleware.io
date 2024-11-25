@@ -2,7 +2,7 @@
 export PATH=$PATH:/opt/mw-agent/bin
 
 # Function to extract version number
-get_version() {
+get_version( {
     local version_string="$1"
     echo "$version_string" | grep -oP '\d+\.\d+\.\d+'
 }
