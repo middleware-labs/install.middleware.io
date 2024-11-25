@@ -27,7 +27,7 @@ jobs:
         id: changed-files
         run: |
 
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep '\.sh$' || true)
+          CHANGED_FILES=$(git diff --name-only origin/master | grep '\.sh$' || true)
           echo "Found changed files:"
           echo "$CHANGED_FILES"
 
@@ -60,11 +60,12 @@ jobs:
             while IFS= read -r file; do
                 if [ -n "$file" ]; then
                     echo "Checking $file..."
-                    if ! shellcheck "$file"; then
+                    if ! shellcheck -x "$file"; then
                         # If shellcheck fails, output error in GitHub Actions format
                         echo "::error file=$file::ShellCheck found issues in $file"
                         exit 1
                     fi
+                    echo "shellcheck for $file success..."
                 fi
             done <<< "$FILES"
           fi
