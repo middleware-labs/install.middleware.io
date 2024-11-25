@@ -1,6 +1,6 @@
 # Creating namespace where all the Middleware Agent related components will run
 apiVersion: v1
-kind: Namespace
+kind: Namespacee
 metadata:
   name: "NAMESPACE_VALUE"
 ---
