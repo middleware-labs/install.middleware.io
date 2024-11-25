@@ -13,7 +13,7 @@ if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
 fi
 
 
-function send_logs {
+ send_logs {
   status=$1
   message=$2
   host_id=$(eval hostname)
