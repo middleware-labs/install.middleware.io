@@ -5,13 +5,13 @@ on:
     branches:
       - shellcheck-workflow
     paths:
-      - '**/*.sh'
+      - "**/*.sh"
 
 jobs:
   shellcheck:
     name: ShellCheck
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,28 +34,10 @@ jobs:
         if: steps.changed-files.outputs.files != ''
         run: |
           echo "Checking files: ${{ steps.changed-files.outputs.files }}"
-          shellcheck ${{ steps.changed-files.outputs.files }}
-
-      - name: Comment on commit if errors found
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const files = '${{ steps.changed-files.outputs.files }}'.split(' ');
-            let output = '';
-            for (const file of files) {
-              try {
-                const result = require('child_process').execSync(`shellcheck ${file} 2>&1`).toString();
-                if (result) output += `\n### ${file}:\n${result}`;
-              } catch (error) {
-                output += `\n### ${file}:\n${error.stdout}`; 
-              }
-            }
-            if (output) {
-              github.rest.repos.createCommitComment({
-                owner: context.repo.owner,
-                repo: context.repo.name,
-                commit_sha: context.sha,
-                body: '⚠️ ShellCheck found issues:\n```\n' + output + '\n```'
-              });
-            }
+          for file in ${{ steps.changed-files.outputs.files }}; do
+            echo "Checking $file..."
+            if ! shellcheck "$file"; then
+              echo "::error file=$file::ShellCheck found issues in $file"
+              exit 1
+            fi
+          done
