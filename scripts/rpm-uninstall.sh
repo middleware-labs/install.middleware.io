@@ -13,3 +13,4 @@ sudo rm -rf /usr/local/bin/mw-agent
 
 # deleting entry from YUM list
 sudo rm -rf /etc/yum.repos.d/middleware.repo
+
