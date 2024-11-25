@@ -12368,6 +12368,7 @@ spec:
         - --zap-log-level=info
         - --zap-time-encoding=rfc3339nano
         - --enable-nginx-instrumentation=true
+        - --enable-go-instrumentation=true
         env:
         - name: SERVICE_ACCOUNT_NAME
           valueFrom:
