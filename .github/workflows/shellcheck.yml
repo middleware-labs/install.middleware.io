@@ -29,8 +29,13 @@ jobs:
           echo "files<<EOF" >> $GITHUB_OUTPUT
           git diff --name-only HEAD^ HEAD | grep '\.sh$' || echo "" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "Debug: files=$files"
         # $GITHUB_OUTPUT is used to set the "files" output for this step.
 
+      - name: Debug Output
+        run: |
+          echo "Debug: Changed files output = '${{ steps.changed-files.outputs.files }}'"
 
       - name: Run ShellCheck on changed files
         if: steps.changed-files.outputs.files != ''
