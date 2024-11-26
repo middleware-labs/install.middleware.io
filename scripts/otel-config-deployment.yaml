@@ -14,9 +14,6 @@ receivers:
           static_configs:
             - targets: ["0.0.0.0:8888"]
   
-  k8s_events:
-    auth_type: serviceAccount
-    namespaces: all
   fluentforward:
     endpoint: 0.0.0.0:8006
   otlp:
@@ -107,7 +104,7 @@ processors:
     attributes:
       - key: k8s.cluster.name
         action: update
-        value: ${MW_KUBE_CLUSTER_NAME}
+        value: unknown
       - key: host.id
         action: update
         from_attribute: k8s.node.name
@@ -198,10 +195,6 @@ service:
         receivers: [ fluentforward ]
         processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
         exporters: [ otlp ]
-      logs/k8s_events:
-        receivers: [ k8s_events ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
-        exporters: [ otlp ]
       logs/otlp:
         receivers: [ otlp ]
         processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
@@ -218,3 +211,4 @@ service:
         receivers: [ k8s_cluster ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
         exporters: [ otlp ]
+
