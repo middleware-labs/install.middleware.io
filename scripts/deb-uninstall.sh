@@ -7,6 +7,7 @@ get_version() {
     echo "$version_string" | grep -oP '\d+\.\d+\.\d+'
 }
 
+
 # Function to compare versions
 version_ge() {
     # Returns 0 if version $1 is greater than or equal to version $2, 1 otherwise
