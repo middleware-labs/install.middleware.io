@@ -31,9 +31,14 @@ const APM_TRIED = 'apm_tried';
 const APM_INSTALLED = 'apm_installed';
 const APM_FAILED = 'apm_failed';
 
-$PROJECT_TYPE = detect_project_type();
+// command line options
+const ADD_INI_DIRS = 'additional-ini-dir';
+const WEB_ROOT = 'web-root';
 
+// globals variables for configuration
+$PROJECT_TYPE;
 $LOGS = [];
+$ARGS = [];
 
 // Common OpenTelemetry packages
 $common_packages = [
@@ -63,6 +68,9 @@ if ($argc < 2) {
 }
 
 try {
+    $GLOBALS['PROJECT_TYPE'] = detect_project_type();
+    parseCliArgs();
+
     match ($argv[1]) {
         'install' => install(),
         'help' => usage($argv[0]),
@@ -72,7 +80,7 @@ try {
     colorLog($e->getMessage(), 'e');
     usage($argv[0]);
 
-    trackEvent(APM_FAILED, 'PostInstall tracking', $PROJECT_TYPE);
+    trackEvent(APM_FAILED, 'PostInstall tracking',  $GLOBALS['PROJECT_TYPE']);
 
     exit(1);
 }
@@ -136,11 +144,39 @@ function getLinuxType()
     return "Unknown Linux distribution";
 }
 
+function parseCliArgs()
+{
+    global $ARGS;
+
+    $options = getopt('', [
+        'additional-ini-dir:',
+        'web-root::'
+    ]);
+
+    // Process additional-ini-dir
+    if (isset($options[ADD_INI_DIRS])) {
+        $val = $options[ADD_INI_DIRS];
+        $ARGS[ADD_INI_DIRS] = array_map(
+            'trim',
+            explode(',', $val)
+        );
+
+        if (count($ARGS[ADD_INI_DIRS]) < 1) {
+            throw new RuntimeException("Please provide config directory (.ini dir) path for apache");
+        }
+    }
+
+    // Process web-root
+    if (isset($options[WEB_ROOT])) {
+        $ARGS[WEB_ROOT] = $options[WEB_ROOT];
+    }
+}
+
 function install(): void
 {
     global $PROJECT_TYPE;
 
-    set_env();
+    // set_env();
     // $project_type = detect_project_type();
     colorLog("Detected project type: " . strtoupper($PROJECT_TYPE), 's');
 
@@ -163,8 +199,16 @@ function install(): void
 
 function usage(string $script_name): void
 {
-    colorLog("Usage: $script_name install");
-    colorLog("This script will automatically detect if you're in a Laravel or WordPress project and perform the appropriate installation.");
+    echo "Usage: php $script_name <command> [options]\n\n";
+    echo "Commands:\n";
+    echo "  install    Install the application\n";
+    echo "  help       Show this help message\n\n";
+    echo "Options:\n";
+    echo "  --additional-ini-dir    Comma-separated list of additional INI directories (Required for install)\n";
+    echo "  --web-root             Web root directory path (Required for install)\n\n";
+    echo "Example:\n";
+    echo "  php script.php install --additional-ini-dir=/path1,/path2 --web-root=/var/www\n";
+    echo "\nThis script will automatically detect if you're in a Laravel or WordPress project and perform the appropriate installation.\n";
 }
 
 function install_common_components($selectedBinaries): bool
@@ -197,6 +241,8 @@ function install_laravel_specific(): void
 
 function install_wordpress_specific(): void
 {
+    global $ARGS;
+
     $packages = get_project_packages(PROJECT_TYPE_WORDPRESS);
     $composer = get_composer_command();
 
@@ -210,26 +256,58 @@ function install_wordpress_specific(): void
     execute_command($require_cmd);
 
     // Set up WordPress-specific configuration
-    $configDir = findPhpApacheConfigDir();
+    $configDir = isset($ARGS[ADD_INI_DIRS]) ? $ARGS[ADD_INI_DIRS] : findPhpApacheConfigDir();
+
     if (!$configDir) {
         throw new RuntimeException("Could not determine PHP Apache configuration directory.");
     }
 
+    if (gettype($configDir) == "string")
+        $configDir = [$configDir];
+
+    $otelConfigDir = isset($ARGS[WEB_ROOT]) ? getOtelDirectory($ARGS[WEB_ROOT]) : "/var/www/otel";
+
     // Copy vendor to otel directory
-    copyOrMoveDirectory("vendor", "/var/www/otel", "move");
+    copyOrMoveDirectory("vendor", $otelConfigDir, "move");
 
     // Configure WordPress
     configure_wordpress($configDir);
 }
 
-function configure_wordpress(string $configDir): void
+function getOtelDirectory($webRoot)
 {
-    colorLog("PHP Apache configuration directory: $configDir", "i");
+    // Go one directory up from web root and create an 'otel' directory
+    $otelDir = dirname($webRoot) . '/otel';
 
+    // Create directory if it doesn't exist
+    if (!is_dir($otelDir)) {
+        if (!mkdir($otelDir, 0755, true)) {
+            throw new RuntimeException("Failed to create directory: $otelDir");
+        }
+    }
+
+    return $otelDir;
+}
+
+function configure_wordpress(array $configDir): void
+{
     $content = "auto_prepend_file=/var/www/otel/autoload.php";
-    file_put_contents("$configDir/mw.wordpress.ini", $content);
 
-    setApacheEnvVariable();
+    foreach ($configDir as $cd) {
+        $filename = "$cd/mw.wordpress.ini";
+
+        if (file_put_contents($filename, $content, FILE_APPEND) === false) {
+            colorLog("Failed to write to INI file: $filename");
+        }
+
+        colorLog("Created $cd/mw.wordpress.ini");
+    }
+
+    try {
+        setApacheEnvVariable();
+    } catch (\Throwable $th) {
+        colorLog("Please set ENVIRONMENT variables and restart your APACHE/NGINX server. (See docs for more info)", "w");
+    }
 }
 
 function get_supported_php_versions()
@@ -519,7 +597,13 @@ function install_opentelemetry($selectedBinaries)
 
 function get_ini_files(array $phpProperties)
 {
+    global $ARGS;
+
     $ini_files = [];
+
+    if (isset($ARGS[ADD_INI_DIRS])) {
+        array_merge($ini_files, $ARGS[ADD_INI_DIRS] . DIRECTORY_SEPARATOR . 'opentelemetry.ini');
+    }
 
     $ini_dir = $phpProperties[INI_SCANDIR];
 
