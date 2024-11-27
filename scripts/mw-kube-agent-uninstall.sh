@@ -5,6 +5,7 @@ sudo mkdir -p /var/log/mw-kube-agent
 sudo touch "$LOG_FILE"
 exec &> >(sudo tee -a "$LOG_FILE")
 
+
 function send_logs {
   status=$1
   message=$2
