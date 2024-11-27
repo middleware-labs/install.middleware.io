@@ -1,6 +1,6 @@
 receivers:
   filelog:
-    include: [ /var/log/pods/*/*/*.log, $MW_LOG_PATHS ]
+    include: [ /var/log/pods/*/*/*.log, $MW_LOG_PTHASSs ]
     include_file_path: true
     include_file_name_resolved: true
     include_file_path_resolved: true
@@ -91,6 +91,7 @@ receivers:
     insecure_skip_verify: true
     k8s_api_config:
       auth_type: serviceAccount
+    extra_metadata_labels: [container.id, k8s.volume.type]
   hostmetrics:
     collection_interval: 5s
     scrapers:
@@ -222,7 +223,7 @@ processors:
     attributes:
       - key: k8s.cluster.name
         action: update
-        value: ${MW_KUBE_CLUSTER_NAME}
+        value: unknown
       - key: host.id
         action: update
         from_attribute: k8s.node.name
@@ -329,3 +330,4 @@ service:
         receivers: [ hostmetrics ]
         processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]
         exporters: [ otlp ]
+
