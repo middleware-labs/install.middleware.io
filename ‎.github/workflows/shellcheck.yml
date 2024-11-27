@@ -1,11 +1,10 @@
 name: ShellCheck Modified Files
+name: Release Charts
 
 on:
   push:
     branches:
       - test-workflow
-    paths:
-      - "**/*.sh"
 
 jobs:
   shellcheck:
