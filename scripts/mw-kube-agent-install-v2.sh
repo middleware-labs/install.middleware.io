@@ -3,7 +3,8 @@ set -e errexit
 LOG_FILE="/var/log/mw-kube-agent/mw-kube-agent-install-$(date +%s).log"
 sudo sh -c 'mkdir -p /var/log/mw-kube-agent && touch "$0" && exec > "$0" 2>&1' "$LOG_FILE"
 
-send_logs() {
+send_logs()
+ {
   status=$1
   message=$2
 
