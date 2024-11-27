@@ -5,6 +5,7 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+
 # Check if required commands are available
 required_commands=("sudo" "mkdir" "touch" "exec" "tee" "date" "curl" "uname" "source" "sed" "tr" "systemctl" "chmod" "rpm")
 missing_commands=()
