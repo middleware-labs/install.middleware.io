@@ -3,7 +3,7 @@ name: ShellCheck Modified Files
 on:
   pull_request:
     branches:
-      - master
+      - agent-logs-fix
     paths:
       - "**/*.sh"
 
