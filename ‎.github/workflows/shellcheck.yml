@@ -1,0 +1,59 @@
+name: ShellCheck Modified Files
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "**/*.sh"
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+
+          CHANGED_FILES=$(git diff --name-only origin/master | grep '\.sh$' || true)
+          echo "Found changed files:"
+          echo "$CHANGED_FILES"
+
+          {
+            echo "files<<EOF"
+            echo "$CHANGED_FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run ShellCheck on changed files
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          # Print files being checked
+          echo "Checking files: ${{ steps.changed-files.outputs.files }}"
+          FILES="${{ steps.changed-files.outputs.files }}"
+          # Check if FILES is not empty
+          if [ -n "$FILES" ]; then
+            while IFS= read -r file; do
+                if [ -n "$file" ]; then
+                    echo "Checking $file..."
+                    if ! shellcheck -x "$file"; then
+                        # If shellcheck fails, output error in GitHub Actions format
+                        echo "::error file=$file::ShellCheck found issues in $file"
+                        exit 1
+                    fi
+                    echo "shellcheck for $file success..."
+                fi
+            done <<< "$FILES"
+          fi

@@ -6,7 +6,7 @@ replicaCount: 1
 
 ## Provide a name in place of opentelemetry-operator (includes the chart's release name).
 ##
-nameOverride: "opentelemetry-operator-controller-manager"
+nameOverride: ""
 
 ## Fully override the name (excludes the chart's release name).
 ##
