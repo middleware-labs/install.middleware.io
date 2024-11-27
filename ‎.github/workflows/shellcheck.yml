@@ -3,7 +3,7 @@ name: ShellCheck Modified Files
 on:
   push:
     branches:
-      - test-worflow
+      - test-workflow
     paths:
       - "**/*.sh"
 
