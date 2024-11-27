@@ -1,7 +1,7 @@
 name: ShellCheck Modified Files
 
 on:
-  pull_request:
+  push:
     branches:
       - agent-logs-fix
     paths:
