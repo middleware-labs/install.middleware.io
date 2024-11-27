@@ -329,3 +329,4 @@ service:
         receivers: [ hostmetrics ]
         processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]
         exporters: [ otlp ]
+
