@@ -77,6 +77,11 @@ cp -r ./mw-kube-agent/* $MW_KUBE_AGENT_HOME
 ls -l $MW_KUBE_AGENT_HOME
 EOSUDO
 
+kubectl --kubeconfig "${MW_KUBECONFIG}" delete configmap mw-deployment-otel-config --namespace="$MW_NAMESPACE"
+kubectl --kubeconfig "${MW_KUBECONFIG}" delete configmap mw-daemonset-otel-config --namespace="$MW_NAMESPACE"
+kubectl --kubeconfig "${MW_KUBECONFIG}" delete job mw-kube-agent-update-configmap --namespace="$MW_NAMESPACE"
+
+
 sudo chmod 777 "$MW_KUBE_AGENT_HOME"
 for file in "$MW_KUBE_AGENT_HOME"/*.yaml; do
   sed -e "s|MW_KUBE_CLUSTER_NAME_VALUE|${MW_KUBE_CLUSTER_NAME}|g" \
@@ -85,13 +90,11 @@ for file in "$MW_KUBE_AGENT_HOME"/*.yaml; do
       -e "s|MW_CONFIG_CHECK_INTERVAL_VALUE|${MW_CONFIG_CHECK_INTERVAL}|g" \
     "$file" > "$file.modified.yaml"
 
-  kubectl delete -f "$file.modified.yaml" --kubeconfig "${MW_KUBECONFIG}"
+  kubectl delete -f "$file.modified.yaml" --kubeconfig "${MW_KUBECONFIG}" --namespace="$MW_NAMESPACE"
 
   rm "$file.modified.yaml"
 done
 
-kubectl --kubeconfig "${MW_KUBECONFIG}" delete configmap mw-deployment-otel-config --namespace="$MW_NAMESPACE"
-kubectl --kubeconfig "${MW_KUBECONFIG}" delete configmap mw-daemonset-otel-config --namespace="$MW_NAMESPACE"
 kubectl --kubeconfig "${MW_KUBECONFIG}" delete namespace "$MW_NAMESPACE"
 
 elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
