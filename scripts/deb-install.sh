@@ -239,6 +239,7 @@ fi
 
 if [ "${MW_AUTO_START}" = true ]; then
     sudo systemctl start mw-agent
+    sudo systemctl restart mw-agent
 fi
 
 echo -e "Middleware Agent installation completed successfully.\n"
