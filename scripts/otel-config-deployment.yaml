@@ -27,7 +27,7 @@ receivers:
         endpoint: 0.0.0.0:9320
 exporters:
   otlp:
-    endpoint: ${MW_TARGET}
+    endpoint: ${env:MW_TARGET}
 processors:
   k8sattributes:
     auth_type: "serviceAccount"
@@ -58,12 +58,12 @@ processors:
         action: upsert
       - key: mw.account_key
         action: insert
-        value: ${MW_API_KEY}
+        value: ${env:MW_API_KEY}
       - key: agent.installation.time
         from_attribute: host.name
         action: insert
       - key: agent.installation.time
-        value: ${MW_AGENT_INSTALLATION_TIME}
+        value: ${env:MW_AGENT_INSTALLATION_TIME}
         action: update
       - key: k8s.cluster.name
         from_attribute: k8s.node.uid
@@ -105,7 +105,7 @@ processors:
     attributes:
       - key: k8s.cluster.name
         action: update
-        value: ${MW_KUBE_CLUSTER_NAME}
+        value: ${env:MW_KUBE_CLUSTER_NAME}
       - key: host.id
         action: update
         from_attribute: k8s.node.name
