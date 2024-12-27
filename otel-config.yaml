@@ -348,8 +348,6 @@ processors:
     override: false
 
 exporters:
-  logging:
-    loglevel: info
   otlp/2:
     endpoint: ${MW_TARGET}
     timeout: 60s
