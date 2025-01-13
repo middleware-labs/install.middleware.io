@@ -47,8 +47,13 @@ if [ -z "$MW_CERT_MANAGER_VERSION" ]; then
 fi
 
 if [ -z "$MW_OTEL_OPERATOR_VERSION" ]; then
-   MW_OTEL_OPERATOR_VERSION="0.101.0"
+   MW_OTEL_OPERATOR_VERSION="0.107.0"
 fi
+
+CURRENT_CONTEXT="$(kubectl config current-context)"
+MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '$CURRENT_CONTEXT')].context.cluster}")"
+
+printf "\nUninstalling Middleware AutoInstrumentation ...\n\n\tcluster : %s \n\tcontext : %s\n" "$MW_KUBE_CLUSTER_NAME" "$CURRENT_CONTEXT"
 
 # Uninstall OpenTelemetry Kubernetes Operator
 echo -e "\n-->Uninstalling OpenTelemetry operator ..."
@@ -60,5 +65,21 @@ if [ -n "${MW_UNINSTALL_CERT_MANAGER}" ] && [ "${MW_UNINSTALL_CERT_MANAGER}" = "
     MW_CERT_MANAGER_VERSION=$(kubectl get pods --namespace cert-manager -l app=cert-manager -o jsonpath="{.items[0].spec.containers[0].image}" | cut -d ":" -f 2)
     kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/${MW_CERT_MANAGER_VERSION}/cert-manager.yaml
 fi
+
+# Delete webhook configuration first
+kubectl delete mutatingwebhookconfiguration "mw-auto-injector.acme.com"
+
+# Delete resources in reverse order
+kubectl delete -n mw-autoinstrumentation deployment mw-auto-injector
+kubectl delete -n mw-autoinstrumentation daemonset mw-lang-detector
+kubectl delete -n mw-autoinstrumentation service mw-auto-injector
+kubectl delete clusterrolebinding mw-lang-detector
+kubectl delete clusterrole mw-lang-detector
+kubectl delete -n mw-autoinstrumentation serviceaccount mw-lang-detector
+kubectl delete -n mw-autoinstrumentation certificate mw-auto-injector-tls
+kubectl delete -n mw-autoinstrumentation issuer mw-auto-injector-selfsigned
+
+# Optionally delete namespace 
+kubectl delete namespace mw-autoinstrumentation
 
 echo -e "\n-->Uninstallation completed"
