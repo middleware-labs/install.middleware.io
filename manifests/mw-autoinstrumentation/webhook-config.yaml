@@ -1,0 +1,29 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: "mw-auto-injector.acme.com"
+  annotations:
+    cert-manager.io/inject-ca-from: mw-autoinstrumentation/mw-auto-injector-tls
+webhooks:
+  - name: "mw-auto-injector.acme.com"
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: "MW_OPERATOR"
+          values: NAMESPACE_LIST_VALUE
+    failurePolicy: Ignore
+    rules:
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["UPDATE"]
+        resources: ["deployments","daemonsets", "statefulsets"]
+        scope: "*"
+    clientConfig:
+      service:
+        namespace: mw-autoinstrumentation
+        name: mw-auto-injector
+        path: /mutate-resources
+        port: 443
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5
