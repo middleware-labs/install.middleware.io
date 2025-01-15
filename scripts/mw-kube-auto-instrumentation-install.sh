@@ -219,7 +219,7 @@ check_pods_running_and_ready opentelemetry-operator-system
 echo -e "\n-->Installing OpenTelemetry auto instrumentation manifest ..."
 apply_manifest opentelemetry-operator-system ${MW_OTEL_OPERATOR_NAMESPACE} https://install.middleware.io/manifests/autoinstrumentation/mw-otel-auto-instrumentation.yaml
 
-BASE_URL="https://naman-jain-15.github.io/test-yaml/mw-autoinstrumentation"
+BASE_URL="https://install.middleware.io/manifests/mw-autoinstrumentation"
 
 for file in mw-lang-detector-serviceaccount.yaml mw-lang-detector-rbac.yaml webhook-service.yaml \
             mw-lang-detector-daemonset.yaml webhook-deployment.yaml certmanager.yaml webhook-config.yaml; do
