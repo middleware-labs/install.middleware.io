@@ -258,5 +258,5 @@ for file in $ordered_files; do
 done
 
 echo "Installation complete!"
-#sudo rm -rf $MW_KUBE_AGENT_HOME
+sudo rm -rf $MW_KUBE_AGENT_HOME
 
