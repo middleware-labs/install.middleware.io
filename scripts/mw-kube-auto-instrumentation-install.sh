@@ -65,8 +65,13 @@ if [ -z "$MW_API_KEY" ]; then
     exit 1
 fi
 
+if [ -z "$MW_TARGET" ]; then
+    echo "MW_TARGET is required"
+    exit 1
+fi
+
 if [ -z "$MW_KUBE_AGENT_HOME" ]; then
-    MW_KUBE_AGENT_HOME=/tmp
+    MW_KUBE_AGENT_HOME=/tmp/mw-auto
 fi
 
 sudo mkdir -p $MW_KUBE_AGENT_HOME
@@ -82,6 +87,50 @@ fi
 if [ -z "$MW_OTEL_OPERATOR_VERSION" ]; then
    MW_OTEL_OPERATOR_VERSION="0.107.0"
 fi
+
+MW_AUTOINSTRUMENTATION_NAMESPACE="mw-autoinstrumentation"
+
+# Fetching cluster name
+CURRENT_CONTEXT="$(kubectl config current-context)"
+MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '$CURRENT_CONTEXT')].context.cluster}")"
+export MW_KUBE_CLUSTER_NAME
+
+MW_DOMAIN=${MW_DOMAIN:-"cluster.local"}
+
+if kubectl --kubeconfig "$MW_KUBECONFIG" get namespace "$MW_AUTOINSTRUMENTATION_NAMESPACE" > /dev/null 2>&1; then
+    echo "Namespace '${MW_AUTOINSTRUMENTATION_NAMESPACE}' already exists. Skipping creation."
+else
+    # If namespace doesn't exist, create it
+    kubectl --kubeconfig "$MW_KUBECONFIG" create namespace "$MW_AUTOINSTRUMENTATION_NAMESPACE"
+    echo "Namespace '${MW_AUTOINSTRUMENTATION_NAMESPACE}' created successfully."
+fi
+
+DEFAULT_EXCLUDED="mw-autoinstrumentation,kube-system,local-path-storage,istio-system,linkerd,kube-node-lease,mw-agent-ns"
+
+# Initialize variables for namespace selection
+FINAL_OPERATOR=""
+NAMESPACE_LIST=""
+
+# Determine operator and namespaces
+if [ ! -z "$MW_INCLUDED_NAMESPACES" ]; then
+    # If included namespaces are provided, they take priority
+    FINAL_OPERATOR="In"
+    NAMESPACE_LIST="$MW_INCLUDED_NAMESPACES"
+else
+    # Use excluded namespaces (combine with defaults if provided)
+    FINAL_OPERATOR="NotIn"
+    if [ ! -z "$MW_EXCLUDED_NAMESPACES" ]; then
+        # Combine user provided excludes with defaults and remove duplicates
+        NAMESPACE_LIST="$MW_EXCLUDED_NAMESPACES,$DEFAULT_EXCLUDED"
+        NAMESPACE_LIST=$(echo "$NAMESPACE_LIST" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
+    else
+        NAMESPACE_LIST="$DEFAULT_EXCLUDED"
+    fi
+fi
+
+NAMESPACE_LIST=$(echo "$NAMESPACE_LIST" | sed 's/,/", "/g' | sed 's/^/["/' | sed 's/$/"]/')
+
+printf "\nSetting up Middleware AutoInstrumentation...\n\n\tcluster : %s \n\tcontext : %s\n" "$MW_KUBE_CLUSTER_NAME" "$CURRENT_CONTEXT"
 
 check_pods_running_and_ready() {
     local namespace=$1
@@ -158,6 +207,7 @@ if [ -n "${MW_INSTALL_CERT_MANAGER}" ] && [ "${MW_INSTALL_CERT_MANAGER}" = "true
     $MW_KUBE_AGENT_HOME/cmctl check api --wait=2m
 fi
 
+
 # Install OpenTelemetry Kubernetes Operator
 echo -e "\n-->Setting up OpenTelemetry operator ..."
 kubectl apply -f https://install.middleware.io/manifests/autoinstrumentation/opentelemetry-operator-${MW_OTEL_OPERATOR_VERSION}.yaml 
@@ -168,5 +218,45 @@ check_pods_running_and_ready opentelemetry-operator-system
 
 echo -e "\n-->Installing OpenTelemetry auto instrumentation manifest ..."
 apply_manifest opentelemetry-operator-system ${MW_OTEL_OPERATOR_NAMESPACE} https://install.middleware.io/manifests/autoinstrumentation/mw-otel-auto-instrumentation.yaml
-sudo rm -f $MW_KUBE_AGENT_HOME/cmctl
+
+BASE_URL="https://install.middleware.io/manifests/mw-autoinstrumentation"
+
+for file in mw-lang-detector-serviceaccount.yaml mw-lang-detector-rbac.yaml webhook-service.yaml \
+            mw-lang-detector-daemonset.yaml webhook-deployment.yaml certmanager.yaml webhook-config.yaml; do
+    if sudo wget -q -O "$MW_KUBE_AGENT_HOME/$file" "$BASE_URL/$file"; then
+        :
+    else
+        echo "✗ Failed to download $file"
+        exit 1
+    fi
+done
+
+ls -l "$MW_KUBE_AGENT_HOME"
+
+# Apply files in order
+ordered_files="
+    mw-lang-detector-serviceaccount.yaml
+    mw-lang-detector-rbac.yaml
+    webhook-service.yaml
+    mw-lang-detector-daemonset.yaml
+    webhook-deployment.yaml
+    certmanager.yaml
+    webhook-config.yaml
+"
+
+for file in $ordered_files; do
+    echo "Applying $file..."
+    
+    sed -e "s|MW_KUBE_CLUSTER_NAME_VALUE|$MW_KUBE_CLUSTER_NAME|g" \
+    -e "s|DOMAIN_NAME|$MW_DOMAIN|g" \
+    -e "s|MW_API_KEY_VALUE|$MW_API_KEY|g" \
+    -e "s|MW_TARGET_VALUE|$MW_TARGET|g" \
+    -e "s|NAMESPACE_LIST_VALUE|${NAMESPACE_LIST}|g" \
+    -e "s|MW_OPERATOR|${FINAL_OPERATOR}|g" \
+"$MW_KUBE_AGENT_HOME/$file" |kubectl apply -f - --kubeconfig "${MW_KUBECONFIG}"
+    
+done
+
+echo "Installation complete!"
+sudo rm -rf $MW_KUBE_AGENT_HOME
 
