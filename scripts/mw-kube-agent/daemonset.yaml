@@ -51,7 +51,7 @@ spec:
             path: /var/lib/docker/containers
         - name: etcmachineid
           hostPath:
-	    path: /etc/machine-id
+            path: /etc/machine-id
       containers:
         - args:
             - mw-agent
@@ -97,8 +97,8 @@ spec:
           - mountPath: /var/lib/docker/containers
             name: varlibdockercontainers
             readOnly: true
-	  - mountPath: /etc/machine-id
-            name: etchmachineid
+          - mountPath: /etc/machine-id
+            name: etcmachineid
             readOnly: true
           resources: {}
       restartPolicy: Always
