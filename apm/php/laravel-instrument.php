@@ -95,7 +95,7 @@ function check_extensions() {
 function check_preconditions(): void
 {
     if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '<')) {
-        throw new RuntimeException("PHP " . MIN_PHP_VERSION . " or higher is required");
+        colorLog("PHP " . MIN_PHP_VERSION . " or higher is required", 'w');
     }
     check_extensions();
     ensure_composer();
