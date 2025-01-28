@@ -173,6 +173,10 @@ function parseCliArgs()
 
 function install(): void
 {
+    if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '<')) {
+        colorLog("PHP " . MIN_PHP_VERSION . " or higher is required", 'w');
+    }
+
     global $PROJECT_TYPE;
     $PROJECT_TYPE = detect_project_type();
     // set_env();
