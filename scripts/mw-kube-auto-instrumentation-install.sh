@@ -88,7 +88,7 @@ if [ -z "$MW_OTEL_OPERATOR_VERSION" ]; then
    MW_OTEL_OPERATOR_VERSION="0.107.0"
 fi
 
-MW_AUTOINSTRUMENTATION_NAMESPACE="mw-autoinstrumentation"
+MW_AUTOINSTRUMENTATION_NAMESPACE="mw-agent-ns"
 
 # Fetching cluster name
 CURRENT_CONTEXT="$(kubectl config current-context)"
@@ -258,5 +258,6 @@ for file in $ordered_files; do
 done
 
 echo "Installation complete!"
+
 sudo rm -rf $MW_KUBE_AGENT_HOME
 

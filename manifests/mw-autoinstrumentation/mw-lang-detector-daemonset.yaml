@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: mw-lang-detector
-  namespace: mw-autoinstrumentation
+  namespace: mw-agent-ns
 spec:
   selector:
     matchLabels:
