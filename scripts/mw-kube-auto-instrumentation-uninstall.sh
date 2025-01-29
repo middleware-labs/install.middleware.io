@@ -67,19 +67,19 @@ if [ -n "${MW_UNINSTALL_CERT_MANAGER}" ] && [ "${MW_UNINSTALL_CERT_MANAGER}" = "
 fi
 
 # Delete webhook configuration first
-kubectl delete mutatingwebhookconfiguration "mw-auto-injector.acme.com"
+kubectl delete mutatingwebhookconfiguration "mw-auto-injector.acme.com" --ignore-not-found
 
 # Delete resources in reverse order
-kubectl delete -n mw-agent-ns deployment mw-auto-injector
-kubectl delete -n mw-agent-ns daemonset mw-lang-detector
-kubectl delete -n mw-agent-ns service mw-auto-injector
-kubectl delete clusterrolebinding mw-lang-detector
-kubectl delete clusterrole mw-lang-detector
-kubectl delete -n mw-agent-ns serviceaccount mw-lang-detector
-kubectl delete -n mw-agent-ns certificate mw-auto-injector-tls
-kubectl delete -n mw-agent-ns issuer mw-auto-injector-selfsigned
+kubectl delete -n mw-agent-ns deployment mw-auto-injector --ignore-not-found
+kubectl delete -n mw-agent-ns daemonset mw-lang-detector --ignore-not-found
+kubectl delete -n mw-agent-ns service mw-auto-injector --ignore-not-found
+kubectl delete clusterrolebinding mw-lang-detector --ignore-not-found
+kubectl delete clusterrole mw-lang-detector --ignore-not-found
+kubectl delete -n mw-agent-ns serviceaccount mw-lang-detector --ignore-not-found
+kubectl delete -n mw-agent-ns certificate mw-auto-injector-tls --ignore-not-found
+kubectl delete -n mw-agent-ns issuer mw-auto-injector-selfsigned --ignore-not-found
 
 # Optionally delete namespace 
-kubectl delete namespace mw-agent-ns
+kubectl delete namespace mw-agent-ns --ignore-not-found
 
 echo -e "\n-->Uninstallation completed"
