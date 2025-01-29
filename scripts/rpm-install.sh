@@ -6,7 +6,7 @@ command_exists() {
 }
 
 # Check if required commands are available
-required_commands=("sudo" "mkdir" "touch" "exec" "tee" "date" "curl" "uname" "source" "sed" "tr" "systemctl" "chmod" "rpm")
+required_commands=("sudo" "mkdir" "touch" "exec" "tee" "date" "curl" "uname" "source" "sed" "tr" "systemctl" "chmod" "rpm" "exec")
 missing_commands=()
 
 for cmd in "${required_commands[@]}"; do
@@ -25,6 +25,11 @@ fi
 LOG_FILE="/var/log/mw-agent/rpm-installation-$(date +%s).log"
 sudo mkdir -p /var/log/mw-agent
 sudo touch "$LOG_FILE"
+sudo chmod 666 "$LOG_FILE"
+
+# Redirect both standard output (stdout) and standard error (stderr) to the log file in append mode
+# using 'tee' to simultaneously write logs to the file and display them in the console.
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 MW_TRACKING_TARGET="https://app.middleware.io"
 if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
