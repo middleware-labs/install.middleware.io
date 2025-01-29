@@ -3,7 +3,7 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: "mw-auto-injector.acme.com"
   annotations:
-    cert-manager.io/inject-ca-from: mw-autoinstrumentation/mw-auto-injector-tls
+    cert-manager.io/inject-ca-from: mw-agent-ns/mw-auto-injector-tls
 webhooks:
   - name: "mw-auto-injector.acme.com"
     namespaceSelector:
@@ -20,7 +20,7 @@ webhooks:
         scope: "*"
     clientConfig:
       service:
-        namespace: mw-autoinstrumentation
+        namespace: mw-agent-ns
         name: mw-auto-injector
         path: /mutate-resources
         port: 443

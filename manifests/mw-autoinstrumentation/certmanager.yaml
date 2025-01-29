@@ -2,11 +2,11 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: mw-auto-injector-tls
-  namespace: mw-autoinstrumentation
+  namespace: mw-agent-ns
 spec:
   dnsNames:
-    - mw-auto-injector.mw-autoinstrumentation.svc
-    - mw-auto-injector.mw-autoinstrumentation.svc.DOMAIN_NAME
+    - mw-auto-injector.mw-agent-ns.svc
+    - mw-auto-injector.mw-agent-ns.svc.DOMAIN_NAME
   issuerRef:
     kind: Issuer
     name: mw-auto-injector-selfsigned
@@ -16,6 +16,6 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: mw-auto-injector-selfsigned
-  namespace: mw-autoinstrumentation
+  namespace: mw-agent-ns
 spec:
   selfSigned: {}

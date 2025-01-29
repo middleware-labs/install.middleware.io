@@ -70,16 +70,16 @@ fi
 kubectl delete mutatingwebhookconfiguration "mw-auto-injector.acme.com"
 
 # Delete resources in reverse order
-kubectl delete -n mw-autoinstrumentation deployment mw-auto-injector
-kubectl delete -n mw-autoinstrumentation daemonset mw-lang-detector
-kubectl delete -n mw-autoinstrumentation service mw-auto-injector
+kubectl delete -n mw-agent-ns deployment mw-auto-injector
+kubectl delete -n mw-agent-ns daemonset mw-lang-detector
+kubectl delete -n mw-agent-ns service mw-auto-injector
 kubectl delete clusterrolebinding mw-lang-detector
 kubectl delete clusterrole mw-lang-detector
-kubectl delete -n mw-autoinstrumentation serviceaccount mw-lang-detector
-kubectl delete -n mw-autoinstrumentation certificate mw-auto-injector-tls
-kubectl delete -n mw-autoinstrumentation issuer mw-auto-injector-selfsigned
+kubectl delete -n mw-agent-ns serviceaccount mw-lang-detector
+kubectl delete -n mw-agent-ns certificate mw-auto-injector-tls
+kubectl delete -n mw-agent-ns issuer mw-auto-injector-selfsigned
 
 # Optionally delete namespace 
-kubectl delete namespace mw-autoinstrumentation
+kubectl delete namespace mw-agent-ns
 
 echo -e "\n-->Uninstallation completed"

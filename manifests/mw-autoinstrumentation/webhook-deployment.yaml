@@ -4,7 +4,7 @@ metadata:
   labels:
     app: mw-auto-injector
   name: mw-auto-injector
-  namespace: mw-autoinstrumentation
+  namespace: mw-agent-ns
 spec:
   replicas: 1
   selector:
