@@ -1,0 +1,44 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mw-kube-agent-config-updater
+  namespace: "NAMESPACE_VALUE"
+spec:
+  selector:
+    matchLabels:
+      app: mw-kube-agent-config-updater
+  template:
+    metadata:
+      labels:
+        app: mw-kube-agent-config-updater
+        k8s-app: mw-app
+    spec:
+      containers:
+        - args:
+            - mw-kube-agent-config-updater
+            - start
+          env:
+            - name: MW_TARGET
+              value: "TARGET_VALUE"
+            - name: MW_API_KEY
+              value: "MW_API_KEY_VALUE"
+            - name: MW_KUBE_CLUSTER_NAME
+              value: "MW_KUBE_CLUSTER_NAME_VALUE"
+            - name: MW_NAMESPACE
+              value:  "NAMESPACE_VALUE"
+            - name: MW_CONFIG_CHECK_INTERVAL
+              value: MW_CONFIG_CHECK_INTERVAL_VALUE
+          image: ghcr.io/middleware-labs/mw-kube-agent-config-updater:local
+          imagePullPolicy: IfNotPresent
+          name: mw-kube-agent-config-updater
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+      restartPolicy: Always
+      serviceAccountName: mw-service-account-update
