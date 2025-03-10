@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-role-binding-update
+  namespace: "NAMESPACE_VALUE"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mw-role-update
+subjects:
+  - kind: ServiceAccount
+    name: mw-service-account-update
+    namespace: "NAMESPACE_VALUE"
