@@ -237,7 +237,7 @@ function install_laravel_specific(): void
     execute_command("$composer config --no-plugins allow-plugins.php-http/discovery false --no-interaction");
     execute_command("$composer config minimum-stability dev --no-interaction");
 
-    // Install packages
+    // Install packages       
     $require_cmd = "$composer require " . implode(' ', $packages) . " --with-all-dependencies --no-interaction";
     execute_command($require_cmd);
 }
@@ -904,7 +904,7 @@ function execute_command(string $cmd): void
     if ($result_code > 0) {
         $out = "";
         foreach ($output as $line) {
-            $out += "$line\n";
+            $out .= "$line\n";
         }
         colorLog($out, 'e');
         throw new RuntimeException("Command failed with exit code {$result_code}");
