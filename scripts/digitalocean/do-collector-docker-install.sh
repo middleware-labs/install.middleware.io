@@ -129,7 +129,7 @@ export dockerrun
 eval " $dockerrun"
 
 # Check if the container is running
-container_status=$(docker inspect -f '{{.State.Status}}' '$MW_DO_COLLECTOR_CONTAINER_NAME' 2>/dev/null)
+container_status=$(docker inspect -f '{{.State.Status}}' $MW_DO_COLLECTOR_CONTAINER_NAME 2>/dev/null)
 
 if [[ "$container_status" == "running" ]]; then
     echo -e "\n\033[1m'${MW_DO_COLLECTOR_CONTAINER_NAME}' is running and collecting data.\033[0m"
