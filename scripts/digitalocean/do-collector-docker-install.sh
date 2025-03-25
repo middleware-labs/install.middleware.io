@@ -120,7 +120,7 @@ docker rm "$MW_DO_COLLECTOR_CONTAINER_NAME" 2>/dev/null
 dockerrun="$dockerrun \
 -e MW_PROMETHEUS_DIR=$MW_PROMETHEUS_DIR \
 -v /var/log:/var/log \
--v "${MW_PROMETHEUS_DIR}:${MW_PROMETHEUS_DIR}"
+-v "${MW_PROMETHEUS_DIR}:${MW_PROMETHEUS_DIR}" \
 --privileged \
 --network=host '$MW_DO_COLLECTOR_DOCKER_IMAGE'"
 
