@@ -116,35 +116,27 @@ fi
 docker stop "$MW_DO_COLLECTOR_CONTAINER_NAME" 2>/dev/null
 docker rm "$MW_DO_COLLECTOR_CONTAINER_NAME" 2>/dev/null
 
+echo "starting dockerrun"
 # shellcheck disable=SC2089
 dockerrun="$dockerrun \
 -e MW_PROMETHEUS_DIR=$MW_PROMETHEUS_DIR \
 -v /var/log:/var/log \
 -v "${MW_PROMETHEUS_DIR}:${MW_PROMETHEUS_DIR}" \
 --privileged \
---network=host '$MW_DO_COLLECTOR_DOCKER_IMAGE'"
+--network=host $MW_DO_COLLECTOR_DOCKER_IMAGE"
 
+echo $dockerrun
 # shellcheck disable=SC2090
 export dockerrun
 eval " $dockerrun"
 
+echo "checking status"
 # Check if the container is running
 container_status=$(docker inspect -f '{{.State.Status}}' $MW_DO_COLLECTOR_CONTAINER_NAME 2>/dev/null)
+echo $container_status
 
 if [[ "$container_status" == "running" ]]; then
     echo -e "\n\033[1m'${MW_DO_COLLECTOR_CONTAINER_NAME}' is running and collecting data.\033[0m"
-    echo -e "\n\033[1mFor DO managed databases log forwarding, please use the 'Rsyslog' option in the 'Log Forwarding' settings with the following configuration.\033[0m"
-
-    if [ "$MW_SYSLOG_HOST" = "0.0.0.0" ] || [ "$MW_SYSLOG_HOST" = "[::]" ]; then
-        server_ip=$(hostname -I | awk '{print $1}')
-    else
-        server_ip=$MW_SYSLOG_HOST
-    fi
-    # Bold "Configuration details" using ANSI escape codes
-    echo -e "\n\033[1mConfiguration details:\033[0m"
-    echo -e "  - \033[32mEndpoint:\033[0m $server_ip"
-    echo -e "  - \033[32mPort:\033[0m $MW_SYSLOG_PORT"
-    echo -e "  - \033[31mUncheck\033[31 \033[32m the 'Enable TLS Support' option.\033[0m"
 elif [[ "$container_status" == "exited" || "$container_status" == "dead" ]]; then
     echo "'${MW_DO_COLLECTOR_CONTAINER_NAME}' failed to start with status $container_status. Please contact our support team at support@middleware.io." 
 else
