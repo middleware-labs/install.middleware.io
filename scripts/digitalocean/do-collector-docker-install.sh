@@ -136,9 +136,18 @@ container_status=$(docker inspect -f '{{.State.Status}}' $MW_DO_COLLECTOR_CONTAI
 echo $container_status
 
 if [[ "$container_status" == "running" ]]; then
-    echo -e "\n\033[1m'${MW_DO_COLLECTOR_CONTAINER_NAME}' is running and collecting data.\033[0m"
+    echo -e "\n\033[1m'${MW_DO_COLLECTOR_CONTAINER_NAME}' is running and collecting data.\033[0m\n"
+    METADATA_URL="http://169.254.169.254/metadata/v1.json"
+    PUBLIC_IP=$(curl -s --max-time 2 "$METADATA_URL" | jq -r '.interfaces.public[0].ipv4.ip_address')
+    echo 'Use the following configuration to enable log forwarding using RSyslog for managed databases.'
+    echo -e "\n\033[1m        Endpoint:           $PUBLIC_IP\033[0m"
+    echo -e "\033[1m        Port:               $MW_SYSLOG_PORT\033[0m"
+    echo -e "\033[1m        Enable TLS Support: Uncheck this option\033[0m"
+    echo -e "\033[1m        Message Format:     Custom\033[0m"
+    echo -e "\033[1m        Log Line Template:  <%pri%>1 %timereported:::date-rfc3339% %HOSTNAME% %app-name% %procid% - - %msg%\\\\n\033[0m\n"
 elif [[ "$container_status" == "exited" || "$container_status" == "dead" ]]; then
     echo "'${MW_DO_COLLECTOR_CONTAINER_NAME}' failed to start with status $container_status. Please contact our support team at support@middleware.io." 
 else
     echo "'${MW_DO_COLLECTOR_CONTAINER_NAME}' does not exist or is not accessible."
 fi
+

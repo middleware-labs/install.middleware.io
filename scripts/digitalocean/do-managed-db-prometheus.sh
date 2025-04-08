@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Exit immediately if a command exits with a non-zero status
-set -e
+set -e pipefail
 
 # Ensure required environment variables are set
 if [[ -z "$DATABASE_NAME" ]]; then
@@ -29,16 +29,6 @@ fi
 mkdir -p "$MW_PROMETHEUS_DIR"
 echo "Prometheus directory is set to: $MW_PROMETHEUS_DIR"
 
-# If MW_SYSLOG_HOST is not set, use the system's primary IP address
-if [[ -z "$MW_SYSLOG_HOST" ]]; then
-    MW_SYSLOG_HOST=$(hostname -I | awk '{print $1}')
-fi
-
-# If MW_SYSLOG_PORT is not set, then set it to 5514
-if [[ -z "$MW_SYSLOG_PORT" ]]; then
-    MW_SYSLOG_PORT="5514"
-fi
-
 # Prompt user for DigitalOcean Token
 echo -n "Enter your DigitalOcean Token: "
 read -s DIGITALOCEAN_API_TOKEN
@@ -56,8 +46,16 @@ get_database_details() {
 
     DATABASE_UUID=$(echo "$DATABASE_INFO" | jq -r ".id")
     DATABASE_HOST=$(echo "$DATABASE_INFO" | jq -r ".connection.host")
-    DATABASE_USERNAME=$(echo "$DATABASE_INFO" | jq -r ".connection.user")
-    DATABASE_PASSWORD=$(echo "$DATABASE_INFO" | jq -r ".connection.password")
+
+    # Get credentials for accessing metrics
+    credentials_output=$(curl --silent -XGET --location "https://api.digitalocean.com/v2/databases/metrics/credentials" --header "Content-Type: application/json" --header "Authorization: Bearer $DIGITALOCEAN_API_TOKEN" | jq '.credentials')
+
+    # Check if curl command for credentials was successful
+    if [ $? -eq 0 ]; then
+        # Parse username and password from curl output
+        DATABASE_USERNAME=$(echo "$credentials_output" | jq -r '.basic_auth_username')
+        DATABASE_PASSWORD=$(echo "$credentials_output" | jq -r '.basic_auth_password')
+    fi
 
     if [[ -z "$DATABASE_UUID" || "$DATABASE_UUID" == "null" ]]; then
         echo "Error: Unable to fetch UUID for database: $DATABASE_NAME"
@@ -93,88 +91,18 @@ append_if_not_exists() {
     fi
 }
 
-# Function to configure DigitalOcean log sink
-configure_digitalocean_log_sink() {
-    echo "Configuring DigitalOcean log sink for database $DATABASE_UUID..."
-
-    # Check if the log sink is already configured by fetching the current log sinks
-    EXISTING_LOG_SINK=$(curl -s -X GET "${DIGITALOCEAN_API_URL}/${DATABASE_UUID}/logsink" \
-        -H "Authorization: Bearer ${DIGITALOCEAN_API_TOKEN}" \
-        -H "Content-Type: application/json")
-    # Extract the log sink ID from the existing sinks if it exists
-    LOG_SINK_ID=$(echo "$EXISTING_LOG_SINK" | jq -r '.sinks[]? | select(.sink_name == "middleware.io") | .sink_id')
-    # Define the payload for the log sink configuration for PUT (update)
-    LOG_SINK_PAYLOAD_PUT=$(jq -n \
-        --arg server "$MW_SYSLOG_HOST" \
-        --argjson port "$MW_SYSLOG_PORT" \
-        '{
-            "config": {
-                "server": $server,
-                "port": $port,
-                "tls": false,
-                "format": "rfc5424"
-            }
-        }')
-
-    # Define the payload for the log sink configuration for POST (create)
-    LOG_SINK_PAYLOAD_POST=$(jq -n \
-        --arg server "$MW_SYSLOG_HOST" \
-        --argjson port "$MW_SYSLOG_PORT" \
-        '{
-            "sink_name": "middleware.io",
-            "sink_type": "rsyslog",
-            "config": {
-                "server": $server,
-                "port": $port,
-                "tls": false,
-                "format": "rfc5424"
-            }
-        }')
-
-    # If the log sink is already configured, update it using PUT API
-    if [[ -n "$LOG_SINK_ID" && "$LOG_SINK_ID" != "null" ]]; then
-        echo "Log sink already exists. Updating log sink..."
-        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$DIGITALOCEAN_API_URL/$DATABASE_UUID/logsink/$LOG_SINK_ID" \
-            -H "Authorization: Bearer $DIGITALOCEAN_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$LOG_SINK_PAYLOAD_PUT")
-
-        if [[ "$RESPONSE" == "200" || "$RESPONSE" == "201" || "$RESPONSE" == "204" ]]; then
-            echo "Successfully updated DigitalOcean log sink."
-        else
-            echo "Error updating log sink. HTTP Status: $RESPONSE"
-            exit 1
-        fi
-    else
-        # If the log sink is not configured, create it using POST API
-        echo "Log sink not found. Creating new log sink..."
-	echo $LOG_SINK_PAYLOAD_POST
-        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$DIGITALOCEAN_API_URL/$DATABASE_UUID/logsink" \
-            -H "Authorization: Bearer $DIGITALOCEAN_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$LOG_SINK_PAYLOAD_POST")
-
-        if [[ "$RESPONSE" == "200" || "$RESPONSE" == "201" ]]; then
-            echo "Successfully created DigitalOcean log sink."
-        else
-            echo "Error creating log sink. HTTP Status: $RESPONSE"
-            exit 1
-        fi
-    fi
-}
-
 # Fetch database UUID, Host, Username, and Password
 get_database_details
 
 # Run curl command to fetch crt content
 crt_content=$(curl -s -X GET \
-	  -H "Content-Type: application/json" \
-	  -H "Authorization: Bearer $DIGITALOCEAN_API_TOKEN" \
-	  "https://api.digitalocean.com/v2/databases/${DATABASE_UUID}/ca" | jq -r '.ca.certificate')
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $DIGITALOCEAN_API_TOKEN" \
+          "https://api.digitalocean.com/v2/databases/${DATABASE_UUID}/ca" | jq -r '.ca.certificate')
 
 # Write crt content to corresponding crt file
-echo "$crt_content" | base64 -d > "$MW_PROMETHEUS_DIR/${hostname}.crt"
-echo "Created $MW_PROMETHEUS_DIR/${hostname}.crt"
+echo "$crt_content" | base64 -d > "$MW_PROMETHEUS_DIR/${DATABASE_HOST}.crt"
+echo "Created $MW_PROMETHEUS_DIR/${DATABASE_HOST}.crt"
 
 # Define Prometheus scrape job
 PROMETHEUS_SCRAPE_JOB="
@@ -197,8 +125,7 @@ PROMETHEUS_SCRAPE_JOB="
 # Ensure Prometheus job is added if not present
 append_if_not_exists "$PROMETHEUS_CONFIG_FILE" "$PROMETHEUS_SCRAPE_JOB" "job_name: '${DATABASE_HOST}_metrics'"
 
-# Configure DigitalOcean log sink
-configure_digitalocean_log_sink
 
-echo "Configuration completed."
+echo "Prometheus configuration generated for $DATABASE_NAME in $MW_PROMETHEUS_DIR/$PROMETHEUS_CONFIG_FILE"
+
 
