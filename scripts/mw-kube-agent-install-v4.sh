@@ -108,7 +108,7 @@ export MW_KUBE_AGENT_HOME
 # Fetch install manifest 
 sudo rm -rf $MW_KUBE_AGENT_HOME
 sudo mkdir -p $MW_KUBE_AGENT_HOME
-BASE_URL="https://install.middleware.io/scripts/mw-kube-agent"
+BASE_URL="https://install.middleware.io/manifests/mw-kube-agent-v4"
 
 # Download necessary files
 for file in clusterrole.yaml clusterrolebinding.yaml configupdater.yaml daemonset.yaml deployment.yaml \
