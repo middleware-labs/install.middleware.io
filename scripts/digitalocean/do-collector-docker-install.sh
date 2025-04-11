@@ -86,7 +86,7 @@ fi
 
 # If MW_LOG_LEVEL is not set, then set it to info
 if [ -z "$MW_LOG_LEVEL" ]; then
-    MW_LOG_LEVEL=info
+    MW_LOG_LEVEL=fatal
 fi
 dockerrun="$dockerrun -e MW_LOG_LEVEL=$MW_LOG_LEVEL"
 
