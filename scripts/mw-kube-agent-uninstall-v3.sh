@@ -41,8 +41,8 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
 --data-raw '{
     "status": "tried",
     "metadata": {
-        "script": "kubernetes",
-        "status": "ok",
+        "script": "kubernetes-v3",
+        "status": "ok
         "message": "agent uninstalled"
     }
 }' > /dev/null
@@ -94,6 +94,7 @@ delete_resource deployment mw-kube-agent $MW_DEFAULT_NAMESPACE
 delete_resource daemonset mw-kube-agent $MW_DEFAULT_NAMESPACE
 delete_resource cronjob mw-kube-agent-update $MW_DEFAULT_NAMESPACE
 delete_resource job mw-kube-agent-update-configmap $MW_DEFAULT_NAMESPACE
+delete_resource deployment mw-kube-agent-config-updater $MW_DEFAULT_NAMESPACE
 
 # Delete cluster-level resources
 delete_resource clusterrole mw-cluster-role-mw-agent-ns
@@ -115,3 +116,5 @@ else
 fi
 
 echo -e "\nMiddleware Kubernetes agent has been successfully uninstalled!"
+
+send_logs "success" "uninstall completed"

@@ -11,7 +11,7 @@ send_logs() {
 {
   "status": "$status",
   "metadata": {
-    "script": "kubernetes",
+    "script": "kubernetes-v3",
     "status": "ok",
     "message": "$message",
     "script_logs": "$(sed 's/$/\\n/' "$LOG_FILE" | tr -d '\n' | sed 's/"/\\\"/g' | sed 's/\t/\\t/g')"
@@ -41,7 +41,7 @@ get_latest_mw_agent_version() {
 
   # Check if the version was fetched successfully
   if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
-    latest_version="1.6.6"
+    latest_version="1.15.1"
   fi
 
   echo "$latest_version"
@@ -68,7 +68,7 @@ export MW_DEFAULT_NAMESPACE
 MW_DEFAULT_API_URL_FOR_CONFIG_CHECK=http://app.middleware.io
 export MW_DEFAULT_API_URL_FOR_CONFIG_CHECK
 
-MW_DEFAULT_CONFIG_CHECK_INTERVAL="*/1 * * * *"
+MW_DEFAULT_CONFIG_CHECK_INTERVAL="60s"
 export MW_DEFAULT_CONFIG_CHECK_INTERVAL
 
 MW_LATEST_VERSION=$(get_latest_mw_agent_version)
@@ -101,19 +101,18 @@ export MW_KUBE_CLUSTER_NAME
 
 printf "\nSetting up Middleware Kubernetes agent ...\n\n\tcluster : %s \n\tcontext : %s\n" "$MW_KUBE_CLUSTER_NAME" "$CURRENT_CONTEXT"
 
-
 # Home for local configs
-MW_KUBE_AGENT_HOME=/usr/local/bin/mw-kube-agent
+MW_KUBE_AGENT_HOME=/tmp/mw-kube-agent
 export MW_KUBE_AGENT_HOME
 
 # Fetch install manifest 
 sudo rm -rf $MW_KUBE_AGENT_HOME
 sudo mkdir -p $MW_KUBE_AGENT_HOME
-BASE_URL="https://install.middleware.io/scripts/mw-kube-agent"
+BASE_URL="https://install.middleware.io/manifests/mw-kube-agent"
 
 # Download necessary files
-for file in clusterrole.yaml clusterrolebinding.yaml cronjob.yaml daemonset.yaml deployment.yaml \
-            role-update.yaml role.yaml rolebinding-update.yaml update-configmap-job.yaml rolebinding.yaml \
+for file in clusterrole.yaml clusterrolebinding.yaml configupdater.yaml daemonset.yaml deployment.yaml \
+            role-update.yaml role.yaml rolebinding-update.yaml rolebinding.yaml \
             service.yaml serviceaccount-update.yaml serviceaccount.yaml; do
     sudo wget -O "$MW_KUBE_AGENT_HOME/$file" "$BASE_URL/$file"
 done
@@ -129,12 +128,8 @@ else
     echo "Namespace '${MW_NAMESPACE}' created successfully."
 fi
 
-sudo wget -q -O otel-config-deployment.yaml https://install.middleware.io/scripts/otel-config-deployment.yaml
-sudo wget -q -O otel-config-daemonset.yaml https://install.middleware.io/scripts/otel-config-daemonset.yaml
-kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-deployment-otel-config --from-file=otel-config=otel-config-deployment.yaml --namespace="$MW_NAMESPACE"
-kubectl --kubeconfig "${MW_KUBECONFIG}" create configmap mw-daemonset-otel-config --from-file=otel-config=otel-config-daemonset.yaml --namespace="$MW_NAMESPACE"     
-
-
+# Delete cronjob updater
+kubectl delete cronjob mw-kube-agent-update -n "${MW_NAMESPACE}" --kubeconfig "${MW_KUBECONFIG}" --ignore-not-found
 
 # Apply YAML files in specific order
 ordered_files="
@@ -144,14 +139,12 @@ ordered_files="
     role-update.yaml
     rolebinding.yaml
     rolebinding-update.yaml
-    serviceaccount.yaml
     clusterrole.yaml
     clusterrolebinding.yaml
-    update-configmap-job.yaml
+    configupdater.yaml
     service.yaml
     deployment.yaml
     daemonset.yaml
-    cronjob.yaml
 "
 
 for file in $ordered_files; do
@@ -166,13 +159,6 @@ for file in $ordered_files; do
       -e "s|MW_CONFIG_CHECK_INTERVAL_VALUE|$MW_CONFIG_CHECK_INTERVAL|g" \
       -e "s|MW_VERSION_VALUE|$MW_VERSION|g" \
     "$MW_KUBE_AGENT_HOME/$file" |kubectl apply -f - --kubeconfig "${MW_KUBECONFIG}"
-
-    # If the current file is the job, wait for it to complete
-    if [ "$file" = "update-configmap-job.yaml" ]; then
-      printf "\nFetching the latest settings for your account ..."
-      job_name=$(kubectl get job -o jsonpath='{.items[0].metadata.name}' --namespace "${MW_NAMESPACE}" --kubeconfig "${MW_KUBECONFIG}")
-      kubectl wait --for=condition=complete --timeout=15s job/"$job_name" --namespace "${MW_NAMESPACE}" --kubeconfig "${MW_KUBECONFIG}" || echo "Continuing the installation ..."
-    fi
 done
 
 echo "Middleware Kubernetes agent successfully installed !"
@@ -184,5 +170,3 @@ if [ "${MW_AUTO_INSTRUMENT:-false}" = "true" ]; then
 else
     echo -e "\nAuto-instrumentation is not enabled. Set MW_AUTO_INSTRUMENT=true to enable it."
 fi
-
-
