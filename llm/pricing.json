@@ -1,0 +1,561 @@
+{
+    "chat": {
+      "davinci-002": { "PromptPrice": 0.002, "CompletionPrice": 0.002 },
+      "babbage-002": { "PromptPrice": 0.0004, "CompletionPrice": 0.0004 },
+      "gpt-3.5-turbo": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "gpt-3.5-turbo-instruct": {
+        "PromptPrice": 0.0015,
+        "CompletionPrice": 0.002
+      },
+      "gpt-3.5-turbo-16k-0613": {
+        "PromptPrice": 0.003,
+        "CompletionPrice": 0.004
+      },
+      "gpt-3.5-0301": { "PromptPrice": 0.0015, "CompletionPrice": 0.002 },
+      "gpt-3.5-turbo-0613": { "PromptPrice": 0.0015, "CompletionPrice": 0.002 },
+      "gpt-3.5-turbo-1106": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "gpt-3.5-turbo-0125": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "azure_gpt-35-turbo": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "azure_gpt-35-turbo-16k": {
+        "PromptPrice": 0.0005,
+        "CompletionPrice": 0.0015
+      },
+      "azure_gpt-35-turbo-instruct": {
+        "PromptPrice": 0.0015,
+        "CompletionPrice": 0.002
+      },
+      "gpt-4-0314": { "PromptPrice": 0.03, "CompletionPrice": 0.06 },
+      "gpt-4-0613": { "PromptPrice": 0.03, "CompletionPrice": 0.06 },
+      "gpt-4": { "PromptPrice": 0.03, "CompletionPrice": 0.06 },
+      "gpt-4-turbo": { "PromptPrice": 0.01, "CompletionPrice": 0.03 },
+      "gpt-4-turbo-2024-04-09": { "PromptPrice": 0.01, "CompletionPrice": 0.03 },
+      "gpt-4-32k": { "PromptPrice": 0.06, "CompletionPrice": 0.12 },
+      "gpt-4-1106-preview": { "PromptPrice": 0.01, "CompletionPrice": 0.03 },
+      "gpt-4-0125-preview": { "PromptPrice": 0.01, "CompletionPrice": 0.03 },
+      "gpt-4-preview": { "PromptPrice": 0.01, "CompletionPrice": 0.03 },
+      "gpt-4-1106-vision-preview": {
+        "PromptPrice": 0.01,
+        "CompletionPrice": 0.03
+      },
+      "gpt-4-vision-preview": { "PromptPrice": 0.01, "CompletionPrice": 0.03 },
+      "gpt-4o": { "PromptPrice": 0.005, "CompletionPrice": 0.015 },
+      "gpt-4o-2024-05-13": { "PromptPrice": 0.005, "CompletionPrice": 0.015 },
+      "gpt-4o-2024-08-06": { "PromptPrice": 0.0025, "CompletionPrice": 0.01 },
+      "gpt-4o-mini": { "PromptPrice": 0.00015, "CompletionPrice": 0.0006 },
+      "gpt-4o-mini-2024-07-18": {
+        "PromptPrice": 0.00015,
+        "CompletionPrice": 0.0006
+      },
+      "o1-mini": { "PromptPrice": 0.003, "CompletionPrice": 0.012 },
+      "o1-mini-2024-09-12": { "PromptPrice": 0.003, "CompletionPrice": 0.012 },
+      "o1-preview": { "PromptPrice": 0.015, "CompletionPrice": 0.06 },
+      "o1-preview-2024-09-12": { "PromptPrice": 0.015, "CompletionPrice": 0.06 },
+      "o1": { "PromptPrice": 0.015, "CompletionPrice": 0.06 },
+      "azure_gpt-4": { "PromptPrice": 0.03, "CompletionPrice": 0.06 },
+      "azure_gpt-4-32k": { "PromptPrice": 0.06, "CompletionPrice": 0.12 },
+      "o3-mini": { "PromptPrice": 0.0011, "CompletionPrice": 0.0044 },
+      "gpt-4.1": { "PromptPrice": 0.002, "CompletionPrice": 0.008 },
+      "gpt-4.1-2025-04-14": { "PromptPrice": 0.002, "CompletionPrice": 0.008 },
+      "gpt-4.1-mini": { "PromptPrice": 0.0004, "CompletionPrice": 0.0016 },
+      "gpt-4.1-mini-2025-04-14": {
+        "PromptPrice": 0.0004,
+        "CompletionPrice": 0.0016
+      },
+      "gpt-4.1-nano": { "PromptPrice": 0.0001, "CompletionPrice": 0.0004 },
+      "gpt-4.1-nano-2025-04-14": {
+        "PromptPrice": 0.0001,
+        "CompletionPrice": 0.0004
+      },
+      "gpt-4.5": { "PromptPrice": 0.075, "CompletionPrice": 0.15 },
+      "gpt-4o-mini-audio-preview": {
+        "PromptPrice": 0.00015,
+        "CompletionPrice": 0.0006
+      },
+      "gpt-4o-mini-audio-preview-2024-12-17": {
+        "PromptPrice": 0.00015,
+        "CompletionPrice": 0.0006
+      },
+      "gpt-4o-mini-realtime-preview": {
+        "PromptPrice": 0.0006,
+        "CompletionPrice": 0.0024
+      },
+      "gpt-4o-mini-realtime-preview-2024-12-17": {
+        "PromptPrice": 0.0006,
+        "CompletionPrice": 0.0024
+      },
+      "gpt-4o-2024-11-20": { "PromptPrice": 0.0025, "CompletionPrice": 0.01 },
+      "gpt-4o-audio-preview": { "PromptPrice": 0.0025, "CompletionPrice": 0.01 },
+      "gpt-4o-audio-preview-2024-12-17": {
+        "PromptPrice": 0.0025,
+        "CompletionPrice": 0.01
+      },
+      "gpt-4o-audio-preview-2024-10-01": {
+        "PromptPrice": 0.0025,
+        "CompletionPrice": 0.01
+      },
+      "gpt-4o-realtime-preview": {
+        "PromptPrice": 0.005,
+        "CompletionPrice": 0.02
+      },
+      "gpt-4o-realtime-preview-2024-12-17": {
+        "PromptPrice": 0.005,
+        "CompletionPrice": 0.02
+      },
+      "gpt-4o-realtime-preview-2024-10-01": {
+        "PromptPrice": 0.005,
+        "CompletionPrice": 0.02
+      },
+      "chatgpt-4o-latest": { "PromptPrice": 0.005, "CompletionPrice": 0.015 },
+      "claude-3-7-sonnet": { "PromptPrice": 0.003, "CompletionPrice": 0.015 },
+      "claude-3-5-haiku": { "PromptPrice": 0.0008, "CompletionPrice": 0.004 },
+      "claude-3-5-sonnet": { "PromptPrice": 0.003, "CompletionPrice": 0.015 },
+      "deepseek-coder": { "PromptPrice": 0.00014, "CompletionPrice": 0.00028 },
+      "ministral-8b-latest": { "PromptPrice": 0.0001, "CompletionPrice": 0.0001 },
+      "ministral-3b-latest": {
+        "PromptPrice": 0.00004,
+        "CompletionPrice": 0.00004
+      },
+      "llama-3.1-8b-instruct": {
+        "PromptPrice": 0.0002,
+        "CompletionPrice": 0.0002
+      },
+      "llama-3.1-70b-instruct": {
+        "PromptPrice": 0.001,
+        "CompletionPrice": 0.001
+      },
+      "pixtral-large-latest": { "PromptPrice": 0.002, "CompletionPrice": 0.006 },
+      "codestral-latest": { "PromptPrice": 0.0002, "CompletionPrice": 0.0006 },
+      "llama-3.1-sonar-huge-128k-online": {
+        "PromptPrice": 0.005,
+        "CompletionPrice": 0.005
+      },
+      "llama-3.1-sonar-small-128k-online": {
+        "PromptPrice": 0.0002,
+        "CompletionPrice": 0.0002
+      },
+      "llama-3.1-sonar-small-128k-chat": {
+        "PromptPrice": 0.0002,
+        "CompletionPrice": 0.0002
+      },
+      "llama-3.1-sonar-large-128k-online": {
+        "PromptPrice": 0.001,
+        "CompletionPrice": 0.001
+      },
+      "llama-3.1-sonar-large-128k-chat": {
+        "PromptPrice": 0.001,
+        "CompletionPrice": 0.001
+      },
+      "command-r": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "command-r-08-2024": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "command-r-03-2024": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "command-r-plus": { "PromptPrice": 0.003, "CompletionPrice": 0.015 },
+      "command-r-plus-08-2024": {
+        "PromptPrice": 0.003,
+        "CompletionPrice": 0.015
+      },
+      "command-r-plus-04-2024": {
+        "PromptPrice": 0.003,
+        "CompletionPrice": 0.015
+      },
+      "deepseek-r1-distill-llama-70b": {
+        "PromptPrice": 0.00075,
+        "CompletionPrice": 0.00099
+      },
+      "deepseek-r1-distill-qwen-32b": {
+        "PromptPrice": 0.00069,
+        "CompletionPrice": 0.00069
+      },
+      "qwen-2.5-32b-instruct": {
+        "PromptPrice": 0.00079,
+        "CompletionPrice": 0.00079
+      },
+      "qwen-2.5-coder-32b-instruct": {
+        "PromptPrice": 0.00079,
+        "CompletionPrice": 0.00079
+      },
+      "qwen-qwq-32b": { "PromptPrice": 0.00029, "CompletionPrice": 0.00039 },
+      "mistral-saba-24b": { "PromptPrice": 0.00079, "CompletionPrice": 0.00079 },
+      "llama-3.2-1b": { "PromptPrice": 0.00004, "CompletionPrice": 0.00004 },
+      "llama-3.2-3b": { "PromptPrice": 0.00006, "CompletionPrice": 0.00006 },
+      "llama-3.3-70b-versatile": {
+        "PromptPrice": 0.00059,
+        "CompletionPrice": 0.00079
+      },
+      "llama-3.3-70b-specdec": {
+        "PromptPrice": 0.00059,
+        "CompletionPrice": 0.00099
+      },
+      "llama-3.2-11b-vision": {
+        "PromptPrice": 0.00018,
+        "CompletionPrice": 0.00018
+      },
+      "llama-3.2-90b-vision": {
+        "PromptPrice": 0.0009,
+        "CompletionPrice": 0.0009
+      },
+      "llama-3.1-8b-instant": {
+        "PromptPrice": 0.00005,
+        "CompletionPrice": 0.00008
+      },
+      "llama-3-70b": { "PromptPrice": 0.00059, "CompletionPrice": 0.00079 },
+      "llama-3-8b": { "PromptPrice": 0.00005, "CompletionPrice": 0.00008 },
+      "mixtral-8x7b-instruct": {
+        "PromptPrice": 0.00024,
+        "CompletionPrice": 0.00024
+      },
+      "gemini-1.5-flash-8b": {
+        "PromptPrice": 0.0000375,
+        "CompletionPrice": 0.00015
+      },
+      "gemini-2.0-flash": { "PromptPrice": 0.0001, "CompletionPrice": 0.0004 },
+      "gemini-2.0-flash-lite": {
+        "PromptPrice": 0.000075,
+        "CompletionPrice": 0.0003
+      },
+      "claude-3-opus-20240229": {
+        "PromptPrice": 0.015,
+        "CompletionPrice": 0.075
+      },
+      "claude-3-sonnet-20240229": {
+        "PromptPrice": 0.003,
+        "CompletionPrice": 0.015
+      },
+      "claude-3-haiku-20240307": {
+        "PromptPrice": 0.00025,
+        "CompletionPrice": 0.00125
+      },
+      "command": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "command-nightly": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "command-light": { "PromptPrice": 0.0003, "CompletionPrice": 0.0006 },
+      "command-light-nightly": {
+        "PromptPrice": 0.0003,
+        "CompletionPrice": 0.0006
+      },
+      "open-mistral-7b": { "PromptPrice": 0.00025, "CompletionPrice": 0.00025 },
+      "open-mixtral-8x7b": { "PromptPrice": 0.0007, "CompletionPrice": 0.0007 },
+      "mistral-small-latest": { "PromptPrice": 0.002, "CompletionPrice": 0.006 },
+      "mistral-medium-latest": {
+        "PromptPrice": 0.0027,
+        "CompletionPrice": 0.0081
+      },
+      "mistral-large-latest": { "PromptPrice": 0.008, "CompletionPrice": 0.024 },
+      "amazon.titan-text-express-v1": {
+        "PromptPrice": 0.0008,
+        "CompletionPrice": 0.0016
+      },
+      "amazon.titan-text-lite-v1": {
+        "PromptPrice": 0.0003,
+        "CompletionPrice": 0.0004
+      },
+      "anthropic.claude-v2": { "PromptPrice": 0.008, "CompletionPrice": 0.024 },
+      "anthropic.claude-3-sonnet-20240229-v1:0": {
+        "PromptPrice": 0.003,
+        "CompletionPrice": 0.015
+      },
+      "anthropic.claude-3-opus-20240229-v1:0": {
+        "PromptPrice": 0.015,
+        "CompletionPrice": 0.075
+      },
+      "anthropic.claude-3-haiku-20240307-v1:0": {
+        "PromptPrice": 0.00025,
+        "CompletionPrice": 0.00125
+      },
+      "meta.llama3-8b-instruct-v1:0": {
+        "PromptPrice": 0.0004,
+        "CompletionPrice": 0.0006
+      },
+      "meta.llama3-70b-instruct-v1:0": {
+        "PromptPrice": 0.00265,
+        "CompletionPrice": 0.0035
+      },
+      "meta.llama2-13b-chat-v1": {
+        "PromptPrice": 0.00075,
+        "CompletionPrice": 0.001
+      },
+      "meta.llama2-70b-chat-v1": {
+        "PromptPrice": 0.00195,
+        "CompletionPrice": 0.00256
+      },
+      "cohere.command-text-v14": {
+        "PromptPrice": 0.0015,
+        "CompletionPrice": 0.002
+      },
+      "cohere.command-light-text-v14": {
+        "PromptPrice": 0.0003,
+        "CompletionPrice": 0.0006
+      },
+      "claude-3-opus-20240229": {
+        "input": 0.015,
+        "output": 0.075
+      },
+      "claude-3-sonnet-20240229": {
+        "input": 0.003,
+        "output": 0.015
+      },
+      "claude-3-haiku-20240307": {
+        "input": 0.00025,
+        "output": 0.00125
+      },
+      "anthropic.claude-v2": {
+        "input": 0.008,
+        "output": 0.024
+      },
+      "anthropic.claude-3-sonnet-20240229-v1:0": {
+        "input": 0.003,
+        "output": 0.015
+      },
+      "anthropic.claude-3-opus-20240229-v1:0": {
+        "input": 0.015,
+        "output": 0.075
+      },
+      "anthropic.claude-3-haiku-20240307-v1:0": {
+        "input": 0.00025,
+        "output": 0.00125
+      },
+      "ai21.j2-mid-v1": { "PromptPrice": 0.0125, "CompletionPrice": 0.0125 },
+      "ai21.j2-ultra-v1": { "PromptPrice": 0.0188, "CompletionPrice": 0.0188 },
+      "gemini-1.0-pro": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "gemini-1.5-flash": { "PromptPrice": 0.000075, "CompletionPrice": 0.0003 },
+      "gemini-1.5-pro": { "PromptPrice": 0.0035, "CompletionPrice": 0.0105 },
+      "gemini-1.0-pro-002": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "gemini-1.0-pro-001": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "gemini-1.5-pro-preview-0409": {
+        "PromptPrice": 0.005,
+        "CompletionPrice": 0.015
+      },
+      "gemini-1.5-pro-preview-0514": {
+        "PromptPrice": 0.005,
+        "CompletionPrice": 0.015
+      },
+      "gemini-1.5-flash-preview-0514": {
+        "PromptPrice": 0.0005,
+        "CompletionPrice": 0.0015
+      },
+      "text-bison": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "text-bison@002": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "text-bison-32k": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "text-bison-32k@002": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "text-unicorn": { "PromptPrice": 0.01, "CompletionPrice": 0.03 },
+      "text-unicorn@001": { "PromptPrice": 0.01, "CompletionPrice": 0.03 },
+      "chat-bison": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "chat-bison@002": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "chat-bison-32k": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "chat-bison-32k@002": { "PromptPrice": 0.001, "CompletionPrice": 0.002 },
+      "llama3-8b-8192": { "PromptPrice": 0.00005, "CompletionPrice": 0.0001 },
+      "llama3-70b-8192": { "PromptPrice": 0.00059, "CompletionPrice": 0.00079 },
+      "mixtral-8x7b-32768": {
+        "PromptPrice": 0.00024,
+        "CompletionPrice": 0.00024
+      },
+      "gemma-7b-it": { "PromptPrice": 0.0001, "CompletionPrice": 0.0001 },
+      "reka-core": { "PromptPrice": 0.002, "CompletionPrice": 0.002 },
+      "reka-core-20240415": { "PromptPrice": 0.002, "CompletionPrice": 0.002 },
+      "reka-core-20240501": { "PromptPrice": 0.002, "CompletionPrice": 0.002 },
+      "reka-flash": { "PromptPrice": 0.0002, "CompletionPrice": 0.0008 },
+      "reka-flash-20240226": { "PromptPrice": 0.0002, "CompletionPrice": 0.0008 },
+      "reka-edge": { "PromptPrice": 0.0001, "CompletionPrice": 0.0001 },
+      "reka-edge-20240208": { "PromptPrice": 0.0001, "CompletionPrice": 0.0001 },
+      "reka-spark": { "PromptPrice": 0.00005, "CompletionPrice": 0.00005 },
+      "grok-beta": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "grok-vision-beta": { "PromptPrice": 0.0005, "CompletionPrice": 0.0015 },
+      "jamba-1.5-mini": { "PromptPrice": 0.0002, "CompletionPrice": 0.0004 },
+      "jamba-1.5-large": { "PromptPrice": 0.002, "CompletionPrice": 0.008 },
+      "meta-llama/Llama-3.3-70B-Instruct-Turbo": {
+        "PromptPrice": 0.00088,
+        "CompletionPrice": 0.00088
+      },
+      "mistral-saba-24b": {
+        "input": 0.00079,
+        "output": 0.00079
+      },
+      "mixtral-8x7b-instruct": {
+        "input": 0.00024,
+        "output": 0.00024
+      },
+      "mistral-medium-latest": {
+        "input": 0.0027,
+        "output": 0.0081
+      },
+      "mixtral-8x7b-32768": {
+        "input": 0.00024,
+        "output": 0.00024
+      },
+      "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo-vLLM-json": {
+        "PromptPrice": 0.00088,
+        "CompletionPrice": 0.00088
+      },
+      "meta-llama/Meta-Llama-3.1-405B-Instruct-Lite-Pro-lora": {
+        "PromptPrice": 0.00088,
+        "CompletionPrice": 0.00088
+      },
+      "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo": {
+        "PromptPrice": 0.00088,
+        "CompletionPrice": 0.00088
+      },
+      "Qwen/QwQ-32B-Preview": {
+        "PromptPrice": 0.0012,
+        "CompletionPrice": 0.0012
+      },
+      "codellama/CodeLlama-34b-Instruct-hf": {
+        "PromptPrice": 0.0008,
+        "CompletionPrice": 0.0008
+      },
+      "databricks/dbrx-instruct": {
+        "PromptPrice": 0.0012,
+        "CompletionPrice": 0.0012
+      },
+      "deepseek-ai/deepseek-llm-67b-chat": {
+        "PromptPrice": 0.0009,
+        "CompletionPrice": 0.0009
+      },
+      "google/gemma-2b-it": { "PromptPrice": 0.0001, "CompletionPrice": 0.0001 },
+      "google/gemma-2-27b-it": {
+        "PromptPrice": 0.0008,
+        "CompletionPrice": 0.0008
+      },
+      "google/gemma-2-9b-it": {
+        "PromptPrice": 0.0003,
+        "CompletionPrice": 0.0003
+      },
+      "gemma-2-9b": {
+        "PromptPrice": 0.0002,
+        "CompletionPrice": 0.0002
+      },
+      "Gryphe/MythoMax-L2-13b-Lite": {
+        "PromptPrice": 0.0003,
+        "CompletionPrice": 0.0003
+      },
+      "nvidia/Llama-3.1-Nemotron-70B-Instruct-HF": {
+        "PromptPrice": 0.0088,
+        "CompletionPrice": 0.0088
+      },
+      "deepseek-chat": { "PromptPrice": 0.00014, "CompletionPrice": 0.00028 },
+      "deepseek-reasoner": { "PromptPrice": 0.00055, "CompletionPrice": 0.00219 }
+    },
+    "embeddings": {
+      "text-embedding-ada-002": 0.0001,
+      "text-embedding-3-small": 0.00002,
+      "text-embedding-3-large": 0.00013,
+      "ada": 0.0001,
+      "ada-v2": 0.0001,
+      "text-ada-001": 0.0001,
+      "azure_text-embedding-ada-002": 0.0001,
+      "azure_text-embedding-3-small": 0.00002,
+      "azure_text-embedding-3-large": 0.00013,
+      "azure_ada": 0.0001,
+      "azure_ada-v2": 0.0001,
+      "azure_text-ada-001": 0.0001,
+      "embed-english-v3.0": 0.0001,
+      "embed-multilingual-v3.0": 0.0001,
+      "embed-english-light-v3.0": 0.0001,
+      "embed-multilingual-light-v3.0": 0.0001,
+      "embed-english-v2.0": 0.0001,
+      "embed-english-light-v2.0": 0.0001,
+      "embed-multilingual-v2.0": 0.0001,
+      "mistral-embed": 0.0001,
+      "amazon.titan-embed-text-v1": 0.0001,
+      "amazon.titan-embed-text-v2": 0.00002,
+      "textembedding-gecko": 0.0001,
+      "textembedding-gecko@001": 0.0001,
+      "textembedding-gecko@002": 0.0001,
+      "textembedding-gecko@003": 0.0001
+    },
+    "audio": {
+      "tts-1": 0.015,
+      "tts-1-hd": 0.03,
+      "eleven_multilingual_v2": 0.24,
+      "eleven_multilingual_v1": 0.24,
+      "eleven_monolingual_v1": 0.24,
+      "eleven_english_v1": 0.24,
+      "eleven_turbo_v2": 0.24,
+      "eleven_english_sts_v2": 0.24,
+      "eleven_multilingual_sts_v2": 0.24,
+      "best": 0.00010277777,
+      "nano": 0.00003333333
+    },
+    "image": {
+      "dall-e-3": {
+        "standard": {
+          "1024x1024": 0.04,
+          "1024x1792": 0.02,
+          "1792x1024": 0.08
+        },
+        "hd": {
+          "1024x1024": 0.08,
+          "1024x1792": 0.12,
+          "1792x1024": 0.12
+        }
+      },
+      "azure_dall-e-3": {
+        "standard": {
+          "1024x1024": 0.04,
+          "1024x1792": 0.02,
+          "1792x1024": 0.08
+        },
+        "hd": {
+          "1024x1024": 0.08,
+          "1024x1792": 0.12,
+          "1792x1024": 0.12
+        }
+      },
+      "dall-e-2": {
+        "standard": {
+          "1024x1024": 0.02,
+          "512x512": 0.018,
+          "256x256": 0.016
+        }
+      },
+      "black-forest-labs/FLUX.1-dev": {
+        "standard": {
+          "1000000": 0.025
+        }
+      },
+      "black-forest-labs/FLUX.1-canny": {
+        "standard": {
+          "1000000": 0.025
+        }
+      },
+      "black-forest-labs/FLUX.1-depth": {
+        "standard": {
+          "1000000": 0.025
+        }
+      },
+      "black-forest-labs/FLUX.1-redux": {
+        "standard": {
+          "1000000": 0.025
+        }
+      },
+      "black-forest-labs/FLUX.1-schnell": {
+        "standard": {
+          "1000000": 0.0027
+        }
+      },
+      "black-forest-labs/FLUX.1-pro": {
+        "standard": {
+          "1000000": 0.04
+        }
+      },
+      "black-forest-labs/FLUX.1.1-pro": {
+        "standard": {
+          "1000000": 0.05
+        }
+      },
+      "stabilityai/stable-diffusion-xl-base-1.0": {
+        "standard": {
+          "512X512": 0.001,
+          "1024x1024": 0.01
+        }
+      },
+      "amazon.titan-image-generator-v1": {
+        "standard": {
+          "512x512": 0.008,
+          "1024x1024": 0.01
+        },
+        "premium": {
+          "512x512": 0.01,
+          "1024x1024": 0.012
+        }
+      }
+    }
+  }
+  
