@@ -27,6 +27,7 @@ spec:
       - operator: "Exists"
         effect: "NoExecute"
       hostNetwork: true
+      hostPID: true
       volumes:
         - name: mw-daemonset-otel-config-volume
           configMap:
