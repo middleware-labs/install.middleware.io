@@ -28,7 +28,7 @@ spec:
               value:  "NAMESPACE_VALUE"
             - name: MW_CONFIG_CHECK_INTERVAL
               value: MW_CONFIG_CHECK_INTERVAL_VALUE
-          image: ghcr.io/middleware-labs/mw-kube-agent-config-updater:local
+          image: ghcr.io/middleware-labs/mw-kube-agent-config-updater:MW_VERSION_VALUE
           imagePullPolicy: IfNotPresent
           name: mw-kube-agent-config-updater
           securityContext:
