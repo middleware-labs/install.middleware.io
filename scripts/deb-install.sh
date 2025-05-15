@@ -206,6 +206,9 @@ if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
   export MW_AGENT_FEATURES_SYNTHETIC_MONITORING
 fi
 
+if [ -n "${MW_ENABLE_DATADOG_RECEIVER}" ]; then
+  export MW_ENABLE_DATADOG_RECEIVER
+fi
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 
