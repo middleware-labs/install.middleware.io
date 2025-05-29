@@ -62,6 +62,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            - name: MW_ENABLE_DATADOG_RECEIVER
+              value: "MW_ENABLE_DATADOG_RECEIVER_VALUE"
           image: ghcr.io/middleware-labs/mw-kube-agent:MW_VERSION_VALUE
           imagePullPolicy: IfNotPresent
           name: mw-kube-agent
