@@ -94,6 +94,11 @@ if [ "${MW_CONFIG_CHECK_INTERVAL}" = "" ]; then
   export MW_NAMESPACE
 fi
 
+if [ "${MW_ENABLE_DATADOG_RECEIVER}" = "" ]; then 
+  MW_ENABLE_DATADOG_RECEIVER=$MW_ENABLE_DATADOG_RECEIVER
+  export MW_ENABLE_DATADOG_RECEIVER
+fi
+
 # Fetching cluster name
 CURRENT_CONTEXT="$(kubectl config current-context)"
 MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '$CURRENT_CONTEXT')].context.cluster}")"
@@ -158,6 +163,7 @@ for file in $ordered_files; do
       -e "s|MW_API_URL_FOR_CONFIG_CHECK_VALUE|$MW_API_URL_FOR_CONFIG_CHECK|g" \
       -e "s|MW_CONFIG_CHECK_INTERVAL_VALUE|$MW_CONFIG_CHECK_INTERVAL|g" \
       -e "s|MW_VERSION_VALUE|$MW_VERSION|g" \
+      -e "s|MW_ENABLE_DATADOG_RECEIVER_VALUE|$MW_ENABLE_DATADOG_RECEIVER|g" \
     "$MW_KUBE_AGENT_HOME/$file" |kubectl apply -f - --kubeconfig "${MW_KUBECONFIG}"
 done
 
