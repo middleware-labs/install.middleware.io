@@ -20,7 +20,7 @@ spec:
           operator: Exists
           effect: NoSchedule
       containers:
-        - image: ghcr.io/middleware-labs/mw-auto-injector:beta
+        - image: ghcr.io/middleware-labs/mw-auto-injector:0.1.1
           imagePullPolicy: IfNotPresent
           name: mw-auto-injector
           env:
@@ -36,6 +36,8 @@ spec:
               value: "MW_API_KEY_VALUE"
             - name: MW_KUBE_CLUSTER_NAME
               value: "MW_KUBE_CLUSTER_NAME_VALUE"
+            - name: MW_RELEASE_NAMESPACE
+              value: mw-agent-ns
           resources:
             limits:
               cpu: 200m
