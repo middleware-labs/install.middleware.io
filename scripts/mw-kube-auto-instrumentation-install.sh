@@ -85,7 +85,7 @@ if [ -z "$MW_CERT_MANAGER_NAMESPACE" ]; then
 fi
 
 if [ -z "$MW_OTEL_OPERATOR_VERSION" ]; then
-   MW_OTEL_OPERATOR_VERSION="0.107.0"
+   MW_OTEL_OPERATOR_VERSION="0.94.2"
 fi
 
 MW_AUTOINSTRUMENTATION_NAMESPACE="mw-agent-ns"
@@ -145,6 +145,14 @@ check_pods_running_and_ready() {
         # Loop through all pods and check their status and readiness
         for pod in $pods; do
             status=$(kubectl get pod $pod -n $namespace -o jsonpath='{.status.phase}')
+
+            echo "Pod: $pod, Status: $status"
+            # For Completed jobs, just check if status is Completed
+            if [[ "$status" == "Succeeded" ]]; then
+                echo "Job $pod Succeeded successfully"
+                continue
+            fi
+
             ready=$(kubectl get pod $pod -n $namespace -o jsonpath='{.status.containerStatuses[0].ready}')
             if [[ "$status" != "Running" ]] || [[ "$ready" != "true" ]]; then
                 echo "Waiting for $pod to be running and ready..."
@@ -175,7 +183,8 @@ apply_manifest() {
     local end_time=$((SECONDS+60))
 
     while true; do
-        if kubectl apply -f $manifest 2>/dev/null; then
+
+        if curl -s "$manifest" | sed "s|MW_API_KEY_VALUE|$MW_API_KEY|g" | kubectl apply -f - 2>/dev/null; then
             echo "Successfully applied $manifest"
             break
         else
@@ -210,19 +219,20 @@ fi
 
 # Install OpenTelemetry Kubernetes Operator
 echo -e "\n-->Setting up OpenTelemetry operator ..."
-kubectl apply -f https://install.middleware.io/manifests/autoinstrumentation/opentelemetry-operator-${MW_OTEL_OPERATOR_VERSION}.yaml 
 
-# Check if all operator pods in the opentelemetry-operator-system namespace are running
-echo -e "\n-->Checking if all pods in the opentelemetry-operator-system namespace are running..."
-check_pods_running_and_ready opentelemetry-operator-system
+kubectl apply -f https://install.middleware.io/manifests/opentelemetry-operator/opentelemetry-operator-manifests-${MW_OTEL_OPERATOR_VERSION}.yaml 
+
+# Check if all operator pods in the mw-agent-ns namespace are running
+echo -e "\n-->Checking if all pods in the mw-agent-ns namespace are running..."
+check_pods_running_and_ready $MW_AUTOINSTRUMENTATION_NAMESPACE
 
 echo -e "\n-->Installing OpenTelemetry auto instrumentation manifest ..."
-apply_manifest opentelemetry-operator-system ${MW_OTEL_OPERATOR_NAMESPACE} https://install.middleware.io/manifests/autoinstrumentation/mw-otel-auto-instrumentation.yaml
+apply_manifest opentelemetry-operator https://install.middleware.io/manifests/autoinstrumentation/mw-otel-auto-instrumentation.yaml
 
 BASE_URL="https://install.middleware.io/manifests/mw-autoinstrumentation"
 
 for file in mw-lang-detector-serviceaccount.yaml mw-lang-detector-rbac.yaml webhook-service.yaml \
-            mw-lang-detector-daemonset.yaml webhook-deployment.yaml certmanager.yaml webhook-config.yaml; do
+            mw-lang-detector-daemonset.yaml mw-lang-aggregator.yaml webhook-deployment.yaml certmanager.yaml webhook-config.yaml; do
     if sudo wget -q -O "$MW_KUBE_AGENT_HOME/$file" "$BASE_URL/$file"; then
         :
     else
@@ -238,11 +248,13 @@ ordered_files="
     mw-lang-detector-serviceaccount.yaml
     mw-lang-detector-rbac.yaml
     webhook-service.yaml
+    mw-lang-aggregator.yaml
     mw-lang-detector-daemonset.yaml
     webhook-deployment.yaml
     certmanager.yaml
     webhook-config.yaml
 "
+MW_CURRENT_TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 
 for file in $ordered_files; do
     echo "Applying $file..."
@@ -252,6 +264,7 @@ for file in $ordered_files; do
     -e "s|MW_API_KEY_VALUE|$MW_API_KEY|g" \
     -e "s|MW_TARGET_VALUE|$MW_TARGET|g" \
     -e "s|NAMESPACE_LIST_VALUE|${NAMESPACE_LIST}|g" \
+    -e "s|MW_CURRENT_TIMESTAMP|${MW_CURRENT_TIMESTAMP}|g" \
     -e "s|MW_OPERATOR|${FINAL_OPERATOR}|g" \
 "$MW_KUBE_AGENT_HOME/$file" |kubectl apply -f - --kubeconfig "${MW_KUBECONFIG}"
     

@@ -47,7 +47,7 @@ if [ -z "$MW_CERT_MANAGER_VERSION" ]; then
 fi
 
 if [ -z "$MW_OTEL_OPERATOR_VERSION" ]; then
-   MW_OTEL_OPERATOR_VERSION="0.107.0"
+   MW_OTEL_OPERATOR_VERSION="0.94.2"
 fi
 
 CURRENT_CONTEXT="$(kubectl config current-context)"
@@ -57,7 +57,7 @@ printf "\nUninstalling Middleware AutoInstrumentation ...\n\n\tcluster : %s \n\t
 
 # Uninstall OpenTelemetry Kubernetes Operator
 echo -e "\n-->Uninstalling OpenTelemetry operator ..."
-kubectl delete -f https://install.middleware.io/manifests/autoinstrumentation/opentelemetry-operator-${MW_OTEL_OPERATOR_VERSION}.yaml 
+kubectl delete -f https://install.middleware.io/manifests/opentelemetry-operator/opentelemetry-operator-manifests-${MW_OTEL_OPERATOR_VERSION}.yaml
 
 # Uninstall cert-manager if it was installed
 if [ -n "${MW_UNINSTALL_CERT_MANAGER}" ] && [ "${MW_UNINSTALL_CERT_MANAGER}" = "true" ]; then
@@ -78,7 +78,9 @@ kubectl delete clusterrole mw-lang-detector --ignore-not-found
 kubectl delete -n mw-agent-ns serviceaccount mw-lang-detector --ignore-not-found
 kubectl delete -n mw-agent-ns certificate mw-auto-injector-tls --ignore-not-found
 kubectl delete -n mw-agent-ns issuer mw-auto-injector-selfsigned --ignore-not-found
-
+kubectl delete deployment -n mw-agent-ns mw-lang-aggregator --ignore-not-found
+kubectl delete service -n mw-agent-ns mw-lang-aggregator --ignore-not-found
+kubectl delete configmap -n mw-agent-ns mw-lang-aggregator-restart-signal --ignore-not-found
 # Optionally delete namespace 
 kubectl delete namespace mw-agent-ns --ignore-not-found
 
