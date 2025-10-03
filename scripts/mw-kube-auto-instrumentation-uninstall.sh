@@ -22,7 +22,7 @@ function send_logs {
 EOF
 )
 
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/"$MW_API_KEY" \
   --header 'Content-Type: application/json' \
   --data-raw "$payload" > /dev/null
 }
@@ -57,13 +57,13 @@ printf "\nUninstalling Middleware AutoInstrumentation ...\n\n\tcluster : %s \n\t
 
 # Uninstall OpenTelemetry Kubernetes Operator
 echo -e "\n-->Uninstalling OpenTelemetry operator ..."
-kubectl delete -f https://install.middleware.io/manifests/opentelemetry-operator/opentelemetry-operator-manifests-${MW_OTEL_OPERATOR_VERSION}.yaml
+kubectl delete -f https://install.middleware.io/manifests/opentelemetry-operator/opentelemetry-operator-manifests-"${MW_OTEL_OPERATOR_VERSION}".yaml
 
 # Uninstall cert-manager if it was installed
 if [ -n "${MW_UNINSTALL_CERT_MANAGER}" ] && [ "${MW_UNINSTALL_CERT_MANAGER}" = "true" ]; then
     echo -e "\n-->Uninstalling cert-manager ..."
     MW_CERT_MANAGER_VERSION=$(kubectl get pods --namespace cert-manager -l app=cert-manager -o jsonpath="{.items[0].spec.containers[0].image}" | cut -d ":" -f 2)
-    kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/${MW_CERT_MANAGER_VERSION}/cert-manager.yaml
+    kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/"${MW_CERT_MANAGER_VERSION}"/cert-manager.yaml
 fi
 
 # Delete webhook configuration first
