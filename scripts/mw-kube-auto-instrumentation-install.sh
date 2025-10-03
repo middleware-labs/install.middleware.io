@@ -45,7 +45,7 @@ function send_logs {
 EOF
 )
 
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/"$MW_API_KEY" \
   --header 'Content-Type: application/json' \
   --data-raw "$payload" > /dev/null
 }
@@ -74,7 +74,7 @@ if [ -z "$MW_KUBE_AGENT_HOME" ]; then
     MW_KUBE_AGENT_HOME=/tmp/mw-auto
 fi
 
-sudo mkdir -p $MW_KUBE_AGENT_HOME
+sudo mkdir -p "$MW_KUBE_AGENT_HOME"
 
 if [ -z "$MW_CERT_MANAGER_VERSION" ]; then
    MW_CERT_MANAGER_VERSION="v1.14.5"
@@ -112,6 +112,7 @@ FINAL_OPERATOR=""
 NAMESPACE_LIST=""
 
 # Determine operator and namespaces
+# shellcheck disable=SC2236
 if [ ! -z "$MW_INCLUDED_NAMESPACES" ]; then
     # If included namespaces are provided, they take priority
     FINAL_OPERATOR="In"
@@ -119,6 +120,7 @@ if [ ! -z "$MW_INCLUDED_NAMESPACES" ]; then
 else
     # Use excluded namespaces (combine with defaults if provided)
     FINAL_OPERATOR="NotIn"
+    # shellcheck disable=SC2236
     if [ ! -z "$MW_EXCLUDED_NAMESPACES" ]; then
         # Combine user provided excludes with defaults and remove duplicates
         NAMESPACE_LIST="$MW_EXCLUDED_NAMESPACES,$DEFAULT_EXCLUDED"
@@ -138,13 +140,13 @@ check_pods_running_and_ready() {
 
     while true; do
         # Get all pods in the namespace
-        pods=$(kubectl get pods -n $namespace -o jsonpath='{.items[*].metadata.name}')
+        pods=$(kubectl get pods -n "$namespace" -o jsonpath='{.items[*].metadata.name}')
 
         all_running_and_ready=true
 
         # Loop through all pods and check their status and readiness
         for pod in $pods; do
-            status=$(kubectl get pod $pod -n $namespace -o jsonpath='{.status.phase}')
+            status=$(kubectl get pod "$pod" -n "$namespace" -o jsonpath='{.status.phase}')
 
             echo "Pod: $pod, Status: $status"
             # For Completed jobs, just check if status is Completed
@@ -153,7 +155,7 @@ check_pods_running_and_ready() {
                 continue
             fi
 
-            ready=$(kubectl get pod $pod -n $namespace -o jsonpath='{.status.containerStatuses[0].ready}')
+            ready=$(kubectl get pod "$pod" -n "$namespace" -o jsonpath='{.status.containerStatuses[0].ready}')
             if [[ "$status" != "Running" ]] || [[ "$ready" != "true" ]]; then
                 echo "Waiting for $pod to be running and ready..."
                 all_running_and_ready=false
@@ -203,24 +205,24 @@ apply_manifest() {
 # Set the namespace where cert-manager is installed
 if [ -n "${MW_INSTALL_CERT_MANAGER}" ] && [ "${MW_INSTALL_CERT_MANAGER}" = "true" ]; then
     echo -e "-->Setting up cert-manager ..."
-    kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/${MW_CERT_MANAGER_VERSION}/cert-manager.yaml
+    kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/"${MW_CERT_MANAGER_VERSION}"/cert-manager.yaml
 
     echo -e "\n-->Checking if all pods in the $MW_CERT_MANAGER_NAMESPACE namespace are running..."
-    check_pods_running_and_ready $MW_CERT_MANAGER_NAMESPACE
+    check_pods_running_and_ready "$MW_CERT_MANAGER_NAMESPACE"
 
     echo -e "\n-->Checking if the cert-manager webhook server is ready. This may take a few minutes..."
 
     curl -fsSL -o cmctl https://github.com/cert-manager/cmctl/releases/latest/download/cmctl_${os}_$arch
     chmod +x cmctl
-    sudo mv cmctl $MW_KUBE_AGENT_HOME/cmctl
-    $MW_KUBE_AGENT_HOME/cmctl check api --wait=2m
+    sudo mv cmctl "$MW_KUBE_AGENT_HOME"/cmctl
+    "$MW_KUBE_AGENT_HOME"/cmctl check api --wait=2m
 fi
 
 
 # Install OpenTelemetry Kubernetes Operator
 echo -e "\n-->Setting up OpenTelemetry operator ..."
 
-kubectl apply -f https://install.middleware.io/manifests/opentelemetry-operator/opentelemetry-operator-manifests-${MW_OTEL_OPERATOR_VERSION}.yaml 
+kubectl apply -f https://install.middleware.io/manifests/opentelemetry-operator/opentelemetry-operator-manifests-"${MW_OTEL_OPERATOR_VERSION}".yaml 
 
 # Check if all operator pods in the mw-agent-ns namespace are running
 echo -e "\n-->Checking if all pods in the mw-agent-ns namespace are running..."
@@ -272,5 +274,5 @@ done
 
 echo "Installation complete!"
 
-sudo rm -rf $MW_KUBE_AGENT_HOME
+sudo rm -rf "$MW_KUBE_AGENT_HOME"
 
