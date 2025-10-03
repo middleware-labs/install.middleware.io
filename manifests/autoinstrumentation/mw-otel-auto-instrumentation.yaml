@@ -15,17 +15,49 @@ spec:
     argument: "1.0"
   python:
     env:
+      - name: MW_AGENT_SERVICE
+        value: mw-service.mw-agent-ns.svc.cluster.local
+      - name: GIT_PYTHON_REFRESH
+        value: quiet
+      - name: MW_K8S_PYTHON_INSTRUMENTATION
+        value: 'true'
+      - name: MW_TRACKER
+        value: 'false'
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: http://mw-service.mw-agent-ns:9320
+      - name: MW_API_KEY
+        value: "MW_API_KEY_VALUE"
+      - name: OTEL_PROPAGATORS
+        value: tracecontext,baggage,b3
+  nodejs:
+    env:
+      - name: OTEL_NODE_DISABLED_INSTRUMENTATIONS
+        value: fs,dns,net
+      - name: OTEL_PROPAGATORS
+        value: b3,tracecontext,baggage
   go:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: http://mw-service.mw-agent-ns:9320
+        value: http://mw-service.mw-agent-ns:9319
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: grpc
+      - name: OTEL_PROPAGATORS
+        value: b3,tracecontext,baggage
   dotnet:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: http://mw-service.mw-agent-ns:9320
+      - name: OTEL_PROPAGATORS
+        value: b3,tracecontext,baggage
   java:
     env:
+      - name: MW_AGENT_SERVICE
+        value: mw-service.mw-agent-ns.svc.cluster.local
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: http://mw-service.mw-agent-ns:9319
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: grpc
+      - name: MW_API_KEY
+        value: "MW_API_KEY_VALUE"
+      - name: OTEL_PROPAGATORS
+        value: tracecontext,baggage,b3
