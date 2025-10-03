@@ -13,7 +13,7 @@ spec:
         app: mw-lang-detector
     spec:
       containers:
-      - image: ghcr.io/middleware-labs/mw-lang-detector:beta
+      - image: ghcr.io/middleware-labs/mw-lang-detector:0.1.2
         imagePullPolicy: IfNotPresent
         name: mw-lang-detector
         command: ["/app/mw-lang-detector"]
@@ -25,10 +25,14 @@ spec:
             value: "MW_API_KEY_VALUE"
           - name: MW_KUBE_CLUSTER_NAME
             value: "MW_KUBE_CLUSTER_NAME_VALUE"
+          - name: MW_RELEASE_NAMESPACE
+            value: mw-agent-ns
           - name: K8S_NODE_NAME
             valueFrom:
               fieldRef:
                 fieldPath: spec.nodeName
+          - name: MW_API_URL_FOR_LANG_AGGREGATOR
+            value: "http://mw-lang-aggregator.mw-agent-ns.svc.cluster.local:8080"
         resources:
           limits:
             cpu: 200m

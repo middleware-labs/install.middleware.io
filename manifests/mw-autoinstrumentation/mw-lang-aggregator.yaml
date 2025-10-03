@@ -1,0 +1,75 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mw-lang-aggregator
+  namespace: "mw-agent-ns"
+spec:
+  selector:
+    matchLabels:
+      app: mw-lang-aggregator
+  template:
+    metadata:
+      labels:
+        app: mw-lang-aggregator
+        k8s-app: mw-app
+    spec:
+      containers:
+        - args:
+            - mw-lang-aggregator
+            - start
+          env:
+            - name: MW_TARGET
+              value: "MW_TARGET_VALUE"
+            - name: MW_API_KEY
+              value: "MW_API_KEY_VALUE"
+            - name: MW_KUBE_CLUSTER_NAME
+              value: "MW_KUBE_CLUSTER_NAME_VALUE"
+            - name: MW_RELEASE_NAMESPACE
+              value: mw-agent-ns
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MW_AUTOINSTRUMENTATION_SYNC_INTERVAL
+              value: "2m"
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi  
+          image: ghcr.io/middleware-labs/mw-lang-aggregator:0.1.0
+          imagePullPolicy: IfNotPresent
+          name: mw-lang-aggregator
+          resources: {}
+      restartPolicy: Always
+      serviceAccountName: mw-lang-detector
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: mw-lang-aggregator
+  namespace: "mw-agent-ns"
+  labels:
+    app: mw-lang-aggregator
+spec:
+  selector:
+    app: mw-lang-aggregator
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mw-lang-aggregator-restart-signal
+  namespace: "mw-agent-ns"
+  labels:
+    app:  mw-lang-aggregator
+    component: lang-aggregator
+data:
+  restart_timestamp: "MW_CURRENT_TIMESTAMP"
