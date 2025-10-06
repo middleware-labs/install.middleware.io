@@ -54,6 +54,82 @@ err() { echo "ERROR: $*" >&2; exit 1; }
 info() { echo "INFO: $*"; }
 warn() { echo "WARN: $*"; }
 
+# Configuration file for storing credentials
+MW_CONFIG_FILE="/etc/middleware/config"
+
+# Function to store MW_API_KEY and MW_TARGET in system configuration
+store_middleware_credentials() {
+  local api_key="$1"
+  local target="$2"
+  
+  # Create config directory if it doesn't exist
+  mkdir -p "$(dirname "$MW_CONFIG_FILE")"
+  
+  # Store the credentials in a secure config file
+  cat > "$MW_CONFIG_FILE" <<EOF
+# Middleware configuration file
+# This file stores MW_API_KEY and MW_TARGET for reuse across installations
+# Generated on $(date)
+
+MW_API_KEY="$api_key"
+MW_TARGET="$target"
+EOF
+  
+  # Set appropriate permissions (readable by root only)
+  chmod 600 "$MW_CONFIG_FILE"
+  chown root:root "$MW_CONFIG_FILE"
+  
+  info "Stored MW_API_KEY and MW_TARGET in $MW_CONFIG_FILE"
+}
+
+# Function to load stored MW_API_KEY and MW_TARGET from system configuration
+load_middleware_credentials() {
+  if [ -f "$MW_CONFIG_FILE" ]; then
+    # Source the config file to load stored values
+    # shellcheck source=/dev/null
+    source "$MW_CONFIG_FILE"
+    
+    # Export the loaded values so they're available to the script
+    if [ -n "${MW_API_KEY:-}" ]; then
+      export MW_API_KEY
+    fi
+    if [ -n "${MW_TARGET:-}" ]; then
+      export MW_TARGET
+    fi
+    
+    info "Loaded stored credentials from $MW_CONFIG_FILE"
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Function to update stored credentials
+update_middleware_credentials() {
+  local api_key="$1"
+  local target="$2"
+  
+  if [ -n "$api_key" ] || [ -n "$target" ]; then
+    # Load existing values first
+    if [ -f "$MW_CONFIG_FILE" ]; then
+      # shellcheck source=/dev/null
+      source "$MW_CONFIG_FILE"
+    fi
+    
+    # Update only the provided values
+    if [ -n "$api_key" ]; then
+      MW_API_KEY="$api_key"
+    fi
+    if [ -n "$target" ]; then
+      MW_TARGET="$target"
+    fi
+    
+    # Store the updated values
+    store_middleware_credentials "${MW_API_KEY:-}" "${MW_TARGET:-}"
+    info "Updated stored credentials"
+  fi
+}
+
 # Function to detect Java services
 detect_java_services() {
   local services=()
@@ -1630,6 +1706,14 @@ install_binary() {
   
   info "Installing system-wide binary: $binary_name"
   
+  # Store current credentials if they are set
+  if [ -n "${MW_API_KEY:-}" ] || [ -n "${MW_TARGET:-}" ]; then
+    info "Storing current MW_API_KEY and MW_TARGET for future use"
+    store_middleware_credentials "${MW_API_KEY:-}" "${MW_TARGET:-}"
+  else
+    info "No MW_API_KEY or MW_TARGET provided, will use stored values or defaults"
+  fi
+  
   # Create a wrapper script that calls the original script
   cat > "$binary_path" <<EOF
 #!/usr/bin/env bash
@@ -1679,6 +1763,65 @@ uninstall_binary() {
     info "✓ Removed binary: $binary_path"
   else
     info "Binary $binary_name not found at $binary_path"
+  fi
+}
+
+# Function to update stored credentials
+update_credentials() {
+  local api_key="$1"
+  local target="$2"
+  
+  if [ -z "$api_key" ] && [ -z "$target" ]; then
+    err "At least one credential (MW_API_KEY or MW_TARGET) must be provided"
+    err "Usage: $0 update-credentials [MW_API_KEY] [MW_TARGET]"
+    return 1
+  fi
+  
+  info "Updating stored credentials..."
+  update_middleware_credentials "$api_key" "$target"
+  
+  if [ -n "$api_key" ]; then
+    info "✓ Updated MW_API_KEY"
+  fi
+  if [ -n "$target" ]; then
+    info "✓ Updated MW_TARGET"
+  fi
+}
+
+# Function to show current stored credentials
+show_credentials() {
+  info "Current stored credentials:"
+  
+  if [ -f "$MW_CONFIG_FILE" ]; then
+    info "Configuration file: $MW_CONFIG_FILE"
+    
+    # Read the stored credentials using sudo if needed
+    local api_key=""
+    local target=""
+    
+    if [ -r "$MW_CONFIG_FILE" ]; then
+      # shellcheck source=/dev/null
+      source "$MW_CONFIG_FILE"
+    else
+      # Use sudo to read the file
+      api_key=$(sudo grep "^MW_API_KEY=" "$MW_CONFIG_FILE" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+      target=$(sudo grep "^MW_TARGET=" "$MW_CONFIG_FILE" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+    fi
+    
+    if [ -n "${MW_API_KEY:-}" ] || [ -n "$api_key" ]; then
+      local key="${MW_API_KEY:-$api_key}"
+      info "MW_API_KEY: ${key:0:10}..." # Show only first 10 characters for security
+    else
+      info "MW_API_KEY: not set"
+    fi
+    if [ -n "${MW_TARGET:-}" ] || [ -n "$target" ]; then
+      local endpoint="${MW_TARGET:-$target}"
+      info "MW_TARGET: $endpoint"
+    else
+      info "MW_TARGET: not set"
+    fi
+  else
+    info "No stored credentials found at $MW_CONFIG_FILE"
   fi
 }
 # Function to remove OTEL instrumentation from all Java apps
@@ -1869,7 +2012,7 @@ if [ "$EUID" -ne 0 ]; then
       # Preserve all environment variables
       exec sudo -E "$0" "$@"
       ;;
-    help|-h|--help|list-instrumented|validate)
+    help|-h|--help|list-instrumented|validate|show-credentials)
       # These commands can run without sudo
       ;;
     *)
@@ -2221,7 +2364,6 @@ Commands:
   update-services     Update existing Java services with OTEL configuration
   update-docker       Update existing Java Docker containers with OTEL wrapper
   update-tomcat       Update existing Tomcat applications with OTEL configuration
-  a
   validate            Validate that all Java services, containers, and Tomcat apps are properly instrumented
   instrument-all      Do install-host + docker-wrapper (does not run patch-k8s by default)
   instrument-service <name>    Add OTEL instrumentation to specific service
@@ -2233,6 +2375,8 @@ Commands:
   uninstrument-tomcat <app-id>  Remove OTEL instrumentation from specific Tomcat application
   list-instrumented   List all currently instrumented Java apps (services, containers, and Tomcat)
   uninstall-binary    Remove system-wide binary "mw-instrument"
+  update-credentials <api-key> <target>  Update stored MW_API_KEY and MW_TARGET
+  show-credentials    Show current stored credentials
 
 Environment Variables:
   OTEL_EXPORTER_OTLP_ENDPOINT    OpenTelemetry endpoint (priority: OTEL_EXPORTER_OTLP_ENDPOINT > MW_TARGET > localhost:4317)
@@ -2248,15 +2392,25 @@ Examples:
   sudo $0 install-binary
   mw-instrument instrument-all
   
+  # Store credentials during install-binary (will be reused automatically)
+  sudo MW_API_KEY=abc123 MW_TARGET=https://middleware.io:443 $0 install-binary
+  mw-instrument instrument-all  # Uses stored credentials automatically
+  
+  # Update stored credentials
+  sudo $0 update-credentials "new-api-key" "https://new-endpoint:443"
+  
+  # Show current stored credentials
+  sudo $0 show-credentials
+  
   # Environment variable priority examples:
   sudo OTEL_EXPORTER_OTLP_ENDPOINT=https://your-endpoint:4317 $0 install-host  # Uses explicit endpoint
   sudo MW_TARGET=https://middleware.io:443 $0 install-host                        # Uses MW_TARGET (fallback)
-  sudo $0 install-host                                                           # Uses localhost:4317 (final fallback)
+  sudo $0 install-host                                                           # Uses stored values or localhost:4317 (final fallback)
   
   # Authentication header priority examples:
   sudo OTEL_EXPORTER_OTLP_HEADERS="authorization=my-key" $0 install-host         # Uses explicit headers
   sudo MW_API_KEY=abc123 $0 install-host                                         # Uses MW_API_KEY (fallback)
-  sudo $0 install-host                                                           # Uses default headers
+  sudo $0 install-host                                                           # Uses stored values or default headers
   sudo $0 install-agent
   sudo OTEL_DIR=/opt/otel FORCE=1 $0 install-agent
   sudo $0 install-host
@@ -2279,6 +2433,15 @@ EOF
 }
 
 main() {
+  # Load stored credentials for commands that need them (unless explicitly overridden)
+  case "${1:-}" in
+    install-binary|install-host|docker-wrapper|update-services|update-docker|update-tomcat|all|instrument-all|instrument-service|instrument-container|instrument-tomcat|validate)
+      if [ -z "${MW_TARGET:-}" ] && [ -z "${MW_API_KEY:-}" ]; then
+        load_middleware_credentials
+      fi
+      ;;
+  esac
+  
   case "${1:-}" in
     install-binary) install_binary ;;
     uninstall-binary) uninstall_binary ;;
@@ -2374,6 +2537,9 @@ main() {
         exit 1
       fi
       uninstrument_tomcat_app "$2" ;;
+    update-credentials)
+      update_credentials "$2" "$3" ;;
+    show-credentials) show_credentials ;;
     "")
       # Default behavior: install-binary if not installed, otherwise show help
       if [ -f "/usr/local/bin/mw-instrument" ]; then
