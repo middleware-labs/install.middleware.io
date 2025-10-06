@@ -74,6 +74,12 @@ export MW_DEFAULT_CONFIG_CHECK_INTERVAL
 MW_LATEST_VERSION=$(get_latest_mw_agent_version)
 export MW_LATEST_VERSION
 
+MW_AGENT_SELF_PROFILING=false
+export MW_AGENT_SELF_PROFILING=false
+
+MW_PROFILING_SERVER_URL=https://profiling.middleware.io
+export MW_PROFILING_SERVER_URL
+
 if [ "${MW_VERSION}" = "" ]; then 
   MW_VERSION=$MW_LATEST_VERSION
   export MW_VERSION

@@ -1,0 +1,72 @@
+{{- if .Values.opsai.enabled }}
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ .Values.opsai.name }}
+  namespace: {{.Release.Namespace}}
+spec:
+  selector:
+    matchLabels:
+      {{- include ".Values.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include ".Values.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - args:
+            - mw-agent
+            - start
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MW_TARGET
+              value: {{ or .Values.global.mw.target .Values.mw.target | quote }}
+            - name: MW_KUBE_CLUSTER_NAME
+              value: {{ or .Values.global.clusterMetadata.name .Values.clusterMetadata.name | quote }}
+            - name: MW_NAMESPACE
+              value: {{ .Release.Namespace | quote }}        
+            - name: MW_AGENT_SELF_PROFILING
+              value: {{ .Values.mw.selfProfiling | quote }}
+            - name: MW_PROFILING_SERVER_URL
+              value: {{ .Values.mw.profilingServerUrl | quote }}
+            - name: MW_AGENT_FEATURES_OPSAI_AUTOFIX
+              value: {{ .Values.opsai.enabled | quote }}
+            - name: MW_OPSAI_API_URL
+              value: {{ .Values.opsai.pulsarHost }}
+            - name: MW_OPSAI_UNSUBSCRIBE_ENDPOINT
+              value: {{ .Values.opsai.unsubscribeEndpoint }}
+            - name: ACCOUNT_UID
+              value: {{ regexReplaceAll "^https://([^\\.]+).*" .Values.global.mw.target "$1" | quote }}
+            - name: MW_AGENT_FEATURES_SYNTHETIC_MONITORING
+              value: {{ .Values.syntheticMonitoring.enabled | quote }}
+            - name: MW_API_URL_FOR_SYNTHETIC_MONITORING
+              value: {{ .Values.syntheticMonitoring.url }}
+            {{- if .Values.mw.apiKeyFromExistingSecret.enabled }}
+            - name: MW_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mw.apiKeyFromExistingSecret.name }}
+                  key: {{ .Values.mw.apiKeyFromExistingSecret.key }}
+            {{- else }}
+            - name: MW_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: middleware-secret
+                  key: api-key
+            {{- end }}
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          image: {{.Values.opsai.repository}}:{{.Values.opsai.tag}}
+          imagePullPolicy: {{.Values.opsai.pullPolicy}}
+          name: {{ .Chart.Name }}
+      restartPolicy: Always
+      serviceAccountName: {{ .Values.opsai.serviceAccount.name }}
+{{- end }}
