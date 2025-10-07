@@ -181,7 +181,6 @@ detect_tomcat_apps() {
       
       if echo "$cmdline" | grep -q "java.*tomcat\|java.*catalina"; then
         # Extract Tomcat home directory
-        local tomcat_home=""
         local catalina_home=""
         
         # Try to get CATALINA_HOME from environment
@@ -230,24 +229,48 @@ detect_tomcat_apps() {
         
         if [ -n "$webapps_dir" ] && [ -d "$webapps_dir" ]; then
           # Find deployed applications (directories and WAR files)
+          # First pass: collect all applications
+          local temp_apps=()
           for app in "$webapps_dir"/*; do
             if [ -d "$app" ] || [[ "$app" == *.war ]]; then
               local app_name
               app_name=$(basename "$app")
               # Skip default Tomcat apps
               if [[ "$app_name" != "ROOT" ]] && [[ "$app_name" != "manager" ]] && [[ "$app_name" != "host-manager" ]] && [[ "$app_name" != "docs" ]] && [[ "$app_name" != "examples" ]]; then
-                # Create a unique identifier for this Tomcat app
-                local tomcat_app_id="tomcat-${pid}-${app_name}"
-                tomcat_apps+=("$tomcat_app_id|$pid|$catalina_home|$catalina_base|$app_name|$app")
+                temp_apps+=("$app")
               fi
             fi
           done
-        fi
-        
-        # If no specific apps found, add the Tomcat server itself
-        if [ ${#tomcat_apps[@]} -eq 0 ] || ! printf '%s\n' "${tomcat_apps[@]}" | grep -q "tomcat-${pid}-"; then
-          local tomcat_app_id="tomcat-${pid}-server"
-          tomcat_apps+=("$tomcat_app_id|$pid|$catalina_home|$catalina_base|server|")
+          
+          # Second pass: deduplicate by prioritizing directories over WAR files
+          for app in "${temp_apps[@]}"; do
+            local app_name
+            local base_name
+            app_name=$(basename "$app")
+            
+            if [ -d "$app" ]; then
+              # It's a directory, check if there's a corresponding WAR file
+              base_name="$app_name"
+            elif [[ "$app" == *.war ]]; then
+              # It's a WAR file, get the base name (without .war extension)
+              base_name="${app_name%.war}"
+            fi
+            
+            # Check if we already have a directory version of this app
+            local has_directory=false
+            for existing_app in "${temp_apps[@]}"; do
+              if [ -d "$existing_app" ] && [[ "$(basename "$existing_app")" == "$base_name" ]]; then
+                has_directory=true
+                break
+              fi
+            done
+            
+            # Only add if it's a directory, or if it's a WAR file and no directory exists
+            if [ -d "$app" ] || { [[ "$app" == *.war ]] && [ "$has_directory" = false ]; }; then
+              local tomcat_app_id="tomcat-${pid}-${app_name}"
+              tomcat_apps+=("$tomcat_app_id|$pid|$catalina_home|$catalina_base|$app_name|$app")
+            fi
+          done
         fi
       fi
     done
@@ -264,7 +287,6 @@ detect_tomcat_apps() {
       if [ -n "$service_pid" ] && [ "$service_pid" != "0" ]; then
         # Check if we already have this PID
         if ! printf '%s\n' "${tomcat_apps[@]}" | grep -q "tomcat-${service_pid}-"; then
-          local tomcat_app_id="tomcat-${service_pid}-service"
           # Extract actual paths from the process
           local cmdline
           local catalina_home=""
@@ -277,13 +299,67 @@ detect_tomcat_apps() {
               catalina_base="$catalina_home"
             fi
           fi
-          tomcat_apps+=("$tomcat_app_id|$service_pid|$catalina_home|$catalina_base|service|")
+          
+          # Find deployed applications for this service
+          local webapps_dir=""
+          if [ -n "$catalina_base" ] && [ -d "$catalina_base" ]; then
+            webapps_dir="$catalina_base/webapps"
+          elif [ -n "$catalina_home" ] && [ -d "$catalina_home" ]; then
+            webapps_dir="$catalina_home/webapps"
+          fi
+          
+          if [ -n "$webapps_dir" ] && [ -d "$webapps_dir" ]; then
+            # Find deployed applications (directories and WAR files)
+            # First pass: collect all applications
+            local temp_apps=()
+            for app in "$webapps_dir"/*; do
+              if [ -d "$app" ] || [[ "$app" == *.war ]]; then
+                local app_name
+                app_name=$(basename "$app")
+                # Skip default Tomcat apps
+                if [[ "$app_name" != "ROOT" ]] && [[ "$app_name" != "manager" ]] && [[ "$app_name" != "host-manager" ]] && [[ "$app_name" != "docs" ]] && [[ "$app_name" != "examples" ]]; then
+                  temp_apps+=("$app")
+                fi
+              fi
+            done
+            
+            # Second pass: deduplicate by prioritizing directories over WAR files
+            for app in "${temp_apps[@]}"; do
+              local app_name
+              local base_name
+              app_name=$(basename "$app")
+              
+              if [ -d "$app" ]; then
+                # It's a directory, check if there's a corresponding WAR file
+                base_name="$app_name"
+              elif [[ "$app" == *.war ]]; then
+                # It's a WAR file, get the base name (without .war extension)
+                base_name="${app_name%.war}"
+              fi
+              
+              # Check if we already have a directory version of this app
+              local has_directory=false
+              for existing_app in "${temp_apps[@]}"; do
+                if [ -d "$existing_app" ] && [[ "$(basename "$existing_app")" == "$base_name" ]]; then
+                  has_directory=true
+                  break
+                fi
+              done
+              
+              # Only add if it's a directory, or if it's a WAR file and no directory exists
+              if [ -d "$app" ] || { [[ "$app" == *.war ]] && [ "$has_directory" = false ]; }; then
+                # Create a unique identifier for this Tomcat app
+                local tomcat_app_id="tomcat-${service_pid}-${app_name}"
+                tomcat_apps+=("$tomcat_app_id|$service_pid|$catalina_home|$catalina_base|$app_name|$app")
+              fi
+            done
+          fi
         fi
       fi
     fi
   done
   
-  echo "${tomcat_apps[@]}"
+  printf '%s\n' "${tomcat_apps[@]}"
 }
 
 # Function to get container configuration for restart
@@ -513,9 +589,9 @@ update_tomcat_apps() {
     IFS='|' read -r app_id pid catalina_home catalina_base app_name app_path <<< "$app_info"
     info "Processing Tomcat app: $app_name (PID: $pid)"
     if update_tomcat_app "$app_id" "$pid" "$catalina_home" "$catalina_base" "$app_name" "$app_path"; then
-      info "✓ Successfully updated Tomcat app: $app_name"
+      info "✓ Successfully updated Tomcat app: $app_id"
     else
-      warn "✗ Failed to update Tomcat app: $app_name"
+      warn "✗ Failed to update Tomcat app: $app_id"
     fi
   done
 }
@@ -534,17 +610,23 @@ update_tomcat_app() {
   info "Using endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}"
   info "Using headers: ${OTEL_EXPORTER_OTLP_HEADERS}"
   
-  # Check if this Tomcat instance is already instrumented
-  local env_output
-  env_output=$(cat "/proc/$pid/environ" 2>/dev/null | tr '\0' '\n' | grep -E "OTEL_EXPORTER_OTLP_ENDPOINT|JAVA_TOOL_OPTIONS" || echo "")
+  # Check if this specific WAR application is already instrumented
+  # We'll use a WAR-specific marker file to track instrumentation status
+  local war_marker_file=""
+  if [ -n "$catalina_base" ] && [ -d "$catalina_base" ]; then
+    war_marker_file="$catalina_base/webapps/$app_name/.otel-instrumented"
+  elif [ -n "$catalina_home" ] && [ -d "$catalina_home" ]; then
+    war_marker_file="$catalina_home/webapps/$app_name/.otel-instrumented"
+  fi
   
-  if echo "$env_output" | grep -q "OTEL_EXPORTER_OTLP_ENDPOINT"; then
-    info "Tomcat application $app_name is already instrumented"
+  if [ -f "$war_marker_file" ]; then
+    info "WAR application $app_name is already instrumented"
     return 0
   fi
   
   # Create backup of Tomcat configuration
-  local backup_dir="/tmp/tomcat-otel-backup-$(date +%Y%m%d_%H%M%S)"
+  local backup_dir
+  backup_dir="/tmp/tomcat-otel-backup-$(date +%Y%m%d_%H%M%S)"
   mkdir -p "$backup_dir"
   
   # Find and backup setenv.sh or catalina.sh
@@ -559,7 +641,63 @@ update_tomcat_app() {
     catalina_script="$catalina_home/bin/catalina.sh"
   fi
   
-  # Create or update setenv.sh with OTEL configuration
+  # Create WAR-specific marker file and configuration
+  if [ -n "$catalina_base" ] && [ -d "$catalina_base" ]; then
+    # Create WAR-specific marker file
+    touch "$war_marker_file"
+    echo "Instrumented on: $(date)" > "$war_marker_file"
+    echo "Service name: $app_name" >> "$war_marker_file"
+    echo "WAR path: $catalina_base/webapps/$app_name" >> "$war_marker_file"
+    
+    # Create WAR-specific OpenTelemetry configuration using environment variables
+    # This approach uses OpenTelemetry's built-in service name detection
+    local war_config_dir="$catalina_base/webapps/$app_name/WEB-INF/classes"
+    mkdir -p "$war_config_dir"
+    
+    # Create a simple environment file that sets WAR-specific service name
+    local war_env_file="$war_config_dir/otel-war.env"
+    cat > "$war_env_file" <<EOF
+# OpenTelemetry environment variables for WAR: $app_name
+# This file sets WAR-specific service name and resource attributes
+
+export OTEL_SERVICE_NAME="$app_name"
+export OTEL_RESOURCE_ATTRIBUTES="service.name=$app_name,service.namespace=tomcat,deployment.environment=production"
+EOF
+    
+    info "Created WAR-specific environment file: $war_env_file"
+    
+    info "Created instrumentation marker: $war_marker_file"
+  elif [ -n "$catalina_home" ] && [ -d "$catalina_home" ]; then
+    # Create WAR-specific marker file
+    touch "$war_marker_file"
+    echo "Instrumented on: $(date)" > "$war_marker_file"
+    echo "Service name: $app_name" >> "$war_marker_file"
+    echo "WAR path: $catalina_home/webapps/$app_name" >> "$war_marker_file"
+    
+    # Create WAR-specific OpenTelemetry configuration using environment variables
+    local war_config_dir="$catalina_home/webapps/$app_name/WEB-INF/classes"
+    mkdir -p "$war_config_dir"
+    
+    # Create a simple environment file that sets WAR-specific service name
+    local war_env_file="$war_config_dir/otel-war.env"
+    cat > "$war_env_file" <<EOF
+# OpenTelemetry environment variables for WAR: $app_name
+# This file sets WAR-specific service name and resource attributes
+
+export OTEL_SERVICE_NAME="$app_name"
+export OTEL_RESOURCE_ATTRIBUTES="service.name=$app_name,service.namespace=tomcat,deployment.environment=production"
+EOF
+    
+    info "Created WAR-specific environment file: $war_env_file"
+    
+    info "Created instrumentation marker: $war_marker_file"
+  else
+    warn "Could not find WAR application directory for $app_name"
+    return 1
+  fi
+  
+  # Check if Tomcat server-level instrumentation is needed
+  # Only add the agent to JAVA_OPTS if not already present
   if [ -n "$setenv_file" ]; then
     # Backup existing setenv.sh if it exists
     if [ -f "$setenv_file" ]; then
@@ -567,29 +705,20 @@ update_tomcat_app() {
       info "Backed up existing setenv.sh to $backup_dir"
     fi
     
-    # Create or update setenv.sh with OTEL configuration
-    cat > "$setenv_file" <<EOF
-#!/bin/bash
-# OpenTelemetry instrumentation for Tomcat (auto-generated)
+    # Check if agent is already configured
+    local agent_configured=false
+    if [ -f "$setenv_file" ]; then
+      if grep -q "javaagent:${AGENT_PATH}" "$setenv_file"; then
+        agent_configured=true
+      fi
+    fi
+    
+    if [ "$agent_configured" = false ]; then
+      # Add agent to JAVA_OPTS (this affects the entire Tomcat server)
+      cat >> "$setenv_file" <<EOF
 
-# Set OpenTelemetry environment variables
-export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT}"
-export OTEL_EXPORTER_OTLP_HEADERS="${OTEL_EXPORTER_OTLP_HEADERS}"
-export OTEL_TRACES_EXPORTER="${OTEL_TRACES_EXPORTER}"
-export OTEL_METRICS_EXPORTER="${OTEL_METRICS_EXPORTER}"
-export OTEL_LOGS_EXPORTER="${OTEL_LOGS_EXPORTER}"
-
-# Set service name
-export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-$app_name}"
-
-# Set resource attributes if provided
-if [ -n "${OTEL_RESOURCE_ATTRIBUTES:-}" ]; then
-  export OTEL_RESOURCE_ATTRIBUTES="${OTEL_RESOURCE_ATTRIBUTES}"
-fi
-
-# Note: Environment variables are set above
-
-# Add Java agent to JAVA_OPTS
+# OpenTelemetry Java Agent (auto-added for WAR instrumentation)
+# This enables OpenTelemetry for all applications in this Tomcat instance
 if [ -z "\${JAVA_OPTS:-}" ]; then
   export JAVA_OPTS="-javaagent:${AGENT_PATH}"
 else
@@ -608,13 +737,34 @@ export JAVA_OPTS="\$JAVA_OPTS -Dotel.javaagent.enable.runtime.metrics=false"
 export JAVA_OPTS="\$JAVA_OPTS -Dotel.javaagent.enable.experimental.runtime.metrics=false"
 export JAVA_OPTS="\$JAVA_OPTS -XX:+DisableAttachMechanism"
 export JAVA_OPTS="\$JAVA_OPTS -Dotel.metrics.exporter=none"
+
+# OpenTelemetry environment variables for WAR instrumentation
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT}"
+export OTEL_EXPORTER_OTLP_HEADERS="${OTEL_EXPORTER_OTLP_HEADERS}"
+export OTEL_TRACES_EXPORTER="${OTEL_TRACES_EXPORTER}"
+export OTEL_METRICS_EXPORTER="${OTEL_METRICS_EXPORTER}"
+export OTEL_LOGS_EXPORTER="${OTEL_LOGS_EXPORTER}"
+
+# Set resource attributes for WAR applications
+# Use a generic service name that will be overridden by individual WAR applications
+export OTEL_SERVICE_NAME="tomcat-server"
+export OTEL_RESOURCE_ATTRIBUTES="service.namespace=tomcat,deployment.environment=production"
+
+# Enable automatic service name detection from application context
+# This allows OpenTelemetry to detect the service name from the application
+export OTEL_SERVICE_NAME_DETECTION_ENABLED=true
+
+# Enable resource detection for better service identification
+export OTEL_RESOURCE_DETECTORS=env,process,process_runtime
 EOF
-    
-    chmod +x "$setenv_file"
-    info "Created/updated setenv.sh: $setenv_file"
+      
+      chmod +x "$setenv_file"
+      info "Updated setenv.sh to include OpenTelemetry agent"
+    else
+      info "OpenTelemetry agent already configured in setenv.sh"
+    fi
   else
-    warn "Could not find Tomcat bin directory for $app_name"
-    return 1
+    warn "Could not find Tomcat bin directory for server-level configuration"
   fi
   
   # If this is a systemd service, also update the service file
@@ -654,7 +804,7 @@ instrument_tomcat_app() {
   info "Adding OTEL instrumentation to Tomcat application: $app_id"
   
   # Parse the app_id to get components
-  IFS='-' read -r prefix pid suffix <<< "$app_id"
+  IFS='-' read -r prefix pid _ <<< "$app_id"
   if [ "$prefix" != "tomcat" ]; then
     err "Invalid Tomcat application ID format: $app_id"
     return 1
@@ -679,19 +829,21 @@ instrument_tomcat_app() {
   
   IFS='|' read -r found_app_id found_pid catalina_home catalina_base app_name app_path <<< "$app_info"
   
-  # Check if already instrumented
-  local env_output
-  env_output=$(cat "/proc/$found_pid/environ" 2>/dev/null | tr '\0' '\n' | grep -E "OTEL_EXPORTER_OTLP_ENDPOINT" || echo "")
+  # Check if already instrumented using WAR-specific marker file
+  local war_marker_file=""
+  if [ -n "$catalina_base" ] && [ -d "$catalina_base" ]; then
+    war_marker_file="$catalina_base/webapps/$app_name/.otel-instrumented"
+  elif [ -n "$catalina_home" ] && [ -d "$catalina_home" ]; then
+    war_marker_file="$catalina_home/webapps/$app_name/.otel-instrumented"
+  fi
   
-  if echo "$env_output" | grep -q "OTEL_EXPORTER_OTLP_ENDPOINT"; then
-    info "Tomcat application $app_name is already instrumented"
+  if [ -f "$war_marker_file" ]; then
+    info "WAR application $app_name is already instrumented"
     return 0
   fi
   
   # Update the Tomcat application
-  update_tomcat_app "$found_app_id" "$found_pid" "$catalina_home" "$catalina_base" "$app_name" "$app_path"
-  
-  if [ $? -eq 0 ]; then
+  if update_tomcat_app "$found_app_id" "$found_pid" "$catalina_home" "$catalina_base" "$app_name" "$app_path"; then
     info "✓ Successfully added OTEL instrumentation to Tomcat application: $app_name"
   else
     err "Failed to add OTEL instrumentation to Tomcat application: $app_name"
@@ -1320,9 +1472,16 @@ list_instrumented_apps() {
   
   for app_info in "${tomcat_apps[@]}"; do
     IFS='|' read -r app_id pid catalina_home catalina_base app_name app_path <<< "$app_info"
-    local env_output
-    env_output=$(cat "/proc/$pid/environ" 2>/dev/null | tr '\0' '\n' | grep -E "OTEL_EXPORTER_OTLP_ENDPOINT" || echo "")
-    if [ -n "$env_output" ]; then
+    
+    # Check for WAR-specific instrumentation marker file
+    local war_marker_file=""
+    if [ -n "$catalina_base" ] && [ -d "$catalina_base" ]; then
+      war_marker_file="$catalina_base/webapps/$app_name/.otel-instrumented"
+    elif [ -n "$catalina_home" ] && [ -d "$catalina_home" ]; then
+      war_marker_file="$catalina_home/webapps/$app_name/.otel-instrumented"
+    fi
+    
+    if [ -f "$war_marker_file" ]; then
       info "✓ Tomcat App: $app_name (PID: $pid) (instrumented) - App ID: $app_id"
       instrumented_count=$((instrumented_count + 1))
     else
@@ -1601,7 +1760,7 @@ uninstrument_tomcat_app() {
   info "Removing OTEL instrumentation from Tomcat application: $app_id"
   
   # Parse the app_id to get components
-  IFS='-' read -r prefix pid suffix <<< "$app_id"
+  IFS='-' read -r prefix pid _ <<< "$app_id"
   if [ "$prefix" != "tomcat" ]; then
     err "Invalid Tomcat application ID format: $app_id"
     return 1
@@ -1626,72 +1785,89 @@ uninstrument_tomcat_app() {
   
   IFS='|' read -r found_app_id found_pid catalina_home catalina_base app_name app_path <<< "$app_info"
   
-  # Check if already uninstrumented
-  local env_output
-  env_output=$(cat "/proc/$found_pid/environ" 2>/dev/null | tr '\0' '\n' | grep -E "OTEL_EXPORTER_OTLP_ENDPOINT" || echo "")
+  # Check if already uninstrumented using WAR-specific marker file
+  local war_marker_file=""
+  if [ -n "$catalina_base" ] && [ -d "$catalina_base" ]; then
+    war_marker_file="$catalina_base/webapps/$app_name/.otel-instrumented"
+  elif [ -n "$catalina_home" ] && [ -d "$catalina_home" ]; then
+    war_marker_file="$catalina_home/webapps/$app_name/.otel-instrumented"
+  fi
   
-  if [ -z "$env_output" ]; then
-    info "Tomcat application $app_name is not instrumented"
+  if [ ! -f "$war_marker_file" ]; then
+    info "WAR application $app_name is not instrumented"
     return 0
   fi
   
-  # Find and remove setenv.sh or restore backup
-  local setenv_file=""
+  # Remove WAR-specific OpenTelemetry configuration
+  local war_config_dir=""
   if [ -n "$catalina_base" ] && [ -d "$catalina_base" ]; then
-    setenv_file="$catalina_base/bin/setenv.sh"
+    war_config_dir="$catalina_base/webapps/$app_name/WEB-INF/classes"
   elif [ -n "$catalina_home" ] && [ -d "$catalina_home" ]; then
-    setenv_file="$catalina_home/bin/setenv.sh"
+    war_config_dir="$catalina_home/webapps/$app_name/WEB-INF/classes"
   fi
   
-  if [ -n "$setenv_file" ] && [ -f "$setenv_file" ]; then
-    # Check if this is our auto-generated setenv.sh
-    if grep -q "OpenTelemetry instrumentation for Tomcat (auto-generated)" "$setenv_file"; then
-      # Remove the auto-generated setenv.sh
-      rm -f "$setenv_file"
-      info "Removed auto-generated setenv.sh: $setenv_file"
-      
-      # Look for backup and restore it
-      local backup_dir="/tmp/tomcat-otel-backup-*"
-      for backup in $backup_dir; do
-        if [ -d "$backup" ] && [ -f "$backup/setenv.sh.backup" ]; then
-          cp "$backup/setenv.sh.backup" "$setenv_file"
-          chmod +x "$setenv_file"
-          info "Restored original setenv.sh from backup"
-          break
-        fi
-      done
-    else
-      # Remove OTEL-related lines from existing setenv.sh
-      local temp_file
-      temp_file=$(mktemp)
-      grep -v -E "OTEL_|javaagent.*opentelemetry|otel\.javaagent" "$setenv_file" > "$temp_file"
-      mv "$temp_file" "$setenv_file"
-      chmod +x "$setenv_file"
-      info "Removed OTEL configuration from setenv.sh: $setenv_file"
+  if [ -n "$war_config_dir" ] && [ -d "$war_config_dir" ]; then
+    # Remove WAR-specific environment file
+    local war_env_file="$war_config_dir/otel-war.env"
+    if [ -f "$war_env_file" ]; then
+      rm -f "$war_env_file"
+      info "Removed WAR-specific environment file: $war_env_file"
+    fi
+    
+    # Remove WAR-specific OpenTelemetry configuration file
+    local otel_config_file="$war_config_dir/otel.properties"
+    if [ -f "$otel_config_file" ]; then
+      rm -f "$otel_config_file"
+      info "Removed WAR-specific OpenTelemetry configuration: $otel_config_file"
     fi
   fi
   
-  # If this is a systemd service, also remove from service file
-  local service_name=""
-  for service in $(systemctl list-units --type=service --state=active --no-pager --no-legend | awk '{print $1}' | grep -E '\.(service)$'); do
-    local service_pid
-    service_pid=$(systemctl show "$service" --property=MainPID --no-pager 2>/dev/null | cut -d'=' -f2- || echo "")
-    if [ "$service_pid" = "$found_pid" ]; then
-      service_name="$service"
-      break
+  # Remove WAR-specific marker file
+  if [ -f "$war_marker_file" ]; then
+    rm -f "$war_marker_file"
+    info "Removed WAR instrumentation marker: $war_marker_file"
+  fi
+  
+  # Check if there are other WAR applications still instrumented on this Tomcat instance
+  local other_instrumented_war=false
+  local tomcat_apps
+  mapfile -t tomcat_apps < <(detect_tomcat_apps)
+  
+  for app_info in "${tomcat_apps[@]}"; do
+    IFS='|' read -r other_app_id other_pid other_catalina_home other_catalina_base other_app_name _ <<< "$app_info"
+    
+    # Skip the current app
+    if [ "$other_app_id" = "$app_id" ]; then
+      continue
+    fi
+    
+    # Check if this other app is on the same Tomcat instance
+    if [ "$other_pid" = "$found_pid" ]; then
+      # Check if this other app is still instrumented
+      local other_war_marker_file=""
+      if [ -n "$other_catalina_base" ] && [ -d "$other_catalina_base" ]; then
+        other_war_marker_file="$other_catalina_base/webapps/$other_app_name/.otel-instrumented"
+      elif [ -n "$other_catalina_home" ] && [ -d "$other_catalina_home" ]; then
+        other_war_marker_file="$other_catalina_home/webapps/$other_app_name/.otel-instrumented"
+      fi
+      
+      if [ -f "$other_war_marker_file" ]; then
+        other_instrumented_war=true
+        info "Found other instrumented WAR application: $other_app_name"
+        break
+      fi
     fi
   done
   
-  if [ -n "$service_name" ]; then
-    info "Found systemd service for Tomcat: $service_name"
-    uninstrument_service "$service_name"
+  # Only remove server-level configuration if no other WAR apps are instrumented
+  if [ "$other_instrumented_war" = false ]; then
+    info "No other WAR applications are instrumented on this Tomcat instance"
+    info "Server-level OpenTelemetry agent will remain active for future WAR instrumentation"
+    info "Note: The OpenTelemetry agent is still loaded at the server level"
+    info "This allows other WAR applications to be instrumented without server restart"
   else
-    # For standalone Tomcat, we need to restart it to pick up the changes
-    info "Tomcat is not managed by systemd, manual restart required"
-    info "Please restart Tomcat to remove OpenTelemetry instrumentation:"
-    info "  - Stop: kill $found_pid"
-    info "  - Start: $catalina_script start"
-    warn "Manual restart required for Tomcat application: $app_name"
+    info "Other WAR applications are still instrumented on this Tomcat instance"
+    info "Server-level OpenTelemetry agent will remain active"
   fi
   
   info "✓ Successfully removed OTEL instrumentation from Tomcat application: $app_name"
