@@ -133,7 +133,18 @@ update_middleware_credentials() {
 # Function to detect Java services
 detect_java_services() {
   local services=()
-  for service in $(systemctl list-units --type=service --state=active --no-pager --no-legend | awk '{print $1}' | grep -E '\.(service)$'); do
+  # Add timeout to prevent hanging when systemd is not available or slow
+  local service_list
+  if ! service_list=$(timeout 10 systemctl list-units --type=service --state=active --no-pager --no-legend 2>/dev/null); then
+    # If systemctl fails or times out, return empty array
+    return 0
+  fi
+  
+  for service in $(echo "$service_list" | awk '{print $1}' | grep -E '\.(service)$'); do
+    # Skip empty service names
+    if [ -z "$service" ]; then
+      continue
+    fi
     # Check if service runs Java
     local exec_start
     exec_start=$(systemctl show "$service" --property=ExecStart --no-pager 2>/dev/null | cut -d'=' -f2- | tr -d '"')
@@ -141,7 +152,11 @@ detect_java_services() {
       services+=("$service")
     fi
   done
-  echo "${services[@]}"
+  
+  # Only echo services if we have any
+  if [ ${#services[@]} -gt 0 ]; then
+    echo "${services[@]}"
+  fi
 }
 
 # Function to detect Java Docker containers
@@ -1431,16 +1446,25 @@ list_instrumented_apps() {
   local java_services
   mapfile -t java_services < <(detect_java_services)
   
-  for service in "${java_services[@]}"; do
-    local env_output
-    env_output=$(systemctl show "$service" --property=Environment --no-pager 2>/dev/null)
-    if echo "$env_output" | grep -q "OTEL_EXPORTER_OTLP_ENDPOINT"; then
-      info "✓ Service: $service (instrumented)"
-      instrumented_count=$((instrumented_count + 1))
-    else
-      info "✗ Service: $service (not instrumented)"
-    fi
-  done
+  # Handle case where no Java services are found
+  if [ ${#java_services[@]} -eq 0 ] || [ -z "${java_services[0]}" ]; then
+    info "No Java services found"
+  else
+    for service in "${java_services[@]}"; do
+      # Skip empty service names
+      if [ -z "$service" ]; then
+        continue
+      fi
+      local env_output
+      env_output=$(systemctl show "$service" --property=Environment --no-pager 2>/dev/null)
+      if echo "$env_output" | grep -q "OTEL_EXPORTER_OTLP_ENDPOINT"; then
+        info "✓ Service: $service (instrumented)"
+        instrumented_count=$((instrumented_count + 1))
+      else
+        info "✗ Service: $service (not instrumented)"
+      fi
+    done
+  fi
   
   # Check Docker containers
   info "=== Docker Containers ==="
