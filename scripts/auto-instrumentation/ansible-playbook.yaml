@@ -19,9 +19,8 @@
     # MW_TARGET: "https://your-middleware-endpoint:443"
     
     script_dir: "/opt/middleware/scripts/auto-instrumentation"
-    script_name: "instrument-java-so-stable-tomcat-1.sh"
-    script_url: "https://raw.githubusercontent.com/naman47vyas/auto-java-playbook/refs/heads/master/java-autoinstrument-tomcat.sh"
-  
+    script_name: "java-autoinstrument-tomcat.sh"
+    script_url:  "https://raw.githubusercontent.com/naman47vyas/auto-java-playbook/refs/heads/master/java-autoinstrument-tomcat.sh"
   tasks:
     - name: Ping hosts
       ansible.builtin.ping:
@@ -75,19 +74,3 @@
         msg: "Return Code: {{ instrument_output.rc }} | Error: {{ instrument_output.stderr }}"
       when: instrument_output.rc != 0
     
-    # ==========================================================================
-    # VALIDATE INSTRUMENTATION
-    # ==========================================================================
-    - name: Validate instrumentation
-      ansible.builtin.shell:
-        cmd: "{{ script_dir }}/{{ script_name }} validate"
-      environment:
-        MW_TARGET: "{{ MW_TARGET }}"
-        MW_API_KEY: "{{ MW_API_KEY }}"
-      register: validate_output
-      ignore_errors: true
-    
-    - name: Show validation results
-      ansible.builtin.debug:
-        var: validate_output.stdout_lines
- 
