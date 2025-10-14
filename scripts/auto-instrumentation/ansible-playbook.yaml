@@ -1,0 +1,76 @@
+# ==============================================================================
+# Middleware Java Auto-Instrumentation Playbook
+# ==============================================================================
+# Simple playbook to instrument Java applications with OpenTelemetry
+#
+# Usage:
+#   ansible-playbook -i inventory.ini playbook.yaml \
+#     -e "MW_API_KEY=your-key" \
+#     -e "MW_TARGET=https://your-endpoint:443"
+# ==============================================================================
+
+- name: Auto-instrument Java applications
+  hosts: myhosts
+  become: true
+  
+  vars:
+    # Set these via command line or uncomment and fill in:
+    # MW_API_KEY: "your-api-key-here"
+    # MW_TARGET: "https://your-middleware-endpoint:443"
+    
+    script_dir: "/opt/middleware/scripts/auto-instrumentation"
+    script_name: "java-autoinstrument-tomcat.sh"
+    script_url:  "https://raw.githubusercontent.com/naman47vyas/auto-java-playbook/refs/heads/master/java-autoinstrument-tomcat.sh"
+  tasks:
+    - name: Ping hosts
+      ansible.builtin.ping:
+    
+    - name: Create script directory
+      ansible.builtin.file:
+        path: "{{ script_dir }}"
+        state: directory
+        mode: '0755'
+    
+    - name: Download instrumentation script
+      ansible.builtin.get_url:
+        url: "{{ script_url }}"
+        dest: "{{ script_dir }}/{{ script_name }}"
+        mode: '0755'
+    
+    # ==========================================================================
+    # LIST CURRENTLY INSTRUMENTED APPS
+    # ==========================================================================
+    - name: List instrumented applications
+      ansible.builtin.shell:
+        cmd: "{{ script_dir }}/{{ script_name }} list-instrumented"
+      environment:
+        MW_TARGET: "{{ MW_TARGET }}"
+        MW_API_KEY: "{{ MW_API_KEY }}"
+      register: list_output
+      ignore_errors: true
+    
+    - name: Show currently instrumented apps
+      ansible.builtin.debug:
+        var: list_output.stdout_lines
+    
+    # ==========================================================================
+    # INSTRUMENT ALL JAVA APPLICATIONS
+    # ==========================================================================
+    - name: Instrument all Java applications
+      ansible.builtin.shell:
+        cmd: "{{ script_dir }}/{{ script_name }} instrument-all"
+      environment:
+        MW_TARGET: "{{ MW_TARGET }}"
+        MW_API_KEY: "{{ MW_API_KEY }}"
+      register: instrument_output
+      ignore_errors: true
+    
+    - name: Show instrumentation output
+      ansible.builtin.debug:
+        var: instrument_output.stdout_lines
+    
+    - name: Show errors if instrumentation failed
+      ansible.builtin.debug:
+        msg: "Return Code: {{ instrument_output.rc }} | Error: {{ instrument_output.stderr }}"
+      when: instrument_output.rc != 0
+    
