@@ -74,6 +74,48 @@ export MW_DEFAULT_CONFIG_CHECK_INTERVAL
 MW_LATEST_VERSION=$(get_latest_mw_agent_version)
 export MW_LATEST_VERSION
 
+MW_DEFAULT_ENABLE_DATADOG_RECEIVER=false
+export MW_DEFAULT_ENABLE_DATADOG_RECEIVER
+
+# Allow override if explicitly defined
+if [ -z "${MW_AGENT_SELF_PROFILING}" ]; then
+  MW_AGENT_SELF_PROFILING=false
+fi
+export MW_AGENT_SELF_PROFILING
+
+if [ -z "${MW_PROFILING_SERVER_URL}" ]; then
+  MW_PROFILING_SERVER_URL=https://profiling.middleware.io
+fi
+export MW_PROFILING_SERVER_URL
+
+if [ -z "${MW_SYNTHETIC_MONITORING_API_URL}" ]; then
+  MW_SYNTHETIC_MONITORING_API_URL=wss://app.middleware.io:443/plsrws/v2
+fi
+export MW_SYNTHETIC_MONITORING_API_URL
+
+if [ -z "${MW_SYNTHETIC_MONITORING_UNSUBSCRIBE_ENDPOINT}" ]; then
+  MW_SYNTHETIC_MONITORING_UNSUBSCRIBE_ENDPOINT=https://app.middleware.io/api/v1/synthetics/unsubscribe
+fi
+export MW_SYNTHETIC_MONITORING_UNSUBSCRIBE_ENDPOINT
+
+if [ -z "${MW_AGENT_FEATURES_OPSAI_AUTOFIX}" ]; then
+  MW_AGENT_FEATURES_OPSAI_AUTOFIX=false
+fi
+export MW_AGENT_FEATURES_OPSAI_AUTOFIX
+
+if [ -z "${MW_OPSAI_API_URL}" ]; then
+  MW_OPSAI_API_URL=wss://app.middleware.io/plsrws/v2
+fi
+export MW_OPSAI_API_URL
+
+if [ -z "${MW_OPSAI_UNSUBSCRIBE_ENDPOINT}" ]; then
+  MW_OPSAI_UNSUBSCRIBE_ENDPOINT=https://app.middleware.io/api/v1/synthetics/unsubscribe
+fi
+export MW_OPSAI_UNSUBSCRIBE_ENDPOINT
+
+ACCOUNT_UID=$(echo "$MW_TARGET" | sed -E 's|^https://([^\.]+).*|\1|')
+export ACCOUNT_UID
+
 if [ "${MW_VERSION}" = "" ]; then 
   MW_VERSION=$MW_LATEST_VERSION
   export MW_VERSION
@@ -95,7 +137,7 @@ if [ "${MW_CONFIG_CHECK_INTERVAL}" = "" ]; then
 fi
 
 if [ "${MW_ENABLE_DATADOG_RECEIVER}" = "" ]; then 
-  MW_ENABLE_DATADOG_RECEIVER=$MW_ENABLE_DATADOG_RECEIVER
+  MW_ENABLE_DATADOG_RECEIVER=$MW_DEFAULT_ENABLE_DATADOG_RECEIVER
   export MW_ENABLE_DATADOG_RECEIVER
 fi
 
@@ -118,7 +160,9 @@ BASE_URL="https://install.middleware.io/manifests/mw-kube-agent"
 # Download necessary files
 for file in clusterrole.yaml clusterrolebinding.yaml configupdater.yaml daemonset.yaml deployment.yaml \
             role-update.yaml role.yaml rolebinding-update.yaml rolebinding.yaml \
-            service.yaml serviceaccount-update.yaml serviceaccount.yaml; do
+            service.yaml serviceaccount-update.yaml serviceaccount.yaml \
+            synthetics.yaml \
+            opsai.yaml clusterrole-opsai.yaml clusterrolebinding-opsai.yaml serviceaccount-opsai.yaml; do
     sudo wget -O "$MW_KUBE_AGENT_HOME/$file" "$BASE_URL/$file"
 done
 
@@ -137,20 +181,36 @@ fi
 kubectl delete cronjob mw-kube-agent-update -n "${MW_NAMESPACE}" --kubeconfig "${MW_KUBECONFIG}" --ignore-not-found
 
 # Apply YAML files in specific order
+
 ordered_files="
-    serviceaccount.yaml
-    serviceaccount-update.yaml
-    role.yaml
-    role-update.yaml
-    rolebinding.yaml
-    rolebinding-update.yaml
-    clusterrole.yaml
-    clusterrolebinding.yaml
-    configupdater.yaml
-    service.yaml
-    deployment.yaml
-    daemonset.yaml
+  serviceaccount.yaml
+  serviceaccount-update.yaml
+  role.yaml
+  role-update.yaml
+  rolebinding.yaml
+  rolebinding-update.yaml
+  clusterrole.yaml
+  clusterrolebinding.yaml
+  configupdater.yaml
+  service.yaml
+  deployment.yaml
+  daemonset.yaml
 "
+
+# Append extra files if MW_AGENT_FEATURES_OPSAI_AUTOFIX is true
+if [ "${MW_AGENT_FEATURES_OPSAI_AUTOFIX:-false}" = "true" ]; then
+  ordered_files="$ordered_files
+  opsai.yaml
+  serviceaccount-opsai.yaml
+  clusterrole-opsai.yaml
+  clusterrolebinding-opsai.yaml"
+fi
+
+if [ "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING:-false}" = "true" ]; then 
+  ordered_files="$ordered_files
+  synthetics.yaml"
+fi
+
 
 for file in $ordered_files; do
   sed -e "s|MW_KUBE_CLUSTER_NAME_VALUE|$MW_KUBE_CLUSTER_NAME|g" \
@@ -159,11 +219,20 @@ for file in $ordered_files; do
       -e "s|MW_DOCKER_ENDPOINT_VALUE|$MW_DOCKER_ENDPOINT|g" \
       -e "s|MW_API_KEY_VALUE|$MW_API_KEY|g" \
       -e "s|TARGET_VALUE|$MW_TARGET|g" \
+      -e "s|ACCOUNT_UID_VALUE|$ACCOUNT_UID|g" \
       -e "s|NAMESPACE_VALUE|${MW_NAMESPACE}|g" \
       -e "s|MW_API_URL_FOR_CONFIG_CHECK_VALUE|$MW_API_URL_FOR_CONFIG_CHECK|g" \
       -e "s|MW_CONFIG_CHECK_INTERVAL_VALUE|$MW_CONFIG_CHECK_INTERVAL|g" \
       -e "s|MW_VERSION_VALUE|$MW_VERSION|g" \
       -e "s|MW_ENABLE_DATADOG_RECEIVER_VALUE|$MW_ENABLE_DATADOG_RECEIVER|g" \
+      -e "s|MW_AGENT_FEATURES_SYNTHETIC_MONITORING_VALUE|$MW_AGENT_FEATURES_SYNTHETIC_MONITORING|g" \
+      -e "s|MW_AGENT_SELF_PROFILING_VALUE|$MW_AGENT_SELF_PROFILING|g" \
+      -e "s|MW_PROFILING_SERVER_URL_VALUE|$MW_PROFILING_SERVER_URL|g" \
+      -e "s|MW_SYNTHETIC_MONITORING_API_URL_VALUE|$MW_SYNTHETIC_MONITORING_API_URL|g" \
+      -e "s|MW_SYNTHETIC_MONITORING_UNSUBSCRIBE_ENDPOINT_VALUE|$MW_SYNTHETIC_MONITORING_UNSUBSCRIBE_ENDPOINT|g" \
+      -e "s|MW_OPSAI_API_URL_VALUE|$MW_OPSAI_API_URL|g" \
+      -e "s|MW_OPSAI_UNSUBSCRIBE_ENDPOINT_VALUE|$MW_OPSAI_UNSUBSCRIBE_ENDPOINT|g" \
+      -e "s|MW_AGENT_FEATURES_OPSAI_AUTOFIX_VALUE|$MW_AGENT_FEATURES_OPSAI_AUTOFIX|g" \
     "$MW_KUBE_AGENT_HOME/$file" |kubectl apply -f - --kubeconfig "${MW_KUBECONFIG}"
 done
 
@@ -171,8 +240,8 @@ echo "Middleware Kubernetes agent successfully installed !"
 
 # Check if MW_AUTO_INSTRUMENT is defined, default to "false" if not
 if [ "${MW_AUTO_INSTRUMENT:-false}" = "true" ]; then
-    echo -e "\nAuto-instrumentation is enabled. Installing auto-instrumentation components..."
+    printf "\nAuto-instrumentation is enabled. Installing auto-instrumentation components...\n"
     bash -c "$(curl -L https://install.middleware.io/scripts/mw-kube-auto-instrumentation-install.sh)"
 else
-    echo -e "\nAuto-instrumentation is not enabled. Set MW_AUTO_INSTRUMENT=true to enable it."
+  printf "\nAuto-instrumentation is not enabled. Set MW_AUTO_INSTRUMENT=true to enable it.\n"
 fi
