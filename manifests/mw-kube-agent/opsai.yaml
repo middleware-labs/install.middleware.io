@@ -1,0 +1,57 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: opsai
+  namespace: "NAMESPACE_VALUE"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mw-kube-agent-v3-opsai
+      app.kubernetes.io/instance: mw-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mw-kube-agent-v3-opsai
+        app.kubernetes.io/instance: mw-agent
+    spec:
+      containers:
+        - args:
+            - mw-agent
+            - start
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MW_TARGET
+              value: "MW_TARGET_VALUE"
+            - name: MW_KUBE_CLUSTER_NAME
+              value: "MW_KUBE_CLUSTER_NAME_VALUE"
+            - name: MW_NAMESPACE
+              value: "NAMESPACE_VALUE" 
+            - name: MW_AGENT_SELF_PROFILING
+              value: "MW_AGENT_SELF_PROFILING_VALUE"
+            - name: MW_PROFILING_SERVER_URL
+              value: "MW_PROFILING_SERVER_URL_VALUE"
+            - name: MW_AGENT_FEATURES_OPSAI_AUTOFIX
+              value: "MW_AGENT_FEATURES_OPSAI_AUTOFIX_VALUE"
+            - name: MW_OPSAI_API_URL
+              value: "MW_OPSAI_API_URL_VALUE"
+            - name: MW_OPSAI_UNSUBSCRIBE_ENDPOINT
+              value: "MW_OPSAI_UNSUBSCRIBE_ENDPOINT_VALUE"
+            - name: ACCOUNT_UID
+              value: "ACCOUNT_UID_VALUE"
+            - name: MW_API_KEY
+              value: "MW_API_KEY_VALUE"
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          image: ghcr.io/middleware-labs/mw-kube-agent-opsai:1.17.1
+          imagePullPolicy: Always
+          name: mw-kube-agent-v3
+      restartPolicy: Always
+      serviceAccountName: mw-opsai-service-account

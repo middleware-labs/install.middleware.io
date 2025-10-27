@@ -33,7 +33,7 @@ on_exit() {
   fi
 }
 
-trap on_exit EXIT
+trap 'on_exit' EXIT
 
 # recording agent installation attempt
 curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/"$MW_API_KEY" \
@@ -51,7 +51,7 @@ curl -s --location --request POST https://app.middleware.io/api/v1/agent/trackin
 MW_DEFAULT_NAMESPACE=mw-agent-ns
 export MW_DEFAULT_NAMESPACE
 
-if [ "$MW_NAMESPACE" = "" ]; then 
+if [ -z "$MW_NAMESPACE" ]; then 
   MW_NAMESPACE=$MW_DEFAULT_NAMESPACE
   export MW_NAMESPACE
 fi
@@ -69,14 +69,14 @@ printf "\nMiddleware Kubernetes agent is being uninstalled using manifest files,
 
 # Function to delete a resource and check its status
 delete_resource() {
-    local resource_type=$1
-    local resource_name=$2
-    local namespace=$3
+  resource_type="$1"
+  resource_name="$2"
+  namespace="$3"
 
     if [ -n "$namespace" ]; then
-        kubectl --kubeconfig "${MW_KUBECONFIG}" delete $resource_type $resource_name -n $namespace --ignore-not-found
+        kubectl --kubeconfig "${MW_KUBECONFIG}" delete "$resource_type" "$resource_name" -n "$namespace" --ignore-not-found
     else
-        kubectl --kubeconfig "${MW_KUBECONFIG}" delete $resource_type $resource_name --ignore-not-found
+        kubectl --kubeconfig "${MW_KUBECONFIG}" delete "$resource_type" "$resource_name" --ignore-not-found
     fi
 }
 
@@ -96,9 +96,21 @@ delete_resource cronjob mw-kube-agent-update $MW_DEFAULT_NAMESPACE
 delete_resource job mw-kube-agent-update-configmap $MW_DEFAULT_NAMESPACE
 delete_resource deployment mw-kube-agent-config-updater $MW_DEFAULT_NAMESPACE
 
+# Deleting OpsAI Components
+delete_resource serviceaccount mw-opsai-service-account $MW_DEFAULT_NAMESPACE
+delete_resource deployment opsai $MW_DEFAULT_NAMESPACE
+
+# Deleting On-Premise Synthetic Components
+delete_resource deployment synthetics $MW_DEFAULT_NAMESPACE
+
 # Delete cluster-level resources
 delete_resource clusterrole mw-cluster-role-mw-agent-ns
 delete_resource clusterrolebinding mw-cluster-role-binding-mw-agent-ns
+
+delete_resource clusterrole mw-opsai-cluster-role
+delete_resource clusterrolebinding mw-opsai-cluster-role-binding
+
+
 
 # kubectl --kubeconfig "${MW_KUBECONFIG}" delete namespace "$MW_NAMESPACE"
 
@@ -108,13 +120,13 @@ elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
 fi
 
 if [ "${MW_AUTO_INSTRUMENT:-false}" = "true" ]; then
-    echo -e "\nUninstalling auto-instrumentation components..."
-    bash -c "$(curl -L https://install.middleware.io/scripts/mw-kube-auto-instrumentation-uninstall.sh)"
+  printf "\nUninstalling auto-instrumentation components...\n"
+  bash -c "$(curl -L https://install.middleware.io/scripts/mw-kube-auto-instrumentation-uninstall.sh)"
 else
-    echo -e "If you have installed auto-instrumentation, please set MW_AUTO_INSTRUMENT=true and try again."
-    delete_resource namespace "$MW_NAMESPACE"
+  printf "If you have installed auto-instrumentation, please set MW_AUTO_INSTRUMENT=true and try again.\n"
+  delete_resource namespace "$MW_NAMESPACE"
 fi
 
-echo -e "\nMiddleware Kubernetes agent has been successfully uninstalled!"
+printf "\nMiddleware Kubernetes agent has been successfully uninstalled!\n"
 
 send_logs "success" "uninstall completed"
