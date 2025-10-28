@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Go Application OpenTelemetry Instrumentation Script
-# Detects running Go applications and instruments them with Alibaba's loongsuite go agent
 # Compatible with Amazon Linux
 
 set -e
