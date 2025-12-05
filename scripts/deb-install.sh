@@ -113,7 +113,7 @@ fi
 MW_LATEST_VERSION=$(get_latest_mw_agent_version)
 export MW_LATEST_VERSION
 # Check if MW_VERSION is provided
-if [ "${MW_VERSION}" = "" ]; then 
+if [ "${MW_VERSION}" = "" ]; then
   MW_VERSION=$MW_LATEST_VERSION
 fi
 export MW_VERSION
@@ -142,10 +142,10 @@ else
   force_continue
 fi
 
-if [ "${MW_DETECTED_ARCH}" = "" ]; then 
+if [ "${MW_DETECTED_ARCH}" = "" ]; then
   MW_DETECTED_ARCH=$(dpkg --print-architecture)
   echo -e "cpu architecture detected: '$MW_DETECTED_ARCH'"
-else 
+else
   echo -e "cpu architecture provided: '$MW_DETECTED_ARCH'"
 fi
 export MW_DETECTED_ARCH
@@ -159,40 +159,40 @@ else
   echo ""
 fi
 
-if [ "${MW_AGENT_HOME}" = "" ]; then 
+if [ "${MW_AGENT_HOME}" = "" ]; then
   MW_AGENT_HOME=/opt/mw-agent
 fi
 export MW_AGENT_HOME
 
-if [ "${MW_KEYRING_LOCATION}" = "" ]; then 
+if [ "${MW_KEYRING_LOCATION}" = "" ]; then
   MW_KEYRING_LOCATION=/usr/share/keyrings
 fi
 export MW_KEYRING_LOCATION
 
-if [ "${MW_APT_LIST}" = "" ]; then 
+if [ "${MW_APT_LIST}" = "" ]; then
   MW_APT_LIST=mw-agent.list
 fi
 export MW_APT_LIST
 
 MW_AGENT_BINARY=mw-agent
-if [ "${MW_AGENT_BINARY}" = "" ]; then 
+if [ "${MW_AGENT_BINARY}" = "" ]; then
   MW_AGENT_BINARY=mw-agent
 fi
 
 export MW_AGENT_BINARY
 
-if [ "${MW_AUTO_START}" = "" ]; then 
+if [ "${MW_AUTO_START}" = "" ]; then
   MW_AUTO_START=true
 fi
 export MW_AUTO_START
 
-if [ "${MW_API_KEY}" = "" ]; then 
+if [ "${MW_API_KEY}" = "" ]; then
   echo "MW_API_KEY environment variable is required and is not set."
   force_continue
 fi
 export MW_API_KEY
 
-if [ "${MW_TARGET}" = "" ]; then 
+if [ "${MW_TARGET}" = "" ]; then
   echo "MW_TARGET environment variable is required and is not set."
   force_continue
 fi
