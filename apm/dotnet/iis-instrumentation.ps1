@@ -63,8 +63,22 @@ Write-Host "✅ REOPEN IT AND RUN USING IIS EXPRESS"
 Write-Host ""
 
 
+
 # Run as Administrator
 $AppCmd = "$env:SystemRoot\System32\inetsrv\appcmd.exe"
+
+# Accept OTLP endpoint and API key as arguments or environment variables
+param(
+    [string]$OtlpEndpoint = $env:OTEL_EXPORTER_OTLP_ENDPOINT,
+    [string]$ApiKey = $env:OTEL_EXPORTER_OTLP_API_KEY
+)
+
+# Set defaults if not provided
+if (-not $OtlpEndpoint) { $OtlpEndpoint = "https://localhost:9320" }
+if (-not $ApiKey) { $ApiKey = "fronvgmuphtdegeougdooktdtsztfxxmzayc" }
+
+Write-Host "Using OTLP Endpoint: $OtlpEndpoint" -ForegroundColor Cyan
+Write-Host "Using API Key: $ApiKey" -ForegroundColor Cyan
 
 # List all App Pools
 Write-Host "\n========== AVAILABLE IIS APP POOLS ==========" -ForegroundColor Yellow
@@ -89,7 +103,7 @@ Write-Host "Selected App Pool: $AppPoolName" -ForegroundColor Cyan
 
 $envs = @{
     "OTEL_SERVICE_NAME" = "MyMvcIisService"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://localhost:9320"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = $OtlpEndpoint
     "OTEL_EXPORTER_OTLP_PROTOCOL" = "http/protobuf"
     "OTEL_DOTNET_AUTO_INSTALL_DIR" = "C:\Program Files\OpenTelemetry .NET AutoInstrumentation"
     "OTEL_TRACES_EXPORTER" = "otlp"
@@ -108,7 +122,7 @@ $envs = @{
     "OTEL_DOTNET_AUTO_INSTRUMENTATION_ENABLED" = "true"
     "OTEL_BSP_SCHEDULE_DELAY" = "1000"
     "OTEL_BSP_MAX_EXPORT_BATCH_SIZE" = "1"
-    "OTEL_EXPORTER_OTLP_HEADERS" = "Authorization=fronvgmuphtdegeougdooktdtsztfxxmzayc"
+    "OTEL_EXPORTER_OTLP_HEADERS" = "Authorization=$MwApiKey"
 }
 
 foreach ($name in $envs.Keys) {
