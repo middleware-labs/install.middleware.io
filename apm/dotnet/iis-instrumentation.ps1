@@ -106,6 +106,7 @@ $envs = @{
     "OTEL_EXPORTER_OTLP_ENDPOINT" = $OtlpEndpoint
     "OTEL_EXPORTER_OTLP_PROTOCOL" = "http/protobuf"
     "OTEL_DOTNET_AUTO_INSTALL_DIR" = "C:\Program Files\OpenTelemetry .NET AutoInstrumentation"
+    "OTEL_DOTNET_AUTO_HOME" = "C:\Program Files\OpenTelemetry .NET AutoInstrumentation"
     "OTEL_TRACES_EXPORTER" = "otlp"
     "OTEL_METRICS_EXPORTER" = "otlp"
     "OTEL_LOGS_EXPORTER" = "otlp"
@@ -115,14 +116,14 @@ $envs = @{
     "COR_ENABLE_PROFILING" = "1"
     "COR_PROFILER" = "{918728DD-259F-4A6A-AC2B-B85E1B658318}"
     "COR_PROFILER_PATH" = "C:\Program Files\OpenTelemetry .NET AutoInstrumentation\win-x64\OpenTelemetry.AutoInstrumentation.Native.dll"
-    "COR_PROFILER_PATH_32" = "C:\Program Files\OpenTelemetry .NET AutoInstrumentation\win-x64\OpenTelemetry.AutoInstrumentation.Native.dll"
+    "COR_PROFILER_PATH_32" = "C:\Program Files\OpenTelemetry .NET AutoInstrumentation\win-x86\OpenTelemetry.AutoInstrumentation.Native.dll"
     "COR_PROFILER_PATH_64" = "C:\Program Files\OpenTelemetry .NET AutoInstrumentation\win-x64\OpenTelemetry.AutoInstrumentation.Native.dll"
     "OTEL_DOTNET_AUTO_LOG_DIRECTORY" = "C:\otel-logs"
     "OTEL_DOTNET_AUTO_LOG_LEVEL" = "debug"
     "OTEL_DOTNET_AUTO_INSTRUMENTATION_ENABLED" = "true"
     "OTEL_BSP_SCHEDULE_DELAY" = "1000"
     "OTEL_BSP_MAX_EXPORT_BATCH_SIZE" = "1"
-    "OTEL_EXPORTER_OTLP_HEADERS" = "Authorization=$MwApiKey"
+    "OTEL_EXPORTER_OTLP_HEADERS" = "Authorization=$ApiKey"
 }
 
 foreach ($name in $envs.Keys) {
