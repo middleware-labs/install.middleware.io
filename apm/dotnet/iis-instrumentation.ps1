@@ -1,5 +1,11 @@
 #Requires -PSEdition Desktop
 
+# Accept OTLP endpoint and API key as arguments or environment variables
+param(
+    [string]$OtlpEndpoint = $env:OTEL_EXPORTER_OTLP_ENDPOINT,
+    [string]$ApiKey = $env:OTEL_EXPORTER_OTLP_API_KEY
+)
+
 Write-Host "========== CLEANING OLD OPEN TELEMETRY SETTINGS ==========" -ForegroundColor Yellow
 
 # -----------------------------
@@ -66,12 +72,6 @@ Write-Host ""
 
 # Run as Administrator
 $AppCmd = "$env:SystemRoot\System32\inetsrv\appcmd.exe"
-
-# Accept OTLP endpoint and API key as arguments or environment variables
-param(
-    [string]$OtlpEndpoint = $env:OTEL_EXPORTER_OTLP_ENDPOINT,
-    [string]$ApiKey = $env:OTEL_EXPORTER_OTLP_API_KEY
-)
 
 # Set defaults if not provided
 if (-not $OtlpEndpoint) { $OtlpEndpoint = "https://localhost:9320" }
