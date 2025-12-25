@@ -73,10 +73,6 @@ Write-Host ""
 # Run as Administrator
 $AppCmd = "$env:SystemRoot\System32\inetsrv\appcmd.exe"
 
-# Set defaults if not provided
-if (-not $OtlpEndpoint) { $OtlpEndpoint = "https://localhost:9320" }
-if (-not $ApiKey) { $ApiKey = "fronvgmuphtdegeougdooktdtsztfxxmzayc" }
-
 Write-Host "Using OTLP Endpoint: $OtlpEndpoint" -ForegroundColor Cyan
 Write-Host "Using API Key: $ApiKey" -ForegroundColor Cyan
 
