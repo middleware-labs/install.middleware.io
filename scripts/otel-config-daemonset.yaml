@@ -214,7 +214,7 @@ processors:
     attributes:
       - key: k8s.cluster.name
         action: update
-        value: ${env:MW_KUBE_CLUSTER_NAME}
+        value: ${MW_KUBE_CLUSTER_NAME}
       - key: host.id
         action: update
         from_attribute: k8s.node.name
@@ -321,3 +321,4 @@ service:
         receivers: [ hostmetrics ]
         processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]
         exporters: [ otlp ]
+
