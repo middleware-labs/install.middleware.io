@@ -125,6 +125,14 @@ $envs = @{
     "OTEL_EXPORTER_OTLP_HEADERS" = "Authorization=$ApiKey"
 }
 
+# Remove App Pool-specific OTEL/profiler variables before re-applying them
+$appPoolEnvVarsToRemove = ($oldEnvVars + $envs.Keys) | Sort-Object -Unique
+foreach ($name in $appPoolEnvVarsToRemove) {
+    $cmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /-environmentVariables.`"[name='$name']`""
+    Write-Host "Unsetting App Pool env $name"
+    Invoke-Expression $cmd
+}
+
 foreach ($name in $envs.Keys) {
     $value = $envs[$name] -replace '\\', '\\\\'   # Escape backslashes for appcmd
     $cmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /+environmentVariables.`"[name='$name',value='$value']`""
