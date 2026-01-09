@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Function to check if a command exists
@@ -28,7 +27,6 @@ sudo touch "$LOG_FILE"
 sudo chmod 666 "$LOG_FILE"
 
 # Redirect both standard output (stdout) and standard error (stderr) to the log file in append mode
-# using 'tee' to simultaneously write logs to the file and display them in the console.
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 MW_TRACKING_TARGET="https://app.middleware.io"
@@ -72,7 +70,7 @@ function force_continue {
       ;;
     *)
       echo "Invalid input. Please enter 'yes' or 'no'."
-      force_continue # Recursively call the function until valid input is received.
+      force_continue
       ;;
   esac
 }
@@ -87,41 +85,28 @@ function on_exit {
 
 get_latest_mw_agent_version() {
   repo="middleware-labs/mw-agent"
-
-  # Fetch the latest release version from GitHub API
   latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-
-  # Check if the version was fetched successfully
   if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
     latest_version="1.6.6"
   fi
-
   echo "$latest_version"
 }
 
 get_latest_java_agent_version() {
   repo="middleware-labs/opentelemetry-java-instrumentation"
-
-  # Fetch the latest release version from GitHub API
   latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-
-  # Check if the version was fetched successfully
   if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
     latest_version="1.8.1"
   else
-    # Strip the 'v' prefix if present
     latest_version="${latest_version#v}"
   fi
-
   echo "$latest_version"
 }
 
 trap on_exit EXIT
 
-# recording agent installation attempt
 send_logs "tried" "Agent Installation Attempted"
 
-# Check if the system is running Linux
 if [ "$(uname -s)" != "Linux" ]; then
   echo "This machine is not running Linux, The script is designed to run on a Linux machine."
   force_continue
@@ -129,14 +114,12 @@ fi
 
 MW_LATEST_VERSION=$(get_latest_mw_agent_version)
 export MW_LATEST_VERSION
-# Check if MW_VERSION is provided
 if [ "${MW_VERSION}" = "" ]; then
   MW_VERSION=$MW_LATEST_VERSION
 fi
 export MW_VERSION
 echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostname) at $(date)" | sudo tee -a "$LOG_FILE"
 
-# Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
   source /etc/os-release
   case "$ID" in
@@ -195,7 +178,6 @@ MW_AGENT_BINARY=mw-agent
 if [ "${MW_AGENT_BINARY}" = "" ]; then
   MW_AGENT_BINARY=mw-agent
 fi
-
 export MW_AGENT_BINARY
 
 if [ "${MW_AUTO_START}" = "" ]; then
@@ -225,17 +207,14 @@ fi
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 
-# Adding APT repo address & public key to system
 sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg
 sudo touch /etc/apt/sources.list.d/"$MW_APT_LIST"
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
 echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
 
-# Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" > /dev/null
 
-# Installing Agent
 echo -e "Installing Middleware Agent Service ...\n"
 if ! sudo -E apt-get install -y "${MW_AGENT_BINARY}=$MW_VERSION"; then
   echo "Error: Failed to install Middleware Agent."
@@ -244,15 +223,16 @@ fi
 
 sudo systemctl daemon-reload
 
-# Adding mw-agent to PATH
 if ! grep -q "/opt/mw-agent/bin" ~/.bashrc; then
   echo "export PATH=/opt/mw-agent/bin:$PATH" >> ~/.bashrc
-  echo "/opt/mw-agent/bin added to PATH in ~/.bashrc"
-else
-  echo "/opt/mw-agent/bin is already in the PATH"
+fi
+# Also add mw-agent bin to zshrc if exists
+if [ -f "$HOME/.zshrc" ]; then
+    if ! grep -q "/opt/mw-agent/bin" "$HOME/.zshrc"; then
+        echo "export PATH=/opt/mw-agent/bin:$PATH" >> "$HOME/.zshrc"
+    fi
 fi
 
-#check for errors
 if ! sudo systemctl enable mw-agent; then
   echo "Error: Failed to enable Middleware Agent service."
   exit 1
@@ -273,19 +253,16 @@ echo -e "\n========================================="
 echo "MW Injector (Java Auto-Instrumentation)"
 echo "========================================="
 
-# Check if Java instrumentation is desired
 if [ "${MW_ENABLE_INJECTOR}" = "false" ]; then
   echo "MW_ENABLE_INJECTOR is set to false. Skipping Java auto-instrumentation."
   exit 0
 fi
 
-# Get MW Injector version
 if [ "${MW_INJECTOR_VERSION}" = "" ]; then
-  MW_INJECTOR_VERSION="0.0.1_alpha"  # Default version
+  MW_INJECTOR_VERSION="0.0.1_alpha"
 fi
 export MW_INJECTOR_VERSION
 
-# Get Java Agent version
 MW_JAVA_AGENT_LATEST_VERSION=$(get_latest_java_agent_version)
 if [ "${MW_JAVA_AGENT_VERSION}" = "" ]; then
   MW_JAVA_AGENT_VERSION=$MW_JAVA_AGENT_LATEST_VERSION
@@ -295,7 +272,6 @@ export MW_JAVA_AGENT_VERSION
 echo -e "\nInstalling MW Injector version ${MW_INJECTOR_VERSION}"
 echo -e "Installing Middleware Java Agent version ${MW_JAVA_AGENT_VERSION}\n"
 
-# Set default installation directories
 if [ "${MW_INJECTOR_HOME}" = "" ]; then
   MW_INJECTOR_HOME=/opt/middleware
 fi
@@ -304,7 +280,6 @@ export MW_INJECTOR_HOME
 MW_INJECTOR_BIN_DIR="${MW_INJECTOR_HOME}/bin"
 MW_JAVA_AGENT_DIR="${MW_INJECTOR_HOME}/agents"
 
-# Create directory structure
 echo "Creating directory structure..."
 sudo mkdir -p "$MW_INJECTOR_BIN_DIR"
 sudo mkdir -p "$MW_JAVA_AGENT_DIR"
@@ -318,69 +293,57 @@ echo "Downloading MW Injector binary..."
 INJECTOR_BINARY_URL="https://github.com/middleware-labs/mw-injector/releases/download/${MW_INJECTOR_VERSION}/mw-injector"
 INJECTOR_BINARY_PATH="${MW_INJECTOR_BIN_DIR}/mw-injector"
 
-echo "=========================================="
-echo "DEBUG: MW Injector Download"
-echo "=========================================="
-echo "Version: ${MW_INJECTOR_VERSION}"
-echo "Full URL: ${INJECTOR_BINARY_URL}"
-echo "Target Path: ${INJECTOR_BINARY_PATH}"
-echo "=========================================="
-
 if ! sudo curl -L -f -o "$INJECTOR_BINARY_PATH" "$INJECTOR_BINARY_URL"; then
   echo "Error: Failed to download MW Injector binary"
-  echo "URL attempted: $INJECTOR_BINARY_URL"
   exit 1
 fi
 
 sudo chmod +x "$INJECTOR_BINARY_PATH"
 echo "✅ MW Injector binary installed to $INJECTOR_BINARY_PATH"
 
-# Verify binary works
-if sudo "$INJECTOR_BINARY_PATH" --help > /dev/null 2>&1; then
-  echo "✅ Binary verified and working"
-else
-  echo "⚠️  Warning: Binary may not be working correctly"
-fi
-
-# Download Middleware Java Agent JAR
 echo "Downloading Middleware Java Agent..."
 JAVA_AGENT_JAR="middleware-javaagent-${MW_JAVA_AGENT_VERSION}.jar"
-# GitHub release tag has 'v' prefix, but JAR filename doesn't
 JAVA_AGENT_URL="https://github.com/middleware-labs/opentelemetry-java-instrumentation/releases/download/v${MW_JAVA_AGENT_VERSION}/${JAVA_AGENT_JAR}"
 JAVA_AGENT_PATH="${MW_JAVA_AGENT_DIR}/${JAVA_AGENT_JAR}"
 
-echo "=========================================="
-echo "DEBUG: Java Agent Download"
-echo "=========================================="
-echo "Version: ${MW_JAVA_AGENT_VERSION}"
-echo "JAR Name: ${JAVA_AGENT_JAR}"
-echo "Full URL: ${JAVA_AGENT_URL}"
-echo "Target Path: ${JAVA_AGENT_PATH}"
-echo "=========================================="
-
 if ! sudo curl -L -f -o "$JAVA_AGENT_PATH" "$JAVA_AGENT_URL"; then
   echo "Error: Failed to download Java Agent"
-  echo "URL attempted: $JAVA_AGENT_URL"
   exit 1
 fi
 
-# Set proper permissions (world-readable)
 sudo chmod 644 "$JAVA_AGENT_PATH"
 sudo chown root:root "$JAVA_AGENT_PATH"
 echo "✅ Java Agent installed to $JAVA_AGENT_PATH"
 
-# Add mw-injector to PATH
-if ! grep -q "${MW_INJECTOR_BIN_DIR}" ~/.bashrc; then
-  echo "export PATH=${MW_INJECTOR_BIN_DIR}:\$PATH" >> ~/.bashrc
-  echo "${MW_INJECTOR_BIN_DIR} added to PATH in ~/.bashrc"
-else
-  echo "${MW_INJECTOR_BIN_DIR} is already in the PATH"
+# -----------------------------------------------------------
+# GLOBAL PATH CONFIGURATION (SYMLINK + SHELL CONFIGS)
+# -----------------------------------------------------------
+echo "Configuring Global Path..."
+
+# 1. Create Symlink (Instant system-wide availability)
+if [ -L "/usr/local/bin/mw-injector" ]; then
+    sudo rm /usr/local/bin/mw-injector
+fi
+sudo ln -s "$INJECTOR_BINARY_PATH" /usr/local/bin/mw-injector
+echo "✅ Created symlink /usr/local/bin/mw-injector"
+
+# 2. Update Bash Config
+if [ -f "$HOME/.bashrc" ]; then
+    if ! grep -q "${MW_INJECTOR_BIN_DIR}" "$HOME/.bashrc"; then
+        echo "export PATH=${MW_INJECTOR_BIN_DIR}:\$PATH" >> "$HOME/.bashrc"
+        echo "✅ Updated ~/.bashrc"
+    fi
 fi
 
-# Make mw-injector available in current session
-export PATH="${MW_INJECTOR_BIN_DIR}:$PATH"
+# 3. Update Zsh Config
+if [ -f "$HOME/.zshrc" ]; then
+    if ! grep -q "${MW_INJECTOR_BIN_DIR}" "$HOME/.zshrc"; then
+        echo "export PATH=${MW_INJECTOR_BIN_DIR}:\$PATH" >> "$HOME/.zshrc"
+        echo "✅ Updated ~/.zshrc"
+    fi
+fi
+# -----------------------------------------------------------
 
-# Create environment file for mw-injector with API credentials
 ENV_FILE="/etc/mw-injector.conf"
 echo "Creating configuration file at $ENV_FILE..."
 sudo tee "$ENV_FILE" > /dev/null <<EOF
@@ -395,22 +358,40 @@ EOF
 sudo chmod 600 "$ENV_FILE"
 echo "✅ Configuration file created"
 
+# -----------------------------------------------------------
+# AUTO-INSTRUMENT CONFIG
+# -----------------------------------------------------------
+echo -e "\nRunning auto-instrumentation global configuration..."
+
+# We pass the env vars explicitly to ensure the command has context
+sudo bash -c "
+  export MW_API_KEY='$MW_API_KEY'
+  export MW_TARGET='$MW_TARGET'
+  export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
+
+  # Run config command
+  '$INJECTOR_BINARY_PATH' auto-instrument-config
+"
+
+if [ $? -eq 0 ]; then
+  echo "✅ Auto-instrumentation config applied."
+else
+  echo "⚠️  Failed to apply auto-instrumentation config."
+fi
+# -----------------------------------------------------------
+
 echo -e "\n========================================="
 echo "Java Process Discovery"
 echo "========================================="
 
-# Check for Java processes (systemd and standalone)
 echo -e "\nScanning for Java processes on the host..."
 
-# First verify the binary is executable
 if [ ! -x "$INJECTOR_BINARY_PATH" ]; then
-  echo "⚠️  Binary is not executable. Attempting to fix..."
   sudo chmod +x "$INJECTOR_BINARY_PATH"
 fi
 
-# Run list-all with proper error handling
-if sudo "$INJECTOR_BINARY_PATH" list-all > /tmp/mw-java-processes.txt 2>&1; then
-  # Count different types of processes from your formatted output
+# Use the globally available command
+if mw-injector list-all > /tmp/mw-java-processes.txt 2>&1; then
   TOMCAT_COUNT=$(grep -c "│ \[TOMCAT\] Instance" /tmp/mw-java-processes.txt 2>/dev/null || echo "0")
   SYSTEMD_COUNT=$(grep -c "│ \[SYSTEMD\] Service" /tmp/mw-java-processes.txt 2>/dev/null || echo "0")
   TOTAL_JAVA_COUNT=$((TOMCAT_COUNT + SYSTEMD_COUNT))
@@ -424,21 +405,12 @@ if sudo "$INJECTOR_BINARY_PATH" list-all > /tmp/mw-java-processes.txt 2>&1; then
     case "$response" in
       [yY]|[yY][eE][sS])
         echo -e "\nStarting auto-instrumentation for host Java processes..."
-
-        # Run auto-instrument with environment variables
         sudo bash -c "
           export MW_API_KEY='$MW_API_KEY'
           export MW_TARGET='$MW_TARGET'
           export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
-
-          (echo '$MW_API_KEY'; echo '$MW_TARGET'; echo '$JAVA_AGENT_PATH') | '$INJECTOR_BINARY_PATH' auto-instrument
+          '$INJECTOR_BINARY_PATH' auto-instrument
         "
-
-        if [ $? -eq 0 ]; then
-          echo "✅ Java processes instrumented successfully"
-        else
-          echo "⚠️  Some processes may have failed to instrument. Check logs above."
-        fi
         ;;
       *)
         echo "⏭️  Skipping host Java process instrumentation"
@@ -449,10 +421,8 @@ if sudo "$INJECTOR_BINARY_PATH" list-all > /tmp/mw-java-processes.txt 2>&1; then
   fi
 else
   echo "⚠️  Could not scan for Java processes"
-  echo "This is normal if Java is not installed or no Java processes are running"
 fi
 
-# Check for Docker
 if command_exists docker; then
   echo -e "\n========================================="
   echo "Docker Container Discovery"
@@ -460,7 +430,6 @@ if command_exists docker; then
 
   echo -e "\nScanning for Java Docker containers..."
   if sudo "$INJECTOR_BINARY_PATH" list-docker > /tmp/mw-java-containers.txt 2>&1; then
-    # Count Java containers specifically
     JAVA_CONTAINER_COUNT=$(grep -c "│ \[DOCKER\] Container" /tmp/mw-java-containers.txt 2>/dev/null || echo "0")
 
     if [ "$JAVA_CONTAINER_COUNT" -gt 0 ]; then
@@ -472,21 +441,12 @@ if command_exists docker; then
       case "$response" in
         [yY]|[yY][eE][sS])
           echo -e "\nStarting auto-instrumentation for Docker containers..."
-
-          # Run docker instrumentation with environment variables
           sudo bash -c "
             export MW_API_KEY='$MW_API_KEY'
             export MW_TARGET='$MW_TARGET'
             export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
-
-            (echo '$MW_API_KEY'; echo '$MW_TARGET'; echo '$JAVA_AGENT_PATH') | '$INJECTOR_BINARY_PATH' instrument-docker
+            '$INJECTOR_BINARY_PATH' instrument-docker
           "
-
-          if [ $? -eq 0 ]; then
-            echo "✅ Docker containers instrumented successfully"
-          else
-            echo "⚠️  Some containers may have failed to instrument. Check logs above."
-          fi
           ;;
         *)
           echo "⏭️  Skipping Docker container instrumentation"
@@ -502,7 +462,6 @@ else
   echo -e "\nDocker is not installed. Skipping Docker container instrumentation."
 fi
 
-# Cleanup temporary files
 rm -f /tmp/mw-java-processes.txt /tmp/mw-java-containers.txt
 
 echo -e "\n========================================="
@@ -510,15 +469,10 @@ echo "Installation Summary"
 echo "========================================="
 echo "✅ Middleware Agent: installed and running"
 echo "✅ MW Injector: installed to $INJECTOR_BINARY_PATH"
+echo "✅ Symlink: /usr/local/bin/mw-injector created"
+echo "✅ Shell Configs: ~/.bashrc and ~/.zshrc updated"
 echo "✅ Java Agent: installed to $JAVA_AGENT_PATH"
-echo "✅ Configuration: stored in $ENV_FILE"
+echo "✅ Config: auto-instrument-config ran successfully"
 echo ""
-echo "You can manually instrument Java applications using:"
-echo "  sudo mw-injector list-all                  # List all processes"
-echo "  sudo mw-injector list                      # List host Java processes"
-echo "  sudo mw-injector list-docker               # List Docker containers"
-echo "  sudo mw-injector auto-instrument           # Instrument systemd services"
-echo "  sudo mw-injector instrument-docker         # Instrument all Docker containers"
-echo ""
-echo "Configuration stored at: $ENV_FILE"
+echo "You can manually instrument Java applications using 'mw-injector' command."
 echo "========================================="
