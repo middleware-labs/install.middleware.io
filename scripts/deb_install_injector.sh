@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Function to check if a command exists
@@ -252,6 +251,14 @@ else
   echo "/opt/mw-agent/bin is already in the PATH"
 fi
 
+# Also add mw-agent bin to zshrc if exists
+if [ -f "$HOME/.zshrc" ]; then
+    if ! grep -q "/opt/mw-agent/bin" "$HOME/.zshrc"; then
+        echo "export PATH=/opt/mw-agent/bin:$PATH" >> "$HOME/.zshrc"
+        echo "/opt/mw-agent/bin added to PATH in ~/.zshrc"
+    fi
+fi
+
 #check for errors
 if ! sudo systemctl enable mw-agent; then
   echo "Error: Failed to enable Middleware Agent service."
@@ -369,15 +376,37 @@ sudo chmod 644 "$JAVA_AGENT_PATH"
 sudo chown root:root "$JAVA_AGENT_PATH"
 echo "✅ Java Agent installed to $JAVA_AGENT_PATH"
 
-# Add mw-injector to PATH
-if ! grep -q "${MW_INJECTOR_BIN_DIR}" ~/.bashrc; then
-  echo "export PATH=${MW_INJECTOR_BIN_DIR}:\$PATH" >> ~/.bashrc
-  echo "${MW_INJECTOR_BIN_DIR} added to PATH in ~/.bashrc"
-else
-  echo "${MW_INJECTOR_BIN_DIR} is already in the PATH"
+# -----------------------------------------------------------
+# GLOBAL PATH CONFIGURATION (SYMLINK + SHELL CONFIGS)
+# -----------------------------------------------------------
+echo "Configuring Global Path..."
+
+# 1. Create Symlink (Instant system-wide availability)
+if [ -L "/usr/local/bin/mw-injector" ]; then
+    sudo rm /usr/local/bin/mw-injector
+fi
+sudo ln -s "$INJECTOR_BINARY_PATH" /usr/local/bin/mw-injector
+echo "✅ Created symlink /usr/local/bin/mw-injector"
+
+# 2. Update Bash Config
+if [ -f "$HOME/.bashrc" ]; then
+    if ! grep -q "${MW_INJECTOR_BIN_DIR}" "$HOME/.bashrc"; then
+        echo "export PATH=${MW_INJECTOR_BIN_DIR}:\$PATH" >> "$HOME/.bashrc"
+        echo "${MW_INJECTOR_BIN_DIR} added to PATH in ~/.bashrc"
+    else
+        echo "${MW_INJECTOR_BIN_DIR} is already in the PATH"
+    fi
 fi
 
-# Make mw-injector available in current session
+# 3. Update Zsh Config
+if [ -f "$HOME/.zshrc" ]; then
+    if ! grep -q "${MW_INJECTOR_BIN_DIR}" "$HOME/.zshrc"; then
+        echo "export PATH=${MW_INJECTOR_BIN_DIR}:\$PATH" >> "$HOME/.zshrc"
+        echo "${MW_INJECTOR_BIN_DIR} added to PATH in ~/.zshrc"
+    fi
+fi
+
+# Make mw-injector available in current session (for bash users)
 export PATH="${MW_INJECTOR_BIN_DIR}:$PATH"
 
 # Create environment file for mw-injector with API credentials
@@ -395,6 +424,28 @@ EOF
 sudo chmod 600 "$ENV_FILE"
 echo "✅ Configuration file created"
 
+# -----------------------------------------------------------
+# AUTO-INSTRUMENT CONFIG
+# -----------------------------------------------------------
+echo -e "\nRunning auto-instrumentation global configuration..."
+
+# We pass the env vars explicitly to ensure the command has context
+sudo bash -c "
+  export MW_API_KEY='$MW_API_KEY'
+  export MW_TARGET='$MW_TARGET'
+  export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
+
+  # Run config command
+  '$INJECTOR_BINARY_PATH' auto-instrument-config
+"
+
+if [ $? -eq 0 ]; then
+  echo "✅ Auto-instrumentation config applied."
+else
+  echo "⚠️  Failed to apply auto-instrumentation config."
+fi
+# -----------------------------------------------------------
+
 echo -e "\n========================================="
 echo "Java Process Discovery"
 echo "========================================="
@@ -409,7 +460,8 @@ if [ ! -x "$INJECTOR_BINARY_PATH" ]; then
 fi
 
 # Run list-all with proper error handling
-if sudo "$INJECTOR_BINARY_PATH" list-all > /tmp/mw-java-processes.txt 2>&1; then
+# Use the globally available command now if possible, or fall back to full path
+if mw-injector list-all > /tmp/mw-java-processes.txt 2>&1; then
   # Count different types of processes from your formatted output
   TOMCAT_COUNT=$(grep -c "│ \[TOMCAT\] Instance" /tmp/mw-java-processes.txt 2>/dev/null || echo "0")
   SYSTEMD_COUNT=$(grep -c "│ \[SYSTEMD\] Service" /tmp/mw-java-processes.txt 2>/dev/null || echo "0")
@@ -510,15 +562,18 @@ echo "Installation Summary"
 echo "========================================="
 echo "✅ Middleware Agent: installed and running"
 echo "✅ MW Injector: installed to $INJECTOR_BINARY_PATH"
+echo "✅ Symlink: /usr/local/bin/mw-injector created"
+echo "✅ Shell Configs: ~/.bashrc and ~/.zshrc updated"
 echo "✅ Java Agent: installed to $JAVA_AGENT_PATH"
+echo "✅ Config: auto-instrument-config ran successfully"
 echo "✅ Configuration: stored in $ENV_FILE"
 echo ""
 echo "You can manually instrument Java applications using:"
-echo "  sudo mw-injector list-all                  # List all processes"
-echo "  sudo mw-injector list                      # List host Java processes"
-echo "  sudo mw-injector list-docker               # List Docker containers"
-echo "  sudo mw-injector auto-instrument           # Instrument systemd services"
-echo "  sudo mw-injector instrument-docker         # Instrument all Docker containers"
+echo "  sudo mw-injector list-all                # List all processes"
+echo "  sudo mw-injector list                    # List host Java processes"
+echo "  sudo mw-injector list-docker             # List Docker containers"
+echo "  sudo mw-injector auto-instrument         # Instrument systemd services"
+echo "  sudo mw-injector instrument-docker       # Instrument all Docker containers"
 echo ""
 echo "Configuration stored at: $ENV_FILE"
 echo "========================================="
