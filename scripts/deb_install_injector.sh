@@ -277,7 +277,7 @@ echo -e "Middleware Agent installation completed successfully.\n"
 #########################################
 
 echo -e "\n========================================="
-echo "MW Injector (Java Auto-Instrumentation)"
+echo "MW Injector (Auto-Instrumentation of host services)"
 echo "========================================="
 
 # Check if Java instrumentation is desired
@@ -446,6 +446,31 @@ else
 fi
 # -----------------------------------------------------------
 
+# -----------------------------------------------------------
+# NEW: INSTRUMENT-DOCKER CONFIG
+# -----------------------------------------------------------
+if command_exists docker; then
+  echo -e "\nRunning Docker instrumentation global configuration..."
+
+  sudo bash -c "
+    export MW_API_KEY='$MW_API_KEY'
+    export MW_TARGET='$MW_TARGET'
+    export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
+
+    # Run docker config command
+    '$INJECTOR_BINARY_PATH' instrument-docker-config
+  "
+
+  if [ $? -eq 0 ]; then
+    echo "✅ Docker instrumentation config applied."
+  else
+    echo "⚠️  Failed to apply Docker instrumentation config."
+  fi
+else
+  echo "Docker not found, skipping instrument-docker-config."
+fi
+# -----------------------------------------------------------
+
 echo -e "\n========================================="
 echo "Java Process Discovery"
 echo "========================================="
@@ -510,42 +535,64 @@ if command_exists docker; then
   echo "Docker Container Discovery"
   echo "========================================="
 
-  echo -e "\nScanning for Java Docker containers..."
-  if sudo "$INJECTOR_BINARY_PATH" list-docker > /tmp/mw-java-containers.txt 2>&1; then
-    # Count Java containers specifically
-    JAVA_CONTAINER_COUNT=$(grep -c "│ \[DOCKER\] Container" /tmp/mw-java-containers.txt 2>/dev/null || echo "0")
+  echo -e "\nScanning for Java/Node Docker containers..."
+  if sudo "$INJECTOR_BINARY_PATH" list-docker > /tmp/mw-containers.txt 2>&1; then
+    # Count Java containers
+    JAVA_CONTAINER_COUNT=$(grep -c "│ \[DOCKER\] Container" /tmp/mw-containers.txt 2>/dev/null || echo "0")
+    # Note: Assuming list-docker returns all containers. We use the same count or just check for existence.
+    # If the list differentiates, we'd use that. For now, we show the list.
 
     if [ "$JAVA_CONTAINER_COUNT" -gt 0 ]; then
-      echo -e "\n🐳 Found $JAVA_CONTAINER_COUNT Java Docker container(s):\n"
-      cat /tmp/mw-java-containers.txt
+      echo -e "\n🐳 Found Docker container(s):\n"
+      cat /tmp/mw-containers.txt
 
+      # -------------------------------------------------------
+      # 1. Java Container Instrumentation
+      # -------------------------------------------------------
       echo -e "\n"
-      read -r -p "Would you like to auto-instrument these Docker containers? (y/N): " response
+      read -r -p "Would you like to auto-instrument Java containers? (y/N): " response
       case "$response" in
         [yY]|[yY][eE][sS])
-          echo -e "\nStarting auto-instrumentation for Docker containers..."
-
-          # Run docker instrumentation with environment variables
+          echo -e "\nStarting Java auto-instrumentation for Docker containers..."
           sudo bash -c "
             export MW_API_KEY='$MW_API_KEY'
             export MW_TARGET='$MW_TARGET'
             export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
-
             (echo '$MW_API_KEY'; echo '$MW_TARGET'; echo '$JAVA_AGENT_PATH') | '$INJECTOR_BINARY_PATH' instrument-docker
           "
+          ;;
+        *)
+          echo "⏭️  Skipping Java container instrumentation"
+          ;;
+      esac
 
+      # -------------------------------------------------------
+      # 2. Node Container Instrumentation (NEW)
+      # -------------------------------------------------------
+      echo -e "\n"
+      read -r -p "Would you like to auto-instrument Node.js containers? (y/N): " response
+      case "$response" in
+        [yY]|[yY][eE][sS])
+          echo -e "\nStarting Node.js auto-instrumentation for Docker containers..."
+          sudo bash -c "
+            export MW_API_KEY='$MW_API_KEY'
+            export MW_TARGET='$MW_TARGET'
+            # Note: Assuming mw-injector handles Node agent path or download internally
+            (echo '$MW_API_KEY'; echo '$MW_TARGET') | '$INJECTOR_BINARY_PATH' instrument-node-containers
+          "
           if [ $? -eq 0 ]; then
-            echo "✅ Docker containers instrumented successfully"
+             echo "✅ Node containers instrumented successfully"
           else
-            echo "⚠️  Some containers may have failed to instrument. Check logs above."
+             echo "⚠️  Node instrumentation encountered an issue. Check logs."
           fi
           ;;
         *)
-          echo "⏭️  Skipping Docker container instrumentation"
+          echo "⏭️  Skipping Node container instrumentation"
           ;;
       esac
+
     else
-      echo "No Java Docker containers found"
+      echo "No Docker containers found to instrument"
     fi
   else
     echo "⚠️  Could not scan for Docker containers"
@@ -555,7 +602,7 @@ else
 fi
 
 # Cleanup temporary files
-rm -f /tmp/mw-java-processes.txt /tmp/mw-java-containers.txt
+rm -f /tmp/mw-java-processes.txt /tmp/mw-containers.txt
 
 echo -e "\n========================================="
 echo "Installation Summary"
@@ -566,14 +613,16 @@ echo "✅ Symlink: /usr/local/bin/mw-injector created"
 echo "✅ Shell Configs: ~/.bashrc and ~/.zshrc updated"
 echo "✅ Java Agent: installed to $JAVA_AGENT_PATH"
 echo "✅ Config: auto-instrument-config ran successfully"
+echo "✅ Config: instrument-docker-config ran successfully"
 echo "✅ Configuration: stored in $ENV_FILE"
 echo ""
-echo "You can manually instrument Java applications using:"
+echo "You can manually instrument applications using:"
 echo "  sudo mw-injector list-all                # List all processes"
 echo "  sudo mw-injector list                    # List host Java processes"
 echo "  sudo mw-injector list-docker             # List Docker containers"
 echo "  sudo mw-injector auto-instrument         # Instrument systemd services"
-echo "  sudo mw-injector instrument-docker       # Instrument all Docker containers"
+echo "  sudo mw-injector instrument-docker       # Instrument Java Docker containers"
+echo "  sudo mw-injector instrument-node-containers # Instrument Node Docker containers"
 echo ""
 echo "Configuration stored at: $ENV_FILE"
 echo "========================================="
