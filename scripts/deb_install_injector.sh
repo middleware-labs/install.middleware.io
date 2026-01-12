@@ -277,7 +277,7 @@ echo -e "Middleware Agent installation completed successfully.\n"
 #########################################
 
 echo -e "\n========================================="
-echo "MW Injector (Auto-Instrumentation of host services)"
+echo "MW Injector (Java Auto-Instrumentation)"
 echo "========================================="
 
 # Check if Java instrumentation is desired
@@ -488,8 +488,9 @@ fi
 # Use the globally available command now if possible, or fall back to full path
 if mw-injector list-all > /tmp/mw-java-processes.txt 2>&1; then
   # Count different types of processes from your formatted output
-  TOMCAT_COUNT=$(grep -c "│ \[TOMCAT\] Instance" /tmp/mw-java-processes.txt 2>/dev/null || echo "0")
-  SYSTEMD_COUNT=$(grep -c "│ \[SYSTEMD\] Service" /tmp/mw-java-processes.txt 2>/dev/null || echo "0")
+  # FIX: Use '|| true' instead of '|| echo 0' to avoid double zeros when grep finds nothing
+  TOMCAT_COUNT=$(grep -c "│ \[TOMCAT\] Instance" /tmp/mw-java-processes.txt 2>/dev/null || true)
+  SYSTEMD_COUNT=$(grep -c "│ \[SYSTEMD\] Service" /tmp/mw-java-processes.txt 2>/dev/null || true)
   TOTAL_JAVA_COUNT=$((TOMCAT_COUNT + SYSTEMD_COUNT))
 
   if [ "$TOTAL_JAVA_COUNT" -gt 0 ]; then
@@ -538,9 +539,8 @@ if command_exists docker; then
   echo -e "\nScanning for Java/Node Docker containers..."
   if sudo "$INJECTOR_BINARY_PATH" list-docker > /tmp/mw-containers.txt 2>&1; then
     # Count Java containers
-    JAVA_CONTAINER_COUNT=$(grep -c "│ \[DOCKER\] Container" /tmp/mw-containers.txt 2>/dev/null || echo "0")
-    # Note: Assuming list-docker returns all containers. We use the same count or just check for existence.
-    # If the list differentiates, we'd use that. For now, we show the list.
+    # FIX: Use '|| true' to avoid double zero bug
+    JAVA_CONTAINER_COUNT=$(grep -c "│ \[DOCKER\] Container" /tmp/mw-containers.txt 2>/dev/null || true)
 
     if [ "$JAVA_CONTAINER_COUNT" -gt 0 ]; then
       echo -e "\n🐳 Found Docker container(s):\n"
