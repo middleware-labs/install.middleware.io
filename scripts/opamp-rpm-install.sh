@@ -123,6 +123,7 @@ echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostn
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
+  # shellcheck disable=SC1091
   source /etc/os-release
   case "$ID" in
     rhel|centos|fedora|almalinux|rocky|amzn|ol|sles|azurelinux)

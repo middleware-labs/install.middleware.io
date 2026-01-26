@@ -19,7 +19,7 @@ service_exists() {
 
 # Get Middleware Agent version
 version_string=$(mw-agent version)
-echo $version_string " detected"
+echo "$version_string detected"
 version=$(get_version "$version_string")
 
 # Define the threshold version
