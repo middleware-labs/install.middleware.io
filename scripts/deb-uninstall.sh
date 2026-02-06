@@ -42,3 +42,27 @@ sudo rm -rf /usr/local/bin/mw-agent
 
 # deleting entry from APT list
 sudo rm -rf /etc/apt/sources.list.d/mw-agent.list
+
+# -------------------------------------------------------
+# OTel Injector Removal
+# -------------------------------------------------------
+if dpkg -l opentelemetry-injector &>/dev/null; then
+    echo "Removing OpenTelemetry Injector ..."
+
+    # Remove libotelinject.so from ld.so.preload if present
+    if [ -f /etc/ld.so.preload ]; then
+        sudo sed -i '\|/usr/lib/opentelemetry/libotelinject.so|d' /etc/ld.so.preload
+        echo "Removed libotelinject.so from /etc/ld.so.preload"
+    fi
+
+    # Purge the package (removes config files too)
+    sudo dpkg --purge opentelemetry-injector
+
+    # Clean up any leftover dirs
+    sudo rm -rf /usr/lib/opentelemetry
+    sudo rm -rf /etc/opentelemetry
+
+    echo "OpenTelemetry Injector removed successfully."
+else
+    echo "OpenTelemetry Injector not installed, skipping."
+fi
