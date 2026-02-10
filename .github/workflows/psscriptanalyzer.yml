@@ -1,0 +1,47 @@
+name: PSScriptAnalyzer
+
+on:
+  push:
+    paths:
+      - '**/*.ps1'
+  pull_request:
+    paths:
+      - '**/*.ps1'
+
+jobs:
+  analyze:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        run: Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+        shell: pwsh
+
+      - name: Run PSScriptAnalyzer on all PowerShell scripts
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $files = Get-ChildItem -Path . -Recurse -Filter *.ps1 | Select-Object -ExpandProperty FullName
+          if ($files) {
+            $allResults = @()
+            foreach ($file in $files) {
+              $result = Invoke-ScriptAnalyzer -Path $file -Severity Warning,Error
+              if ($result) {
+                $allResults += $result
+              }
+            }
+            if ($allResults.Count -gt 0) {
+              $allResults | Format-Table -AutoSize | Out-String | Write-Host
+              $failures = $allResults | Where-Object { $_.Severity -eq 'Error' }
+              if ($failures) {
+                Write-Host 'PSScriptAnalyzer found errors.'
+                exit 1
+              }
+            } else {
+              Write-Host 'No issues found by PSScriptAnalyzer.'
+            }
+          } else {
+            Write-Host 'No PowerShell scripts found.'
+          }
+        shell: pwsh
