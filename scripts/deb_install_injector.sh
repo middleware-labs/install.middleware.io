@@ -259,6 +259,14 @@ else
   echo "/opt/mw-agent/bin is already in the PATH"
 fi
 
+# Also add mw-agent bin to zshrc if exists
+if [ -f "$HOME/.zshrc" ]; then
+    if ! grep -q "/opt/mw-agent/bin" "$HOME/.zshrc"; then
+        echo "export PATH=/opt/mw-agent/bin:$PATH" >> "$HOME/.zshrc"
+        echo "/opt/mw-agent/bin added to PATH in ~/.zshrc"
+    fi
+fi
+
 #check for errors
 if ! sudo systemctl enable mw-agent; then
   echo "Error: Failed to enable Middleware Agent service."
