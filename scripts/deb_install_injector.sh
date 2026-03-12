@@ -35,6 +35,7 @@ if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
     export MW_TRACKING_TARGET="$MW_API_URL_FOR_CONFIG_CHECK"
 fi
 
+
 function send_logs {
   status=$1
   message=$2
@@ -98,18 +99,13 @@ get_latest_mw_agent_version() {
   echo "$latest_version"
 }
 
-get_latest_java_agent_version() {
-  repo="middleware-labs/opentelemetry-java-instrumentation"
+get_latest_otel_injector_version() {
+  repo="open-telemetry/opentelemetry-injector"
 
-  # Fetch the latest release version from GitHub API
   latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
-  # Check if the version was fetched successfully
   if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
-    latest_version="1.8.1"
-  else
-    # Strip the 'v' prefix if present
-    latest_version="${latest_version#v}"
+    latest_version="v0.1.0"
   fi
 
   echo "$latest_version"
@@ -222,6 +218,18 @@ if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
   export MW_AGENT_FEATURES_SYNTHETIC_MONITORING
 fi
 
+# OTel Injector defaults
+if [ "${MW_ENABLE_INJECTOR}" = "" ]; then
+  MW_ENABLE_INJECTOR=true
+fi
+export MW_ENABLE_INJECTOR
+
+if [ "${OTEL_INJECTOR_VERSION}" = "" ]; then
+  OTEL_INJECTOR_VERSION=$(get_latest_otel_injector_version)
+fi
+export OTEL_INJECTOR_VERSION
+
+
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 
 # Adding APT repo address & public key to system
@@ -229,7 +237,7 @@ sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | su
 sudo touch /etc/apt/sources.list.d/"$MW_APT_LIST"
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
-echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
+echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/"$MW_APT_LIST" > /dev/null
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" > /dev/null
@@ -272,357 +280,47 @@ fi
 
 echo -e "Middleware Agent installation completed successfully.\n"
 
-#########################################
-# MW INJECTOR INSTALLATION STARTS HERE
-#########################################
+# -------------------------------------------------------
+# OTel Injector Installation
+# -------------------------------------------------------
+if [ "${MW_ENABLE_INJECTOR}" = true ]; then
+  echo -e "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION} ...\n"
 
-echo -e "\n========================================="
-echo "MW Injector (Java Auto-Instrumentation)"
-echo "========================================="
-
-# Check if Java instrumentation is desired
-if [ "${MW_ENABLE_INJECTOR}" = "false" ]; then
-  echo "MW_ENABLE_INJECTOR is set to false. Skipping Java auto-instrumentation."
-  exit 0
-fi
-
-# Get MW Injector version
-if [ "${MW_INJECTOR_VERSION}" = "" ]; then
-  MW_INJECTOR_VERSION="0.0.1_alpha"  # Default version
-fi
-export MW_INJECTOR_VERSION
-
-# Get Java Agent version
-MW_JAVA_AGENT_LATEST_VERSION=$(get_latest_java_agent_version)
-if [ "${MW_JAVA_AGENT_VERSION}" = "" ]; then
-  MW_JAVA_AGENT_VERSION=$MW_JAVA_AGENT_LATEST_VERSION
-fi
-export MW_JAVA_AGENT_VERSION
-
-echo -e "\nInstalling MW Injector version ${MW_INJECTOR_VERSION}"
-echo -e "Installing Middleware Java Agent version ${MW_JAVA_AGENT_VERSION}\n"
-
-# Set default installation directories
-if [ "${MW_INJECTOR_HOME}" = "" ]; then
-  MW_INJECTOR_HOME=/opt/middleware
-fi
-export MW_INJECTOR_HOME
-
-MW_INJECTOR_BIN_DIR="${MW_INJECTOR_HOME}/bin"
-MW_JAVA_AGENT_DIR="${MW_INJECTOR_HOME}/agents"
-
-# Create directory structure
-echo "Creating directory structure..."
-sudo mkdir -p "$MW_INJECTOR_BIN_DIR"
-sudo mkdir -p "$MW_JAVA_AGENT_DIR"
-sudo mkdir -p /etc/middleware/systemd
-sudo mkdir -p /etc/middleware/tomcat
-sudo mkdir -p /etc/middleware/standalone
-sudo mkdir -p /etc/middleware/state
-sudo mkdir -p /etc/middleware/docker
-
-echo "Downloading MW Injector binary..."
-INJECTOR_BINARY_URL="https://github.com/middleware-labs/mw-injector/releases/download/${MW_INJECTOR_VERSION}/mw-injector"
-INJECTOR_BINARY_PATH="${MW_INJECTOR_BIN_DIR}/mw-injector"
-
-echo "=========================================="
-echo "DEBUG: MW Injector Download"
-echo "=========================================="
-echo "Version: ${MW_INJECTOR_VERSION}"
-echo "Full URL: ${INJECTOR_BINARY_URL}"
-echo "Target Path: ${INJECTOR_BINARY_PATH}"
-echo "=========================================="
-
-if ! sudo curl -L -f -o "$INJECTOR_BINARY_PATH" "$INJECTOR_BINARY_URL"; then
-  echo "Error: Failed to download MW Injector binary"
-  echo "URL attempted: $INJECTOR_BINARY_URL"
-  exit 1
-fi
-
-sudo chmod +x "$INJECTOR_BINARY_PATH"
-echo "✅ MW Injector binary installed to $INJECTOR_BINARY_PATH"
-
-# Verify binary works
-if sudo "$INJECTOR_BINARY_PATH" --help > /dev/null 2>&1; then
-  echo "✅ Binary verified and working"
-else
-  echo "⚠️  Warning: Binary may not be working correctly"
-fi
-
-# Download Middleware Java Agent JAR
-echo "Downloading Middleware Java Agent..."
-JAVA_AGENT_JAR="middleware-javaagent-${MW_JAVA_AGENT_VERSION}.jar"
-# GitHub release tag has 'v' prefix, but JAR filename doesn't
-JAVA_AGENT_URL="https://github.com/middleware-labs/opentelemetry-java-instrumentation/releases/download/v${MW_JAVA_AGENT_VERSION}/${JAVA_AGENT_JAR}"
-JAVA_AGENT_PATH="${MW_JAVA_AGENT_DIR}/${JAVA_AGENT_JAR}"
-
-echo "=========================================="
-echo "DEBUG: Java Agent Download"
-echo "=========================================="
-echo "Version: ${MW_JAVA_AGENT_VERSION}"
-echo "JAR Name: ${JAVA_AGENT_JAR}"
-echo "Full URL: ${JAVA_AGENT_URL}"
-echo "Target Path: ${JAVA_AGENT_PATH}"
-echo "=========================================="
-
-if ! sudo curl -L -f -o "$JAVA_AGENT_PATH" "$JAVA_AGENT_URL"; then
-  echo "Error: Failed to download Java Agent"
-  echo "URL attempted: $JAVA_AGENT_URL"
-  exit 1
-fi
-
-# Set proper permissions (world-readable)
-sudo chmod 644 "$JAVA_AGENT_PATH"
-sudo chown root:root "$JAVA_AGENT_PATH"
-echo "✅ Java Agent installed to $JAVA_AGENT_PATH"
-
-# -----------------------------------------------------------
-# GLOBAL PATH CONFIGURATION (SYMLINK + SHELL CONFIGS)
-# -----------------------------------------------------------
-echo "Configuring Global Path..."
-
-# 1. Create Symlink (Instant system-wide availability)
-if [ -L "/usr/local/bin/mw-injector" ]; then
-    sudo rm /usr/local/bin/mw-injector
-fi
-sudo ln -s "$INJECTOR_BINARY_PATH" /usr/local/bin/mw-injector
-echo "✅ Created symlink /usr/local/bin/mw-injector"
-
-# 2. Update Bash Config
-if [ -f "$HOME/.bashrc" ]; then
-    if ! grep -q "${MW_INJECTOR_BIN_DIR}" "$HOME/.bashrc"; then
-        echo "export PATH=${MW_INJECTOR_BIN_DIR}:\$PATH" >> "$HOME/.bashrc"
-        echo "${MW_INJECTOR_BIN_DIR} added to PATH in ~/.bashrc"
-    else
-        echo "${MW_INJECTOR_BIN_DIR} is already in the PATH"
-    fi
-fi
-
-# 3. Update Zsh Config
-if [ -f "$HOME/.zshrc" ]; then
-    if ! grep -q "${MW_INJECTOR_BIN_DIR}" "$HOME/.zshrc"; then
-        echo "export PATH=${MW_INJECTOR_BIN_DIR}:\$PATH" >> "$HOME/.zshrc"
-        echo "${MW_INJECTOR_BIN_DIR} added to PATH in ~/.zshrc"
-    fi
-fi
-
-# Make mw-injector available in current session (for bash users)
-export PATH="${MW_INJECTOR_BIN_DIR}:$PATH"
-
-# Create environment file for mw-injector with API credentials
-ENV_FILE="/etc/mw-injector.conf"
-echo "Creating configuration file at $ENV_FILE..."
-sudo tee "$ENV_FILE" > /dev/null <<EOF
-# Middleware Java Instrumentation Configuration
-# Generated on $(date)
-
-MW_API_KEY=${MW_API_KEY}
-MW_TARGET=${MW_TARGET}
-MW_JAVA_AGENT_PATH=${JAVA_AGENT_PATH}
-EOF
-
-sudo chmod 600 "$ENV_FILE"
-echo "✅ Configuration file created"
-
-# -----------------------------------------------------------
-# AUTO-INSTRUMENT CONFIG
-# -----------------------------------------------------------
-echo -e "\nRunning auto-instrumentation global configuration..."
-
-# We pass the env vars explicitly to ensure the command has context
-sudo bash -c "
-  export MW_API_KEY='$MW_API_KEY'
-  export MW_TARGET='$MW_TARGET'
-  export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
-
-  # Run config command
-  '$INJECTOR_BINARY_PATH' auto-instrument-config
-"
-
-if [ $? -eq 0 ]; then
-  echo "✅ Auto-instrumentation config applied."
-else
-  echo "⚠️  Failed to apply auto-instrumentation config."
-fi
-# -----------------------------------------------------------
-
-# -----------------------------------------------------------
-# NEW: INSTRUMENT-DOCKER CONFIG
-# -----------------------------------------------------------
-if command_exists docker; then
-  echo -e "\nRunning Docker instrumentation global configuration..."
-
-  sudo bash -c "
-    export MW_API_KEY='$MW_API_KEY'
-    export MW_TARGET='$MW_TARGET'
-    export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
-
-    # Run docker config command
-    '$INJECTOR_BINARY_PATH' instrument-docker-config
-  "
-
-  if [ $? -eq 0 ]; then
-    echo "✅ Docker instrumentation config applied."
+  # Map detected arch to the arch string used in injector release filenames
+  OTEL_INJECTOR_ARCH=""
+  if [[ $MW_APT_LIST_ARCH == "arm64" ]]; then
+    OTEL_INJECTOR_ARCH="arm64"
+  elif [[ $MW_APT_LIST_ARCH == "amd64" ]]; then
+    OTEL_INJECTOR_ARCH="amd64"
   else
-    echo "⚠️  Failed to apply Docker instrumentation config."
+    echo "Warning: Unsupported architecture '$MW_DETECTED_ARCH' for OTel Injector. Skipping."
+    exit 0
   fi
-else
-  echo "Docker not found, skipping instrument-docker-config."
-fi
-# -----------------------------------------------------------
 
-echo -e "\n========================================="
-echo "Java Process Discovery"
-echo "========================================="
+  # Strip leading 'v' from version for the filename (e.g. v0.1.0 -> 0.1.0)
+  OTEL_INJECTOR_VERSION_STRIPPED="${OTEL_INJECTOR_VERSION#v}"
 
-# Check for Java processes (systemd and standalone)
-echo -e "\nScanning for Java processes on the host..."
+  OTEL_INJECTOR_DEB="opentelemetry-injector_${OTEL_INJECTOR_VERSION_STRIPPED}_${OTEL_INJECTOR_ARCH}.deb"
+  OTEL_INJECTOR_URL="https://github.com/open-telemetry/opentelemetry-injector/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_DEB}"
+  OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_DEB}"
 
-# First verify the binary is executable
-if [ ! -x "$INJECTOR_BINARY_PATH" ]; then
-  echo "⚠️  Binary is not executable. Attempting to fix..."
-  sudo chmod +x "$INJECTOR_BINARY_PATH"
-fi
-
-# Run list-all with proper error handling
-# Use the globally available command now if possible, or fall back to full path
-if mw-injector list-all > /tmp/mw-java-processes.txt 2>&1; then
-  # Count different types of processes from your formatted output
-  # FIX: Use '|| true' instead of '|| echo 0' to avoid double zeros when grep finds nothing
-  TOMCAT_COUNT=$(grep -c "│ \[TOMCAT\] Instance" /tmp/mw-java-processes.txt 2>/dev/null || true)
-  SYSTEMD_COUNT=$(grep -c "│ \[SYSTEMD\] Service" /tmp/mw-java-processes.txt 2>/dev/null || true)
-  TOTAL_JAVA_COUNT=$((TOMCAT_COUNT + SYSTEMD_COUNT))
-
-  if [ "$TOTAL_JAVA_COUNT" -gt 0 ]; then
-    echo -e "\n📋 Found $TOTAL_JAVA_COUNT Java process(es):\n"
-    cat /tmp/mw-java-processes.txt
-
-    echo -e "\n"
-    read -r -p "Would you like to auto-instrument these Java processes? (y/N): " response
-    case "$response" in
-      [yY]|[yY][eE][sS])
-        echo -e "\nStarting auto-instrumentation for host Java processes..."
-
-        # Run auto-instrument with environment variables
-        sudo bash -c "
-          export MW_API_KEY='$MW_API_KEY'
-          export MW_TARGET='$MW_TARGET'
-          export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
-
-          (echo '$MW_API_KEY'; echo '$MW_TARGET'; echo '$JAVA_AGENT_PATH') | '$INJECTOR_BINARY_PATH' auto-instrument
-        "
-
-        if [ $? -eq 0 ]; then
-          echo "✅ Java processes instrumented successfully"
-        else
-          echo "⚠️  Some processes may have failed to instrument. Check logs above."
-        fi
-        ;;
-      *)
-        echo "⏭️  Skipping host Java process instrumentation"
-        ;;
-    esac
-  else
-    echo "No Java processes found on the host"
+  echo "Downloading ${OTEL_INJECTOR_URL} ..."
+  if ! curl -fSL -o "$OTEL_INJECTOR_TMP" "$OTEL_INJECTOR_URL"; then
+    echo "Error: Failed to download OpenTelemetry Injector package."
+    echo "URL: ${OTEL_INJECTOR_URL}"
+    exit 1
   fi
-else
-  echo "⚠️  Could not scan for Java processes"
-  echo "This is normal if Java is not installed or no Java processes are running"
-fi
 
-# Check for Docker
-if command_exists docker; then
-  echo -e "\n========================================="
-  echo "Docker Container Discovery"
-  echo "========================================="
-
-  echo -e "\nScanning for Java/Node Docker containers..."
-  if sudo "$INJECTOR_BINARY_PATH" list-docker > /tmp/mw-containers.txt 2>&1; then
-    # Count Java containers
-    # FIX: Use '|| true' to avoid double zero bug
-    JAVA_CONTAINER_COUNT=$(grep -c "│ \[DOCKER\] Container" /tmp/mw-containers.txt 2>/dev/null || true)
-
-    if [ "$JAVA_CONTAINER_COUNT" -gt 0 ]; then
-      echo -e "\n🐳 Found Docker container(s):\n"
-      cat /tmp/mw-containers.txt
-
-      # -------------------------------------------------------
-      # 1. Java Container Instrumentation
-      # -------------------------------------------------------
-      echo -e "\n"
-      read -r -p "Would you like to auto-instrument Java containers? (y/N): " response
-      case "$response" in
-        [yY]|[yY][eE][sS])
-          echo -e "\nStarting Java auto-instrumentation for Docker containers..."
-          sudo bash -c "
-            export MW_API_KEY='$MW_API_KEY'
-            export MW_TARGET='$MW_TARGET'
-            export MW_JAVA_AGENT_PATH='$JAVA_AGENT_PATH'
-            (echo '$MW_API_KEY'; echo '$MW_TARGET'; echo '$JAVA_AGENT_PATH') | '$INJECTOR_BINARY_PATH' instrument-docker
-          "
-          ;;
-        *)
-          echo "⏭️  Skipping Java container instrumentation"
-          ;;
-      esac
-
-      # -------------------------------------------------------
-      # 2. Node Container Instrumentation (NEW)
-      # -------------------------------------------------------
-      echo -e "\n"
-      read -r -p "Would you like to auto-instrument Node.js containers? (y/N): " response
-      case "$response" in
-        [yY]|[yY][eE][sS])
-          echo -e "\nStarting Node.js auto-instrumentation for Docker containers..."
-          sudo bash -c "
-            export MW_API_KEY='$MW_API_KEY'
-            export MW_TARGET='$MW_TARGET'
-            # Note: Assuming mw-injector handles Node agent path or download internally
-            (echo '$MW_API_KEY'; echo '$MW_TARGET') | '$INJECTOR_BINARY_PATH' instrument-node-containers
-          "
-          if [ $? -eq 0 ]; then
-             echo "✅ Node containers instrumented successfully"
-          else
-             echo "⚠️  Node instrumentation encountered an issue. Check logs."
-          fi
-          ;;
-        *)
-          echo "⏭️  Skipping Node container instrumentation"
-          ;;
-      esac
-
-    else
-      echo "No Docker containers found to instrument"
-    fi
-  else
-    echo "⚠️  Could not scan for Docker containers"
+  echo "Installing OpenTelemetry Injector package ..."
+  if ! sudo dpkg -i "$OTEL_INJECTOR_TMP"; then
+    echo "Error: Failed to install OpenTelemetry Injector package."
+    rm -f "$OTEL_INJECTOR_TMP"
+    exit 1
   fi
+
+  rm -f "$OTEL_INJECTOR_TMP"
+
+  echo -e "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully.\n"
 else
-  echo -e "\nDocker is not installed. Skipping Docker container instrumentation."
+  echo -e "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR}).\n"
 fi
-
-# Cleanup temporary files
-rm -f /tmp/mw-java-processes.txt /tmp/mw-containers.txt
-
-echo -e "\n========================================="
-echo "Installation Summary"
-echo "========================================="
-echo "✅ Middleware Agent: installed and running"
-echo "✅ MW Injector: installed to $INJECTOR_BINARY_PATH"
-echo "✅ Symlink: /usr/local/bin/mw-injector created"
-echo "✅ Shell Configs: ~/.bashrc and ~/.zshrc updated"
-echo "✅ Java Agent: installed to $JAVA_AGENT_PATH"
-echo "✅ Config: auto-instrument-config ran successfully"
-echo "✅ Config: instrument-docker-config ran successfully"
-echo "✅ Configuration: stored in $ENV_FILE"
-echo ""
-echo "You can manually instrument applications using:"
-echo "  sudo mw-injector list-all                # List all processes"
-echo "  sudo mw-injector list                    # List host Java processes"
-echo "  sudo mw-injector list-docker             # List Docker containers"
-echo "  sudo mw-injector auto-instrument         # Instrument systemd services"
-echo "  sudo mw-injector instrument-docker       # Instrument Java Docker containers"
-echo "  sudo mw-injector instrument-node-containers # Instrument Node Docker containers"
-echo ""
-echo "Configuration stored at: $ENV_FILE"
-echo "========================================="
