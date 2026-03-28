@@ -20,10 +20,9 @@ download() {
     EXECUTABLE="otel"
 
     echo "Downloading from $DOWNLOAD_URL"
+    
     # curl and show progress
-    curl -L -o "$EXECUTABLE" "$DOWNLOAD_URL"
-
-    if [ $? -ne 0 ]; then
+    if ! curl -L -o "$EXECUTABLE" "$DOWNLOAD_URL"; then
         echo "Failed to download $DOWNLOAD_URL"
         exit 1
     fi
