@@ -5,7 +5,8 @@ receivers:
     node_conditions_to_report: [ Ready, DiskPressure, MemoryPressure, PIDPressure, NetworkUnavailable ]
     distribution: kubernetes
     allocatable_types_to_report: [ cpu, memory, ephemeral-storage, storage ]
-  
+  k8s_events:
+    auth_type: serviceAccount
   prometheus:
     config:
       scrape_configs:
@@ -14,9 +15,6 @@ receivers:
           static_configs:
             - targets: ["0.0.0.0:8888"]
   
-  k8s_events:
-    auth_type: serviceAccount
-    namespaces: all
   fluentforward:
     endpoint: 0.0.0.0:8006
   otlp:
@@ -99,7 +97,7 @@ processors:
     attributes:
       - key: k8s.cluster.name
         action: update
-        value: ${env:MW_KUBE_CLUSTER_NAME}
+        value: ${MW_KUBE_CLUSTER_NAME}
       - key: host.id
         action: update
         from_attribute: k8s.node.name
@@ -210,3 +208,4 @@ service:
         receivers: [ k8s_cluster ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
         exporters: [ otlp ]
+
