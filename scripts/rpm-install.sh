@@ -278,9 +278,9 @@ if [ "${MW_ENABLE_INJECTOR}" = true ]; then
   # Map uname -m arch to the arch string used in injector release filenames
   OTEL_INJECTOR_ARCH=""
   if [[ $MW_DETECTED_ARCH == "aarch64" || $MW_DETECTED_ARCH == "arm64" ]]; then
-    OTEL_INJECTOR_ARCH="arm64"
+    OTEL_INJECTOR_ARCH="aarch64"
   elif [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
-    OTEL_INJECTOR_ARCH="amd64"
+    OTEL_INJECTOR_ARCH="x86_64"
   else
     echo "Warning: Unsupported architecture '$MW_DETECTED_ARCH' for OTel Injector. Skipping."
     exit 0
@@ -289,7 +289,7 @@ if [ "${MW_ENABLE_INJECTOR}" = true ]; then
   # Strip leading 'v' from version for the filename (e.g. v0.1.0 -> 0.1.0)
   OTEL_INJECTOR_VERSION_STRIPPED="${OTEL_INJECTOR_VERSION#v}"
 
-  OTEL_INJECTOR_RPM="opentelemetry-injector_${OTEL_INJECTOR_VERSION_STRIPPED}_${OTEL_INJECTOR_ARCH}.rpm"
+  OTEL_INJECTOR_RPM="opentelemetry-injector-${OTEL_INJECTOR_VERSION_STRIPPED}-1.${OTEL_INJECTOR_ARCH}.rpm"
   OTEL_INJECTOR_URL="https://github.com/open-telemetry/opentelemetry-injector/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_RPM}"
   OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_RPM}"
 
