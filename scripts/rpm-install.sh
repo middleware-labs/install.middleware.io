@@ -301,7 +301,7 @@ if [ "${MW_ENABLE_INJECTOR}" = true ]; then
   fi
 
   echo "Installing OpenTelemetry Injector package ..."
-  if ! sudo rpm -U "$OTEL_INJECTOR_TMP"; then
+  if ! sudo rpm -U --replacepkgs "$OTEL_INJECTOR_TMP"; then
     echo "Error: Failed to install OpenTelemetry Injector package."
     rm -f "$OTEL_INJECTOR_TMP"
     exit 1
