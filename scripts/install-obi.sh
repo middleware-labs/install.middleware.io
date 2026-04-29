@@ -23,7 +23,7 @@ LOG_FILE="/var/log/${SERVICE_UNIT_NAME}/install-$(date +%s).log"
 
 INSTALL_DIR="${OBI_INSTALL_DIR:-/usr/local/bin}"
 CONFIG_DIR="${OBI_CONFIG_DIR:-/etc/obi-agent}"
-OTEL_ENDPOINT="${OBI_OTEL_ENDPOINT:-http://localhost:4318}"
+OTEL_ENDPOINT="${OBI_OTEL_ENDPOINT:-http://localhost:9320}"
 OTEL_PROTOCOL="${OBI_OTEL_PROTOCOL:-http/protobuf}"
 AUTH_TOKEN="${OBI_AUTH_TOKEN:-}"
 LOG_LEVEL="${OBI_LOG_LEVEL:-INFO}"
@@ -347,7 +347,7 @@ preflight_checks() {
         log_error "systemctl not found. systemd is required to manage the OBI service."
         exit 1
     fi
- 
+
     # Detect OS family (used for kernel compatibility decisions)
     detect_os_family
 
