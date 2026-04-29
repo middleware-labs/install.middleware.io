@@ -99,6 +99,18 @@ get_latest_mw_agent_version() {
   echo "$latest_version"
 }
 
+get_latest_otel_injector_version() {
+  repo="open-telemetry/opentelemetry-injector"
+
+  latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+  if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
+    latest_version="v0.1.0"
+  fi
+
+  echo "$latest_version"
+}
+
 trap on_exit EXIT
 
 # recording agent installation attempt
@@ -190,6 +202,16 @@ if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
   export MW_AGENT_FEATURES_SYNTHETIC_MONITORING
 fi
 
+# OTel Injector defaults
+if [ "${MW_ENABLE_INJECTOR}" = "" ]; then
+  MW_ENABLE_INJECTOR=true
+fi
+export MW_ENABLE_INJECTOR
+
+if [ "${OTEL_INJECTOR_VERSION}" = "" ]; then
+  OTEL_INJECTOR_VERSION=$(get_latest_otel_injector_version)
+fi
+export OTEL_INJECTOR_VERSION
 
 skip_certificate_check=""
 if [ "${MW_SKIP_CERTIFICATE_CHECK}" = "yes" ]; then 
@@ -226,6 +248,14 @@ else
   echo "/opt/mw-agent/bin is already in the PATH"
 fi
 
+# Also add mw-agent bin to zshrc if exists
+if [ -f "$HOME/.zshrc" ]; then
+    if ! grep -q "/opt/mw-agent/bin" "$HOME/.zshrc"; then
+        echo "export PATH=/opt/mw-agent/bin:$PATH" >> "$HOME/.zshrc"
+        echo "/opt/mw-agent/bin added to PATH in ~/.zshrc"
+    fi
+fi
+
 #check for errors
 if ! sudo systemctl enable mw-agent; then
   echo "Error: Failed to enable Middleware Agent service."
@@ -238,3 +268,48 @@ if [ "${MW_AUTO_START}" = true ]; then
 fi
 
 echo -e "Middleware Agent installation completed successfully.\n"
+
+# -------------------------------------------------------
+# OTel Injector Installation
+# -------------------------------------------------------
+if [ "${MW_ENABLE_INJECTOR}" = true ]; then
+  echo -e "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION} ...\n"
+
+  # Map uname -m arch to the arch string used in injector release filenames
+  OTEL_INJECTOR_ARCH=""
+  if [[ $MW_DETECTED_ARCH == "aarch64" || $MW_DETECTED_ARCH == "arm64" ]]; then
+    OTEL_INJECTOR_ARCH="aarch64"
+  elif [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
+    OTEL_INJECTOR_ARCH="x86_64"
+  else
+    echo "Warning: Unsupported architecture '$MW_DETECTED_ARCH' for OTel Injector. Skipping."
+    exit 0
+  fi
+
+  # Strip leading 'v' from version for the filename (e.g. v0.1.0 -> 0.1.0)
+  OTEL_INJECTOR_VERSION_STRIPPED="${OTEL_INJECTOR_VERSION#v}"
+
+  OTEL_INJECTOR_RPM="opentelemetry-injector-${OTEL_INJECTOR_VERSION_STRIPPED}-1.${OTEL_INJECTOR_ARCH}.rpm"
+  OTEL_INJECTOR_URL="https://github.com/open-telemetry/opentelemetry-injector/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_RPM}"
+  OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_RPM}"
+
+  echo "Downloading ${OTEL_INJECTOR_URL} ..."
+  if ! curl -fSL -o "$OTEL_INJECTOR_TMP" "$OTEL_INJECTOR_URL"; then
+    echo "Error: Failed to download OpenTelemetry Injector package."
+    echo "URL: ${OTEL_INJECTOR_URL}"
+    exit 1
+  fi
+
+  echo "Installing OpenTelemetry Injector package ..."
+  if ! sudo rpm -U --replacepkgs "$OTEL_INJECTOR_TMP"; then
+    echo "Error: Failed to install OpenTelemetry Injector package."
+    rm -f "$OTEL_INJECTOR_TMP"
+    exit 1
+  fi
+
+  rm -f "$OTEL_INJECTOR_TMP"
+
+  echo -e "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully.\n"
+else
+  echo -e "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR}).\n"
+fi
