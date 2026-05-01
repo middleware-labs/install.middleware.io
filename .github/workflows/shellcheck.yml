@@ -46,7 +46,7 @@ jobs:
           # Check if FILES is not empty
           if [ -n "$FILES" ]; then
             while IFS= read -r file; do
-                if [ -n "$file" ]; then
+                if [ -n "$file" ] && [ -f "$file" ]; then
                     echo "Checking $file..."
                     if ! shellcheck -x "$file"; then
                         # If shellcheck fails, output error in GitHub Actions format

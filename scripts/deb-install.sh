@@ -99,6 +99,18 @@ get_latest_mw_agent_version() {
   echo "$latest_version"
 }
 
+get_latest_otel_injector_version() {
+  repo="open-telemetry/opentelemetry-injector"
+
+  latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+  if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
+    latest_version="v0.1.0"
+  fi
+
+  echo "$latest_version"
+}
+
 trap on_exit EXIT
 
 # recording agent installation attempt
@@ -121,6 +133,7 @@ echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostn
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
+  # shellcheck source=/dev/null
   source /etc/os-release
   case "$ID" in
     debian|ubuntu)
@@ -206,6 +219,17 @@ if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
   export MW_AGENT_FEATURES_SYNTHETIC_MONITORING
 fi
 
+# OTel Injector defaults
+if [ "${MW_ENABLE_INJECTOR}" = "" ]; then
+  MW_ENABLE_INJECTOR=true
+fi
+export MW_ENABLE_INJECTOR
+
+if [ "${OTEL_INJECTOR_VERSION}" = "" ]; then
+  OTEL_INJECTOR_VERSION=$(get_latest_otel_injector_version)
+fi
+export OTEL_INJECTOR_VERSION
+
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 
@@ -214,7 +238,7 @@ sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | su
 sudo touch /etc/apt/sources.list.d/"$MW_APT_LIST"
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
-echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
+echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/"$MW_APT_LIST" > /dev/null
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" > /dev/null
@@ -236,6 +260,14 @@ else
   echo "/opt/mw-agent/bin is already in the PATH"
 fi
 
+# Also add mw-agent bin to zshrc if exists
+if [ -f "$HOME/.zshrc" ]; then
+    if ! grep -q "/opt/mw-agent/bin" "$HOME/.zshrc"; then
+        echo "export PATH=/opt/mw-agent/bin:$PATH" >> "$HOME/.zshrc"
+        echo "/opt/mw-agent/bin added to PATH in ~/.zshrc"
+    fi
+fi
+
 #check for errors
 if ! sudo systemctl enable mw-agent; then
   echo "Error: Failed to enable Middleware Agent service."
@@ -248,3 +280,48 @@ if [ "${MW_AUTO_START}" = true ]; then
 fi
 
 echo -e "Middleware Agent installation completed successfully.\n"
+
+# -------------------------------------------------------
+# OTel Injector Installation
+# -------------------------------------------------------
+if [ "${MW_ENABLE_INJECTOR}" = true ]; then
+  echo -e "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION} ...\n"
+
+  # Map detected arch to the arch string used in injector release filenames
+  OTEL_INJECTOR_ARCH=""
+  if [[ $MW_APT_LIST_ARCH == "arm64" ]]; then
+    OTEL_INJECTOR_ARCH="arm64"
+  elif [[ $MW_APT_LIST_ARCH == "amd64" ]]; then
+    OTEL_INJECTOR_ARCH="amd64"
+  else
+    echo "Warning: Unsupported architecture '$MW_DETECTED_ARCH' for OTel Injector. Skipping."
+    exit 0
+  fi
+
+  # Strip leading 'v' from version for the filename (e.g. v0.1.0 -> 0.1.0)
+  OTEL_INJECTOR_VERSION_STRIPPED="${OTEL_INJECTOR_VERSION#v}"
+
+  OTEL_INJECTOR_DEB="opentelemetry-injector_${OTEL_INJECTOR_VERSION_STRIPPED}_${OTEL_INJECTOR_ARCH}.deb"
+  OTEL_INJECTOR_URL="https://github.com/open-telemetry/opentelemetry-injector/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_DEB}"
+  OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_DEB}"
+
+  echo "Downloading ${OTEL_INJECTOR_URL} ..."
+  if ! curl -fSL -o "$OTEL_INJECTOR_TMP" "$OTEL_INJECTOR_URL"; then
+    echo "Error: Failed to download OpenTelemetry Injector package."
+    echo "URL: ${OTEL_INJECTOR_URL}"
+    exit 1
+  fi
+
+  echo "Installing OpenTelemetry Injector package ..."
+  if ! sudo dpkg -i "$OTEL_INJECTOR_TMP"; then
+    echo "Error: Failed to install OpenTelemetry Injector package."
+    rm -f "$OTEL_INJECTOR_TMP"
+    exit 1
+  fi
+
+  rm -f "$OTEL_INJECTOR_TMP"
+
+  echo -e "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully.\n"
+else
+  echo -e "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR}).\n"
+fi
