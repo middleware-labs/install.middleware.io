@@ -229,6 +229,12 @@ if [ "${OTEL_INJECTOR_VERSION}" = "" ]; then
 fi
 export OTEL_INJECTOR_VERSION
 
+# OBI Agent defaults
+if [ "${MW_ENABLE_OBI}" = "" ]; then
+  MW_ENABLE_OBI=true
+fi
+export MW_ENABLE_OBI
+
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 
@@ -323,4 +329,14 @@ if [ "${MW_ENABLE_INJECTOR}" = true ]; then
   echo -e "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully.\n"
 else
   echo -e "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR}).\n"
+fi
+
+# -------------------------------------------------------
+# OBI Agent Installation
+# -------------------------------------------------------
+if [ "${MW_ENABLE_OBI}" = true ]; then
+  echo -e "Installing OBI Agent ...\n"
+  sudo -E bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"
+else
+  echo -e "OBI Agent installation skipped (MW_ENABLE_OBI=${MW_ENABLE_OBI}).\n"
 fi

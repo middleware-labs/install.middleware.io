@@ -36,3 +36,13 @@ if rpm -q opentelemetry-injector &>/dev/null; then
 else
     echo "OpenTelemetry Injector not installed, skipping."
 fi
+
+# -------------------------------------------------------
+# OBI Agent Removal
+# -------------------------------------------------------
+if [ -f /etc/systemd/system/obi-agent.service ] || [ -f /usr/local/bin/obi ]; then
+    echo "Removing OBI Agent ..."
+    sudo bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)" -- --uninstall
+else
+    echo "OBI Agent not installed, skipping."
+fi
