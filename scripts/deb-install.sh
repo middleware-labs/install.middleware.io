@@ -77,6 +77,18 @@ function force_continue {
   esac
 }
 
+run_cmd() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  else
+    local env_args=()
+    while IFS='=' read -r name value; do
+      env_args+=("${name}=${value}")
+    done < <(env | grep '^MW_\|^OTEL_')
+    sudo "${env_args[@]}" "$@"
+  fi
+}
+
 function on_exit {
   if [ $? -eq 0 ]; then
     send_logs "installed" "Script Completed"
@@ -251,7 +263,7 @@ sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o D
 
 # Installing Agent
 echo -e "Installing Middleware Agent Service ...\n"
-if ! sudo -E apt-get install -y "${MW_AGENT_BINARY}=$MW_VERSION"; then
+if ! run_cmd apt-get install -y "${MW_AGENT_BINARY}=$MW_VERSION"; then
   echo "Error: Failed to install Middleware Agent."
   exit 1
 fi
@@ -337,7 +349,7 @@ fi
 # -------------------------------------------------------
 if [ "${MW_ENABLE_OBI}" = true ]; then
   echo -e "Installing OBI Agent ...\n"
-  sudo -E bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"
+  run_cmd bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"
 else
   echo -e "OBI Agent installation skipped (MW_ENABLE_OBI=${MW_ENABLE_OBI}).\n"
 fi

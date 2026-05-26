@@ -77,6 +77,18 @@ function force_continue {
   esac
 }
 
+run_cmd() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  else
+    local env_args=()
+    while IFS='=' read -r name value; do
+      env_args+=("${name}=${value}")
+    done < <(env | grep '^MW_\|^OTEL_')
+    sudo "${env_args[@]}" "$@"
+  fi
+}
+
 function on_exit {
   if [ $? -eq 0 ]; then
     send_logs "installed" "Script Completed"
@@ -231,7 +243,7 @@ curl -L -q -s -o "$RPM_FILE" yum.middleware.io/"$MW_DETECTED_ARCH"/Packages/"$RP
 # Remove mw-agent if present
 if rpm -q mw-agent &>/dev/null; then
   echo "Removing existing Middleware Agent..."
-  if ! sudo -E rpm -e mw-agent; then
+  if ! run_cmd rpm -e mw-agent; then
     echo "Error: Failed to remove existing Middleware Agent."
     exit 1
   fi
@@ -239,7 +251,7 @@ fi
 
 # Install the new package
 echo "Installing Middleware Agent..."
-if ! sudo -E rpm -U "$RPM_FILE"; then
+if ! run_cmd rpm -U "$RPM_FILE"; then
   echo "Error: Failed to install Middleware Agent."
   exit 1
 fi
@@ -325,7 +337,7 @@ fi
 # -------------------------------------------------------
 if [ "${MW_ENABLE_OBI}" = true ]; then
   echo -e "Installing OBI Agent ...\n"
-  sudo -E bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"
+  run_cmd bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"
 else
   echo -e "OBI Agent installation skipped (MW_ENABLE_OBI=${MW_ENABLE_OBI}).\n"
 fi
