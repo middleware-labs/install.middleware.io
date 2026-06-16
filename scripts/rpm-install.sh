@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# ─── Logging helpers ──────────────────────────────────────────────────────────
+
+log_info()    { echo "[INFO]  $*"; }
+log_ok()      { echo "[OK]    $*"; }
+log_warn()    { echo "[WARN]  $*"; }
+log_error()   { echo "[ERROR] $*"; }
+
 # Function to check if a command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -16,8 +23,8 @@ for cmd in "${required_commands[@]}"; do
 done
 
 if [ ${#missing_commands[@]} -gt 0 ]; then
-  echo "Error: The following required commands are missing: ${missing_commands[*]}"
-  echo "Please install them and run the script again."
+  log_error "The following required commands are missing: ${missing_commands[*]}"
+  log_error "Please install them and run the script again."
   exit 1
 fi
 
@@ -55,7 +62,7 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/"$MW_API_KEY" \
+  curl -s --location --request POST "$MW_TRACKING_TARGET"/api/v1/agent/tracking/"$MW_API_KEY" \
   --header 'Content-Type: application/json' \
   --data "$payload" > /dev/null
 }
@@ -131,7 +138,7 @@ send_logs "tried" "Agent Installation Attempted"
 
 # Check if the system is running Linux
 if [ "$(uname -s)" != "Linux" ]; then
-  echo "This machine is not running Linux, The script is designed to run on a Linux machine."
+  log_warn "This machine is not running Linux. The script is designed to run on a Linux machine."
   force_continue
 fi
 
@@ -139,40 +146,46 @@ MW_LATEST_VERSION=$(get_latest_mw_agent_version)
 export MW_LATEST_VERSION
 
 # Check if MW_VERSION is provided
-if [ "${MW_VERSION}" = "" ]; then 
+if [ "${MW_VERSION}" = "" ]; then
   MW_VERSION=$MW_LATEST_VERSION
 fi
 export MW_VERSION
-echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostname) at $(date)" | sudo tee -a "$LOG_FILE"
+
+echo ""
+log_info "Middleware Agent Install Script"
+log_info "Date: $(date -u)"
+log_info "Host: $(hostname) | Kernel: $(uname -r) | Arch: $(uname -m)"
+log_info "Version: ${MW_VERSION}"
+echo ""
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
   source /etc/os-release
   case "$ID" in
     rhel|centos|fedora|almalinux|rocky|amzn|ol|sles|azurelinux)
-      echo "os-release ID is $ID"
+      log_ok "OS detected: $ID"
       ;;
     *)
       case "$ID_LIKE" in
         rhel|centos|fedora|suse)
-          echo  "os-release ID_LIKE is $ID_LIKE"
+          log_ok "OS detected: $ID (ID_LIKE: $ID_LIKE)"
           ;;
         *)
-          echo "This is not a RPM based Linux distribution."
+          log_warn "This is not a RPM based Linux distribution."
           force_continue
           ;;
       esac
   esac
 else
-  echo "/etc/os-release file not found. Unable to determine the distribution."
+  log_warn "/etc/os-release file not found. Unable to determine the distribution."
   force_continue
 fi
 
-if [ "${MW_DETECTED_ARCH}" = "" ]; then 
+if [ "${MW_DETECTED_ARCH}" = "" ]; then
   MW_DETECTED_ARCH=$(uname -m)
-  echo -e "cpu architecture detected: '$MW_DETECTED_ARCH'"
-else 
-  echo -e "cpu architecture provided: '$MW_DETECTED_ARCH'"
+  log_info "CPU architecture detected: ${MW_DETECTED_ARCH}"
+else
+  log_info "CPU architecture provided: ${MW_DETECTED_ARCH}"
 fi
 export MW_DETECTED_ARCH
 
@@ -194,14 +207,14 @@ if [ "${MW_AUTO_START}" = "" ]; then
 fi
 export MW_AUTO_START
 
-if [ "${MW_API_KEY}" = "" ]; then 
-  echo "MW_API_KEY environment variable is required and is not set."
+if [ "${MW_API_KEY}" = "" ]; then
+  log_error "MW_API_KEY environment variable is required and is not set."
   force_continue
 fi
 export MW_API_KEY
 
-if [ "${MW_TARGET}" = "" ]; then 
-  echo "MW_TARGET environment variable is required and is not set."
+if [ "${MW_TARGET}" = "" ]; then
+  log_error "MW_TARGET environment variable is required and is not set."
   force_continue
 fi
 export MW_TARGET
@@ -236,23 +249,26 @@ if [ "${MW_SKIP_CERTIFICATE_CHECK}" = "yes" ]; then
   skip_certificate_check="--no-check-certificate"
 fi
 
-echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
-echo "yum.middleware.io/$MW_DETECTED_ARCH/Packages/$RPM_FILE"
+log_info "The host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
+
+log_info "Downloading ${RPM_FILE} from yum.middleware.io..."
 curl -L -q -s -o "$RPM_FILE" yum.middleware.io/"$MW_DETECTED_ARCH"/Packages/"$RPM_FILE" $skip_certificate_check
+log_ok "Downloaded ${RPM_FILE}."
 
 # Remove mw-agent if present
 if rpm -q mw-agent &>/dev/null; then
-  echo "Removing existing Middleware Agent..."
+  log_info "Removing existing Middleware Agent..."
   if ! run_cmd rpm -e mw-agent; then
-    echo "Error: Failed to remove existing Middleware Agent."
+    log_error "Failed to remove existing Middleware Agent."
     exit 1
   fi
+  log_ok "Existing agent removed."
 fi
 
 # Install the new package
-echo "Installing Middleware Agent..."
+log_info "Installing Middleware Agent (${RPM_FILE})..."
 if ! run_cmd rpm -U "$RPM_FILE"; then
-  echo "Error: Failed to install Middleware Agent."
+  log_error "Failed to install Middleware Agent."
   exit 1
 fi
 
@@ -261,37 +277,56 @@ sudo systemctl daemon-reload
 # Adding mw-agent to PATH
 if ! grep -q "/opt/mw-agent/bin" ~/.bashrc; then
   echo "export PATH=/opt/mw-agent/bin:$PATH" >> ~/.bashrc
-  echo "/opt/mw-agent/bin added to PATH in ~/.bashrc"
+  log_ok "Added /opt/mw-agent/bin to PATH in ~/.bashrc"
 else
-  echo "/opt/mw-agent/bin is already in the PATH"
+  log_info "/opt/mw-agent/bin is already in PATH."
 fi
 
 # Also add mw-agent bin to zshrc if exists
 if [ -f "$HOME/.zshrc" ]; then
     if ! grep -q "/opt/mw-agent/bin" "$HOME/.zshrc"; then
         echo "export PATH=/opt/mw-agent/bin:$PATH" >> "$HOME/.zshrc"
-        echo "/opt/mw-agent/bin added to PATH in ~/.zshrc"
+        log_ok "Added /opt/mw-agent/bin to PATH in ~/.zshrc"
     fi
 fi
 
-#check for errors
+log_info "Enabling mw-agent service..."
 if ! sudo systemctl enable mw-agent; then
-  echo "Error: Failed to enable Middleware Agent service."
+  log_error "Failed to enable Middleware Agent service."
   exit 1
 fi
+log_ok "Service enabled to start on boot."
 
 if [ "${MW_AUTO_START}" = true ]; then
+    log_info "Starting mw-agent..."
     sudo systemctl start mw-agent
     sudo systemctl restart mw-agent
+    log_ok "mw-agent is running."
 fi
 
-echo -e "Middleware Agent installation completed successfully.\n"
+log_ok "Middleware Agent installation completed successfully."
+
+echo ""
+echo "================================================================="
+echo "  Middleware Agent v${MW_VERSION} (${MW_DETECTED_ARCH}) installed successfully"
+echo "================================================================="
+echo ""
+echo "  Binary:        ${MW_AGENT_HOME}/bin/mw-agent"
+echo "  Service:       mw-agent"
+echo "  Log file:      ${LOG_FILE}"
+echo ""
+echo "  Useful commands:"
+echo "    systemctl status mw-agent          # Check service status"
+echo "    journalctl -u mw-agent -f          # Follow logs"
+echo "    systemctl restart mw-agent         # Restart"
+echo "    systemctl stop mw-agent            # Stop"
+echo ""
 
 # -------------------------------------------------------
 # OTel Injector Installation
 # -------------------------------------------------------
 if [ "${MW_ENABLE_INJECTOR}" = true ]; then
-  echo -e "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION} ...\n"
+  log_info "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION}..."
 
   # Map uname -m arch to the arch string used in injector release filenames
   OTEL_INJECTOR_ARCH=""
@@ -300,7 +335,7 @@ if [ "${MW_ENABLE_INJECTOR}" = true ]; then
   elif [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
     OTEL_INJECTOR_ARCH="x86_64"
   else
-    echo "Warning: Unsupported architecture '$MW_DETECTED_ARCH' for OTel Injector. Skipping."
+    log_warn "Unsupported architecture '${MW_DETECTED_ARCH}' for OTel Injector. Skipping."
     exit 0
   fi
 
@@ -311,33 +346,45 @@ if [ "${MW_ENABLE_INJECTOR}" = true ]; then
   OTEL_INJECTOR_URL="https://github.com/open-telemetry/opentelemetry-injector/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_RPM}"
   OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_RPM}"
 
-  echo "Downloading ${OTEL_INJECTOR_URL} ..."
+  log_info "Downloading ${OTEL_INJECTOR_URL}..."
   if ! curl -fSL -o "$OTEL_INJECTOR_TMP" "$OTEL_INJECTOR_URL"; then
-    echo "Error: Failed to download OpenTelemetry Injector package."
-    echo "URL: ${OTEL_INJECTOR_URL}"
+    log_error "Failed to download OpenTelemetry Injector package."
+    log_error "URL: ${OTEL_INJECTOR_URL}"
     exit 1
   fi
+  log_ok "Downloaded ${OTEL_INJECTOR_RPM}."
 
-  echo "Installing OpenTelemetry Injector package ..."
+  log_info "Installing OpenTelemetry Injector package..."
   if ! sudo rpm -U --replacepkgs "$OTEL_INJECTOR_TMP"; then
-    echo "Error: Failed to install OpenTelemetry Injector package."
+    log_error "Failed to install OpenTelemetry Injector package."
     rm -f "$OTEL_INJECTOR_TMP"
     exit 1
   fi
 
   rm -f "$OTEL_INJECTOR_TMP"
 
-  echo -e "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully.\n"
+  log_ok "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully."
+
+  echo ""
+  echo "================================================================="
+  echo "  OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} (${MW_DETECTED_ARCH}) installed successfully"
+  echo "================================================================="
+  echo ""
+  echo "  Package:       ${OTEL_INJECTOR_RPM}"
+  echo "  Version:       ${OTEL_INJECTOR_VERSION}"
+  echo ""
 else
-  echo -e "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR}).\n"
+  log_info "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR})."
+  echo ""
 fi
 
 # -------------------------------------------------------
 # OBI Agent Installation
 # -------------------------------------------------------
 if [ "${MW_ENABLE_OBI}" = true ]; then
-  echo -e "Installing OBI Agent ...\n"
+  log_info "Installing OBI Agent..."
+  echo ""
   run_cmd bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"
 else
-  echo -e "OBI Agent installation skipped (MW_ENABLE_OBI=${MW_ENABLE_OBI}).\n"
+  log_info "OBI Agent installation skipped (MW_ENABLE_OBI=${MW_ENABLE_OBI})."
 fi
