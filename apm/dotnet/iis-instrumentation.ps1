@@ -37,7 +37,7 @@ $oldEnvVars = @(
 )
 
 foreach ($var in $oldEnvVars) {
-    Write-Host "Unsetting $var"
+    Write-Host "Cleaning up.. $var"
     [Environment]::SetEnvironmentVariable($var, $null, "Machine")
 }
 
@@ -47,23 +47,44 @@ iisreset /noforce
 
 Write-Host "========== Installing OpenTelemetry for IIS ==========" -ForegroundColor Cyan
 
-# 1. Create base directory (for module only)
+# Create base directory (for module only)
 $otelBasePath = "C:\otel-dotnet-auto"
-New-Item -ItemType Directory -Force -Path $otelBasePath | Out-Null
 
-# 2. Download the OpenTelemetry module
+if (Test-Path $otelBasePath) {
+    Write-Host "`nDirectory $otelBasePath already exists." -ForegroundColor Yellow
+    $choice = Read-Host "Type 's' to skip downloading, or 'd' to delete and re-download"
+    if ($choice -eq 'd') {
+        Write-Host "Deleting $otelBasePath..." -ForegroundColor Red
+        Remove-Item -Recurse -Force $otelBasePath
+        New-Item -ItemType Directory -Force -Path $otelBasePath | Out-Null
+    } elseif ($choice -eq 's') {
+        Write-Host "Skipping download and module import." -ForegroundColor Cyan
+        $skipDownload = $true
+    } else {
+        Write-Host "Invalid choice. Exiting script." -ForegroundColor Red
+        exit 1
+    }
+} else {
+    New-Item -ItemType Directory -Force -Path $otelBasePath | Out-Null
+}
+
+# Download the OpenTelemetry module
 $moduleUrl = "https://github.com/open-telemetry/opentelemetry-dotnet-instrumentation/releases/latest/download/OpenTelemetry.DotNet.Auto.psm1"
 $modulePath = Join-Path $otelBasePath "OpenTelemetry.DotNet.Auto.psm1"
 
-Write-Host "Downloading OpenTelemetry module..."
-Invoke-WebRequest -Uri $moduleUrl -OutFile $modulePath -UseBasicParsing
+if (-not $skipDownload) {
+    Write-Host "Downloading OpenTelemetry module..."
+    Invoke-WebRequest -Uri $moduleUrl -OutFile $modulePath -UseBasicParsing
 
-# 3. Import the module
-Import-Module $modulePath -Force
+    # Import the module
+    Import-Module $modulePath -Force
 
-# 4. ✅ Install OpenTelemetry Core (ONLINE - DEFAULT PATH)
-Write-Host "Installing OpenTelemetry Core..."
-Install-OpenTelemetryCore
+    # Install OpenTelemetry Core
+    Write-Host "Installing OpenTelemetry Core..."
+    Install-OpenTelemetryCore
+} else {
+    Write-Host "Module download and install steps skipped as requested." -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "✅ INSTALLATION COMPLETE" -ForegroundColor Green
@@ -83,21 +104,30 @@ Write-Host "Using API Key: $ApiKey" -ForegroundColor Cyan
 Write-Host "\n========== AVAILABLE IIS APP POOLS ==========" -ForegroundColor Yellow
 $appPools = & $AppCmd list apppool /text:name
 $appPoolsArray = $appPools -split "\r?\n" | Where-Object { $_ -ne "" }
+
 for ($i = 0; $i -lt $appPoolsArray.Count; $i++) {
     Write-Host ("[{0}] {1}" -f $i, $appPoolsArray[$i])
 }
 
-# Prompt user to select App Pool
+# Prompt user to select one, multiple, or all App Pools
 do {
-    $selection = Read-Host "Enter the number of the App Pool to use"
-    $isValid = $selection -match '^[0-9]+$' -and [int]$selection -ge 0 -and [int]$selection -lt $appPoolsArray.Count
+    $selection = Read-Host "Enter the number(s) of the App Pool(s) to use (comma-separated, or 'all' for all)"
+    $isAll = $selection.Trim().ToLower() -eq 'all'
+    if ($isAll) {
+        $selectedIndices = @(0..($appPoolsArray.Count - 1))
+        $isValid = $true
+    } else {
+        $selectedIndices = $selection -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[0-9]+$' } | ForEach-Object { [int]$_ }
+        $isValid = $selectedIndices.Count -gt 0 -and ($selectedIndices | Where-Object { $_ -ge 0 -and $_ -lt $appPoolsArray.Count }).Count -eq $selectedIndices.Count
+    }
     if (-not $isValid) {
-        Write-Host "Invalid selection. Please enter a valid number." -ForegroundColor Red
+        Write-Host "Invalid selection. Please enter valid number(s) or 'all'." -ForegroundColor Red
     }
 } while (-not $isValid)
 
-$AppPoolName = $appPoolsArray[$selection]
-Write-Host "Selected App Pool: $AppPoolName" -ForegroundColor Cyan
+$SelectedAppPools = $selectedIndices | ForEach-Object { $appPoolsArray[$_] }
+Write-Host "Selected App Pool(s): $($SelectedAppPools -join ', ')" -ForegroundColor Cyan
+
 
 
 $envs = @{
@@ -125,21 +155,51 @@ $envs = @{
     "OTEL_EXPORTER_OTLP_HEADERS" = "Authorization=$ApiKey"
 }
 
-# Remove App Pool-specific OTEL/profiler variables before re-applying them
-$appPoolEnvVarsToRemove = ($oldEnvVars + $envs.Keys) | Sort-Object -Unique
-foreach ($name in $appPoolEnvVarsToRemove) {
-    $cmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /-environmentVariables.`"[name='$name']`""
-    Write-Host "Unsetting App Pool env $name"
-    Invoke-Expression $cmd
-}
+# Remove and set env vars for each selected App Pool
+foreach ($AppPoolName in $SelectedAppPools) {
+    Write-Host "`nConfiguring App Pool: $AppPoolName" -ForegroundColor Cyan
 
-foreach ($name in $envs.Keys) {
-    $value = $envs[$name] -replace '\\', '\\\\'   # Escape backslashes for appcmd
-    $cmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /+environmentVariables.`"[name='$name',value='$value']`""
-    Write-Host "Running: $cmd"
-    Invoke-Expression $cmd
-}
+    # Get current environment variables for the App Pool
+    $currentEnvVars = & $AppCmd list apppool /name:"$AppPoolName" /text:environmentVariables
+    $currentEnvVarNames = @()
+    if ($currentEnvVars) {
+        $currentEnvVarNames = $currentEnvVars -split ';' | ForEach-Object {
+            ($_ -split '=')[0]
+        }
+    }
 
-Write-Host "✅ All environment variables set for App Pool: $AppPoolName"
-Restart-WebAppPool -Name $AppPoolName
+    $appPoolEnvVarsToRemove = ($oldEnvVars + $envs.Keys) | Sort-Object -Unique
+    foreach ($name in $appPoolEnvVarsToRemove) {
+        if ($currentEnvVarNames -contains $name) {
+            $cmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /-environmentVariables.`"[name='$name']`""
+            Write-Host "Unsetting App Pool env $name"
+            Invoke-Expression $cmd
+        }
+    }
+
+    # Refresh the list after unsetting
+    $currentEnvVars = & $AppCmd list apppool /name:"$AppPoolName" /text:environmentVariables
+    $currentEnvVarNames = @()
+    if ($currentEnvVars) {
+        $currentEnvVarNames = $currentEnvVars -split ';' | ForEach-Object {
+            ($_ -split '=')[0]
+        }
+    }
+
+    foreach ($name in $envs.Keys) {
+        $value = $envs[$name] -replace '\\', '\\\\'   # Escape backslashes for appcmd
+
+        # Always remove first to avoid duplicates
+        $removeCmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /-environmentVariables.`"[name='$name']`""
+        Write-Host "Ensuring removal: $removeCmd"
+        Invoke-Expression $removeCmd
+
+        # Now add
+        $addCmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /+environmentVariables.`"[name='$name',value='$value']`""
+        Write-Host "Adding: $addCmd"
+        Invoke-Expression $addCmd
+    }
+    Write-Host "✅ All environment variables set for App Pool: $AppPoolName"
+    Restart-WebAppPool -Name $AppPoolName
+}
 Write-Host "Done!"
