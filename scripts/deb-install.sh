@@ -56,7 +56,7 @@ function send_logs {
     "status": "ok",
     "message": "$message",
     "host_id": "$host_id",
-    "script_logs": "$(sed 's/$/\\n/' "$LOG_FILE" | tr -d '\n' | sed 's/"/\\\"/g')"
+    "script_logs": "$(sed 's/$/\\n/' "$LOG_FILE" | tr -d '\r\n' | sed 's/"/\\\"/g')"
   }
 }
 EOF
