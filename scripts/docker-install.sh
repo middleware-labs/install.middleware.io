@@ -1,5 +1,26 @@
 #!/bin/bash
 
+# Checking if required commands exists -- Start
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+required_commands=("sudo" "mkdir" "touch" "tee" "date" "curl" "uname" "sed" "tr" "systemctl" "compgen")
+missing_commands=()
+
+for cmd in "${required_commands[@]}"; do
+  if ! command_exists "$cmd"; then
+    missing_commands+=("$cmd")
+  fi
+done
+
+if [ ${#missing_commands[@]} -gt 0 ]; then
+  echo "Error: The following required commands are missing: ${missing_commands[*]}"
+  echo "Please install them and run the script again."
+  exit 1
+fi
+# Checking if required commands exists -- End
+
 LOG_FILE="/var/log/mw-agent/docker-installation-$(date +%s).log"
 sudo mkdir -p /var/log/mw-agent
 sudo touch "$LOG_FILE"
@@ -120,51 +141,35 @@ while true; do
 done
 fi
 
-docker pull $MW_AGENT_DOCKER_IMAGE
+docker pull "${MW_AGENT_DOCKER_IMAGE}"
 
 dockerrun="docker run -d \
   --name mw-agent-${MW_API_KEY:0:5} \
   --pid host \
   --restart always"
 
-if [ -n "$MW_API_KEY" ]; then
-    dockerrun="$dockerrun -e MW_API_KEY=$MW_API_KEY"
-fi
+# Function to add environment variables to dockerrun
+add_env_var() {
+    local var_name="$1"
+    local var_value="${!var_name}"  # Get the value of the variable using indirect reference
+    if [ -n "$var_value" ]; then
+        dockerrun="$dockerrun -e $var_name=$var_value"
+    fi
+}
 
-# Check if MW_TARGET is non-empty, then set the environment variable
-if [ -n "$MW_TARGET" ]; then
-    dockerrun="$dockerrun -e MW_TARGET=$MW_TARGET"
-fi
+# Capture all environment variables in the script's environment
+# This ensures variables like MW_API_KEY are included
+for env_var in $(compgen -e); do
+    export env_var
+done
 
-# Check if MW_ENABLE_SYNTHETIC_MONITORING is non-empty, then set the environment variable
-if [ -n "$MW_ENABLE_SYNTHETIC_MONITORING" ]; then
-    dockerrun="$dockerrun -e MW_ENABLE_SYNTHETIC_MONITORING=$MW_ENABLE_SYNTHETIC_MONITORING"
-fi
-
-# Check if MW_CONFIG_CHECK_INTERVAL is non-empty, then set the environment variable
-if [ -n "$MW_CONFIG_CHECK_INTERVAL" ]; then
-    dockerrun="$dockerrun -e MW_CONFIG_CHECK_INTERVAL=$MW_CONFIG_CHECK_INTERVAL"
-fi
-
-# Check if MW_DOCKER_ENDPOINT is non-empty, then set the environment variable
-if [ -n "$MW_DOCKER_ENDPOINT" ]; then
-    dockerrun="$dockerrun -e MW_DOCKER_ENDPOINT=$MW_DOCKER_ENDPOINT"
-fi
-
-# Check if MW_API_URL_FOR_CONFIG_CHECK is non-empty, then set the environment variable
-if [ -n "$MW_API_URL_FOR_CONFIG_CHECK" ]; then
-    dockerrun="$dockerrun -e MW_API_URL_FOR_CONFIG_CHECK=$MW_API_URL_FOR_CONFIG_CHECK"
-fi
-
-# Check if MW_HOST_TAGS is non-empty, then set the environment variable
-if [ -n "$MW_HOST_TAGS" ]; then
-    dockerrun="$dockerrun -e MW_HOST_TAGS=$MW_HOST_TAGS"
-fi
-
-# Check if MW_LOG_PATHS is non-empty, then set the environment variable
-if [ -n "$MW_LOG_PATHS" ]; then
-    dockerrun="$dockerrun -e MW_LOG_PATHS=$MW_LOG_PATHS"
-fi
+# Loop through all environment variables in the script's environment
+for env_var in $(compgen -e); do
+    # Check if the environment variable starts with MW_ (modify as needed)
+    if [[ "$env_var" == MW_* ]]; then
+        add_env_var "$env_var"
+    fi
+done
 
 if [[ $(uname) == "Darwin" ]]; then
 
