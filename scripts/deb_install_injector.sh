@@ -99,13 +99,21 @@ get_latest_mw_agent_version() {
   echo "$latest_version"
 }
 
+# Returns the latest STABLE (non-prerelease, non-draft) OpenTelemetry Injector
+# release from open-telemetry/opentelemetry-packaging, or an empty string when
+# there are none yet. The caller falls back to a pinned known-good version.
+# Newer DEB/RPM packages are published from opentelemetry-packaging (its own
+# version scheme); the legacy open-telemetry/opentelemetry-injector repo shipped
+# packages up to v0.9.2 and from v0.10.0 releases only the raw libotelinject_*.so.
 get_latest_otel_injector_version() {
-  repo="open-telemetry/opentelemetry-injector"
+  repo="open-telemetry/opentelemetry-packaging"
 
+  # /releases/latest returns the newest stable release, or 404 (empty) when the
+  # repo has only pre-releases, as is currently the case.
   latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
-  if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
-    latest_version="v0.1.0"
+  if [ "$latest_version" = "null" ]; then
+    latest_version=""
   fi
 
   echo "$latest_version"
@@ -133,6 +141,7 @@ echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostn
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
+  # shellcheck source=/dev/null
   source /etc/os-release
   case "$ID" in
     debian|ubuntu)
@@ -224,10 +233,27 @@ if [ "${MW_ENABLE_INJECTOR}" = "" ]; then
 fi
 export MW_ENABLE_INJECTOR
 
-if [ "${OTEL_INJECTOR_VERSION}" = "" ]; then
+# Injector download source (version + repo are resolved together):
+#   - User-pinned OTEL_INJECTOR_VERSION: fetched from the legacy
+#     open-telemetry/opentelemetry-injector repo (packages up to v0.9.2 live there).
+#   - No pin: prefer the latest stable release from opentelemetry-packaging;
+#     while that repo has only a pre-release, fall back to the last known-good
+#     stable (v0.9.2) from the legacy injector repo.
+OTEL_INJECTOR_FALLBACK_VERSION="v0.9.2"
+OTEL_INJECTOR_FALLBACK_REPO="open-telemetry/opentelemetry-injector"
+if [ "${OTEL_INJECTOR_VERSION}" != "" ]; then
+  OTEL_INJECTOR_REPO="open-telemetry/opentelemetry-injector"
+else
   OTEL_INJECTOR_VERSION=$(get_latest_otel_injector_version)
+  if [ -n "${OTEL_INJECTOR_VERSION}" ]; then
+    OTEL_INJECTOR_REPO="open-telemetry/opentelemetry-packaging"
+  else
+    OTEL_INJECTOR_VERSION="${OTEL_INJECTOR_FALLBACK_VERSION}"
+    OTEL_INJECTOR_REPO="${OTEL_INJECTOR_FALLBACK_REPO}"
+  fi
 fi
 export OTEL_INJECTOR_VERSION
+export OTEL_INJECTOR_REPO
 
 # OBI Agent defaults
 if [ "${MW_ENABLE_OBI}" = "" ]; then
@@ -288,45 +314,58 @@ echo -e "Middleware Agent installation completed successfully.\n"
 
 # -------------------------------------------------------
 # OTel Injector Installation
+#
+# Best-effort add-on: if the injector cannot be resolved, downloaded, or
+# installed we warn and continue so that core agent monitoring is unaffected.
 # -------------------------------------------------------
 if [ "${MW_ENABLE_INJECTOR}" = true ]; then
-  echo -e "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION} ...\n"
+  if ! (
+    if [ -z "${OTEL_INJECTOR_VERSION}" ]; then
+      echo "Error: Could not determine the OpenTelemetry Injector version to install."
+      exit 1
+    fi
 
-  # Map detected arch to the arch string used in injector release filenames
-  OTEL_INJECTOR_ARCH=""
-  if [[ $MW_APT_LIST_ARCH == "arm64" ]]; then
-    OTEL_INJECTOR_ARCH="arm64"
-  elif [[ $MW_APT_LIST_ARCH == "amd64" ]]; then
-    OTEL_INJECTOR_ARCH="amd64"
-  else
-    echo "Warning: Unsupported architecture '$MW_DETECTED_ARCH' for OTel Injector. Skipping."
-    exit 0
-  fi
+    echo -e "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION} ...\n"
 
-  # Strip leading 'v' from version for the filename (e.g. v0.1.0 -> 0.1.0)
-  OTEL_INJECTOR_VERSION_STRIPPED="${OTEL_INJECTOR_VERSION#v}"
+    # Map detected arch to the arch string used in injector release filenames
+    OTEL_INJECTOR_ARCH=""
+    if [[ $MW_APT_LIST_ARCH == "arm64" ]]; then
+      OTEL_INJECTOR_ARCH="arm64"
+    elif [[ $MW_APT_LIST_ARCH == "amd64" ]]; then
+      OTEL_INJECTOR_ARCH="amd64"
+    else
+      echo "Warning: Unsupported architecture '$MW_DETECTED_ARCH' for OTel Injector. Skipping."
+      exit 1
+    fi
 
-  OTEL_INJECTOR_DEB="opentelemetry-injector_${OTEL_INJECTOR_VERSION_STRIPPED}_${OTEL_INJECTOR_ARCH}.deb"
-  OTEL_INJECTOR_URL="https://github.com/open-telemetry/opentelemetry-injector/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_DEB}"
-  OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_DEB}"
+    # Strip leading 'v' from version for the filename (e.g. v0.1.0 -> 0.1.0)
+    OTEL_INJECTOR_VERSION_STRIPPED="${OTEL_INJECTOR_VERSION#v}"
 
-  echo "Downloading ${OTEL_INJECTOR_URL} ..."
-  if ! curl -fSL -o "$OTEL_INJECTOR_TMP" "$OTEL_INJECTOR_URL"; then
-    echo "Error: Failed to download OpenTelemetry Injector package."
-    echo "URL: ${OTEL_INJECTOR_URL}"
-    exit 1
-  fi
+    OTEL_INJECTOR_DEB="opentelemetry-injector_${OTEL_INJECTOR_VERSION_STRIPPED}_${OTEL_INJECTOR_ARCH}.deb"
+    OTEL_INJECTOR_URL="https://github.com/${OTEL_INJECTOR_REPO}/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_DEB}"
+    OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_DEB}"
 
-  echo "Installing OpenTelemetry Injector package ..."
-  if ! sudo dpkg -i "$OTEL_INJECTOR_TMP"; then
-    echo "Error: Failed to install OpenTelemetry Injector package."
+    echo "Downloading ${OTEL_INJECTOR_URL} ..."
+    if ! curl -fSL -o "$OTEL_INJECTOR_TMP" "$OTEL_INJECTOR_URL"; then
+      echo "Error: Failed to download OpenTelemetry Injector package."
+      echo "URL: ${OTEL_INJECTOR_URL}"
+      rm -f "$OTEL_INJECTOR_TMP"
+      exit 1
+    fi
+
+    echo "Installing OpenTelemetry Injector package ..."
+    if ! sudo dpkg -i "$OTEL_INJECTOR_TMP"; then
+      echo "Error: Failed to install OpenTelemetry Injector package."
+      rm -f "$OTEL_INJECTOR_TMP"
+      exit 1
+    fi
+
     rm -f "$OTEL_INJECTOR_TMP"
-    exit 1
+
+    echo -e "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully.\n"
+  ); then
+    echo -e "Warning: OpenTelemetry Injector installation did not complete; continuing without it. Core agent monitoring is unaffected.\n"
   fi
-
-  rm -f "$OTEL_INJECTOR_TMP"
-
-  echo -e "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully.\n"
 else
   echo -e "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR}).\n"
 fi
