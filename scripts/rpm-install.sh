@@ -111,13 +111,19 @@ get_latest_mw_agent_version() {
   echo "$latest_version"
 }
 
+# DEB/RPM packages for the OpenTelemetry Injector are published from
+# open-telemetry/opentelemetry-packaging (which has its own version scheme).
+# open-telemetry/opentelemetry-injector stopped shipping packages after v0.9.0
+# and now releases only the raw libotelinject_*.so library.
+# Returns an empty string if the latest version cannot be resolved; callers
+# treat that as "skip the injector" rather than aborting the install.
 get_latest_otel_injector_version() {
-  repo="open-telemetry/opentelemetry-injector"
+  repo="open-telemetry/opentelemetry-packaging"
 
   latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
-  if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
-    latest_version="v0.1.0"
+  if [ "$latest_version" = "null" ]; then
+    latest_version=""
   fi
 
   echo "$latest_version"
@@ -220,10 +226,18 @@ if [ "${MW_ENABLE_INJECTOR}" = "" ]; then
 fi
 export MW_ENABLE_INJECTOR
 
+# Injector download source. With no pinned version we install the latest
+# package from open-telemetry/opentelemetry-packaging. A user-pinned
+# OTEL_INJECTOR_VERSION is treated as a legacy version from the
+# open-telemetry/opentelemetry-injector repo (packages up to v0.9.0).
+OTEL_INJECTOR_REPO="open-telemetry/opentelemetry-packaging"
 if [ "${OTEL_INJECTOR_VERSION}" = "" ]; then
   OTEL_INJECTOR_VERSION=$(get_latest_otel_injector_version)
+else
+  OTEL_INJECTOR_REPO="open-telemetry/opentelemetry-injector"
 fi
 export OTEL_INJECTOR_VERSION
+export OTEL_INJECTOR_REPO
 
 # OBI Agent defaults
 if [ "${MW_ENABLE_OBI}" = "" ]; then
@@ -289,45 +303,68 @@ echo -e "Middleware Agent installation completed successfully.\n"
 
 # -------------------------------------------------------
 # OTel Injector Installation
+#
+# Best-effort add-on: if the injector cannot be resolved, downloaded, or
+# installed we warn and continue so that core agent monitoring is unaffected.
 # -------------------------------------------------------
 if [ "${MW_ENABLE_INJECTOR}" = true ]; then
-  echo -e "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION} ...\n"
+  if ! (
+    if [ -z "${OTEL_INJECTOR_VERSION}" ]; then
+      log_error "Could not determine the OpenTelemetry Injector version to install."
+      exit 1
+    fi
 
-  # Map uname -m arch to the arch string used in injector release filenames
-  OTEL_INJECTOR_ARCH=""
-  if [[ $MW_DETECTED_ARCH == "aarch64" || $MW_DETECTED_ARCH == "arm64" ]]; then
-    OTEL_INJECTOR_ARCH="aarch64"
-  elif [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
-    OTEL_INJECTOR_ARCH="x86_64"
-  else
-    echo "Warning: Unsupported architecture '$MW_DETECTED_ARCH' for OTel Injector. Skipping."
-    exit 0
-  fi
+    log_info "Installing OpenTelemetry Injector version ${OTEL_INJECTOR_VERSION}..."
 
-  # Strip leading 'v' from version for the filename (e.g. v0.1.0 -> 0.1.0)
-  OTEL_INJECTOR_VERSION_STRIPPED="${OTEL_INJECTOR_VERSION#v}"
+    # Map uname -m arch to the arch string used in injector release filenames
+    OTEL_INJECTOR_ARCH=""
+    if [[ $MW_DETECTED_ARCH == "aarch64" || $MW_DETECTED_ARCH == "arm64" ]]; then
+      OTEL_INJECTOR_ARCH="aarch64"
+    elif [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
+      OTEL_INJECTOR_ARCH="x86_64"
+    else
+      log_warn "Unsupported architecture '${MW_DETECTED_ARCH}' for OTel Injector. Skipping."
+      exit 1
+    fi
 
-  OTEL_INJECTOR_RPM="opentelemetry-injector-${OTEL_INJECTOR_VERSION_STRIPPED}-1.${OTEL_INJECTOR_ARCH}.rpm"
-  OTEL_INJECTOR_URL="https://github.com/open-telemetry/opentelemetry-injector/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_RPM}"
-  OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_RPM}"
+    # Strip leading 'v' from version for the filename (e.g. v0.1.0 -> 0.1.0)
+    OTEL_INJECTOR_VERSION_STRIPPED="${OTEL_INJECTOR_VERSION#v}"
 
-  echo "Downloading ${OTEL_INJECTOR_URL} ..."
-  if ! curl -fSL -o "$OTEL_INJECTOR_TMP" "$OTEL_INJECTOR_URL"; then
-    echo "Error: Failed to download OpenTelemetry Injector package."
-    echo "URL: ${OTEL_INJECTOR_URL}"
-    exit 1
-  fi
+    OTEL_INJECTOR_RPM="opentelemetry-injector-${OTEL_INJECTOR_VERSION_STRIPPED}-1.${OTEL_INJECTOR_ARCH}.rpm"
+    OTEL_INJECTOR_URL="https://github.com/${OTEL_INJECTOR_REPO}/releases/download/${OTEL_INJECTOR_VERSION}/${OTEL_INJECTOR_RPM}"
+    OTEL_INJECTOR_TMP="/tmp/${OTEL_INJECTOR_RPM}"
 
-  echo "Installing OpenTelemetry Injector package ..."
-  if ! sudo rpm -U --replacepkgs "$OTEL_INJECTOR_TMP"; then
-    echo "Error: Failed to install OpenTelemetry Injector package."
+    log_info "Downloading ${OTEL_INJECTOR_URL}..."
+    if ! curl -fSL -o "$OTEL_INJECTOR_TMP" "$OTEL_INJECTOR_URL"; then
+      log_error "Failed to download OpenTelemetry Injector package."
+      log_error "URL: ${OTEL_INJECTOR_URL}"
+      rm -f "$OTEL_INJECTOR_TMP"
+      exit 1
+    fi
+    log_ok "Downloaded ${OTEL_INJECTOR_RPM}."
+
+    log_info "Installing OpenTelemetry Injector package..."
+    if ! sudo rpm -U --replacepkgs "$OTEL_INJECTOR_TMP"; then
+      log_error "Failed to install OpenTelemetry Injector package."
+      rm -f "$OTEL_INJECTOR_TMP"
+      exit 1
+    fi
+
     rm -f "$OTEL_INJECTOR_TMP"
-    exit 1
+
+    log_ok "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully."
+
+    echo ""
+    echo "================================================================="
+    echo "  OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} (${MW_DETECTED_ARCH}) installed successfully"
+    echo "================================================================="
+    echo ""
+    echo "  Package:       ${OTEL_INJECTOR_RPM}"
+    echo "  Version:       ${OTEL_INJECTOR_VERSION}"
+    echo ""
+  ); then
+    log_warn "OpenTelemetry Injector installation did not complete; continuing without it. Core agent monitoring is unaffected."
   fi
-
-  rm -f "$OTEL_INJECTOR_TMP"
-
-  echo -e "OpenTelemetry Injector ${OTEL_INJECTOR_VERSION} installed successfully.\n"
 else
   echo -e "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR}).\n"
 fi
