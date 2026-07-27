@@ -139,6 +139,7 @@ echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostn
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
+  # shellcheck source=/dev/null
   source /etc/os-release
   case "$ID" in
     debian|ubuntu)
