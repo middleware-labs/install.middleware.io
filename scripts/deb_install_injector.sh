@@ -99,15 +99,17 @@ get_latest_mw_agent_version() {
   echo "$latest_version"
 }
 
-# DEB/RPM packages for the OpenTelemetry Injector are published from
-# open-telemetry/opentelemetry-packaging (which has its own version scheme).
-# open-telemetry/opentelemetry-injector stopped shipping packages after v0.9.0
-# and now releases only the raw libotelinject_*.so library.
-# Returns an empty string if the latest version cannot be resolved; callers
-# treat that as "skip the injector" rather than aborting the install.
+# Returns the latest STABLE (non-prerelease, non-draft) OpenTelemetry Injector
+# release from open-telemetry/opentelemetry-packaging, or an empty string when
+# there are none yet. The caller falls back to a pinned known-good version.
+# Newer DEB/RPM packages are published from opentelemetry-packaging (its own
+# version scheme); the legacy open-telemetry/opentelemetry-injector repo shipped
+# packages up to v0.9.2 and from v0.10.0 releases only the raw libotelinject_*.so.
 get_latest_otel_injector_version() {
   repo="open-telemetry/opentelemetry-packaging"
 
+  # /releases/latest returns the newest stable release, or 404 (empty) when the
+  # repo has only pre-releases, as is currently the case.
   latest_version=$(curl --silent "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
   if [ "$latest_version" = "null" ]; then
@@ -231,15 +233,24 @@ if [ "${MW_ENABLE_INJECTOR}" = "" ]; then
 fi
 export MW_ENABLE_INJECTOR
 
-# Injector download source. With no pinned version we install the latest
-# package from open-telemetry/opentelemetry-packaging. A user-pinned
-# OTEL_INJECTOR_VERSION is treated as a legacy version from the
-# open-telemetry/opentelemetry-injector repo (packages up to v0.9.0).
-OTEL_INJECTOR_REPO="open-telemetry/opentelemetry-packaging"
-if [ "${OTEL_INJECTOR_VERSION}" = "" ]; then
-  OTEL_INJECTOR_VERSION=$(get_latest_otel_injector_version)
-else
+# Injector download source (version + repo are resolved together):
+#   - User-pinned OTEL_INJECTOR_VERSION: fetched from the legacy
+#     open-telemetry/opentelemetry-injector repo (packages up to v0.9.2 live there).
+#   - No pin: prefer the latest stable release from opentelemetry-packaging;
+#     while that repo has only a pre-release, fall back to the last known-good
+#     stable (v0.9.2) from the legacy injector repo.
+OTEL_INJECTOR_FALLBACK_VERSION="v0.9.2"
+OTEL_INJECTOR_FALLBACK_REPO="open-telemetry/opentelemetry-injector"
+if [ "${OTEL_INJECTOR_VERSION}" != "" ]; then
   OTEL_INJECTOR_REPO="open-telemetry/opentelemetry-injector"
+else
+  OTEL_INJECTOR_VERSION=$(get_latest_otel_injector_version)
+  if [ -n "${OTEL_INJECTOR_VERSION}" ]; then
+    OTEL_INJECTOR_REPO="open-telemetry/opentelemetry-packaging"
+  else
+    OTEL_INJECTOR_VERSION="${OTEL_INJECTOR_FALLBACK_VERSION}"
+    OTEL_INJECTOR_REPO="${OTEL_INJECTOR_FALLBACK_REPO}"
+  fi
 fi
 export OTEL_INJECTOR_VERSION
 export OTEL_INJECTOR_REPO
