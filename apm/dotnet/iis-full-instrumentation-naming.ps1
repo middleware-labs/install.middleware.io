@@ -44,7 +44,12 @@ foreach ($var in $oldEnvVars) {
 # Restart IIS to ensure old profiler references are gone
 Write-Host "Performing IIS reset..."
 $IisReset = "$env:SystemRoot\System32\inetsrv\iisreset.exe"
-& $IisReset /noforce
+if (Test-Path $IisReset) {
+    & $IisReset /noforce
+} else {
+    Write-Host "iisreset.exe not found; restarting IIS services (WAS/W3SVC) directly." -ForegroundColor Yellow
+    Restart-Service -Name WAS -Force -ErrorAction SilentlyContinue
+}
 
 Write-Host "========== Installing OpenTelemetry for IIS ==========" -ForegroundColor Cyan
 
