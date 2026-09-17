@@ -428,7 +428,10 @@ fi
 if [ "${MW_ENABLE_OBI}" = true ]; then
   log_info "Installing OBI Agent..."
   echo ""
-  run_cmd bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"
+  if ! run_cmd bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"; then
+    DETECTED_KERNEL="$(uname -r)"
+    log_warn "OBI Agent installation did not complete — detected kernel ${DETECTED_KERNEL} does not meet OBI's minimum requirement (5.8+). Continuing without it. Core mw-agent and OTel Injector monitoring are unaffected. See https://opentelemetry.io/docs/zero-code/obi/ for OBI kernel requirements."
+  fi
 else
   log_info "OBI Agent installation skipped (MW_ENABLE_OBI=${MW_ENABLE_OBI})."
 fi
