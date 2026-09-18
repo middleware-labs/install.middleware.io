@@ -45,8 +45,9 @@ function send_logs {
 EOF
 )
 
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/"$MW_API_KEY" \
+curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking \
   --header 'Content-Type: application/json' \
+  --header "mw-api-key: $MW_API_KEY" \
   --data-raw "$payload" > /dev/null
 }
 

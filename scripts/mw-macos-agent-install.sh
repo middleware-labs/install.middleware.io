@@ -65,9 +65,10 @@ function send_logs {
 EOF
 )
 
-  url=https://app.middleware.io/api/v1/agent/tracking/"$api_key"
+  url=https://app.middleware.io/api/v1/agent/tracking
   curl -s --location --request POST "$url" \
   --header 'Content-Type: application/json' \
+  --header "mw-api-key: $api_key" \
   --data "$payload" >> /dev/null
 }
 

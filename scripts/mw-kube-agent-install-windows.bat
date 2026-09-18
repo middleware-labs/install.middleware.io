@@ -128,7 +128,7 @@ exit /b
   ) > temp_payload.json
 
   REM Send the payload using certutil for HTTP POST request
-  curl -X POST -H "Content-Type: application/json" -d @temp_payload.json "%MW_TARGET%/api/v1/agent/tracking/%MW_API_KEY%"
+  curl -X POST -H "Content-Type: application/json" -H "mw-api-key: %MW_API_KEY%" -d @temp_payload.json "%MW_TARGET%/api/v1/agent/tracking"
   REM del temp_payload.json
 
   exit /b
@@ -140,6 +140,6 @@ exit /b
   REM Payload initialization with JSON structure
   set "payload={"status":"%status%","metadata":{"script":"kubernetes/windows","status":"tried","message":"%message%"}}"
   echo %payload% > temp.json
-  curl -X POST -H "Content-Type: application/json" -d @temp.json "%MW_TARGET%/api/v1/agent/tracking/%MW_API_KEY%" > nul
+  curl -X POST -H "Content-Type: application/json" -H "mw-api-key: %MW_API_KEY%" -d @temp.json "%MW_TARGET%/api/v1/agent/tracking" > nul
   del temp.json
   exit /b 

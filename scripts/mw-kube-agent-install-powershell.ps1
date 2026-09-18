@@ -20,7 +20,7 @@ function Send-Logs {
             script_logs = (Get-Content -Path $logFilePath -Raw) -replace "`r`n", '`n'
         }
     } | ConvertTo-Json
-    $null = Invoke-RestMethod -Uri "$env:MW_TARGET/api/v1/agent/tracking/$env:MW_API_KEY" -Method Post -ContentType "application/json" -Body $payload
+    $null = Invoke-RestMethod -Uri "$env:MW_TARGET/api/v1/agent/tracking" -Headers @{ "mw-api-key" = $env:MW_API_KEY } -Method Post -ContentType "application/json" -Body $payload
 }
 
 # Cleanup function
@@ -39,7 +39,7 @@ $ErrorActionPreference = "Stop"
 # Try-Catch block to ensure cleanup
 try {
     # Attempt log
-    $null = Invoke-RestMethod -Uri "$env:MW_TARGET/api/v1/agent/tracking/$env:MW_API_KEY" -Method Post -ContentType "application/json" -Body '{
+    $null = Invoke-RestMethod -Uri "$env:MW_TARGET/api/v1/agent/tracking" -Headers @{ "mw-api-key" = $env:MW_API_KEY } -Method Post -ContentType "application/json" -Body '{
         "status": "tried",
         "metadata": {
             "script": "kubernetes",
