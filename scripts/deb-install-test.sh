@@ -32,14 +32,14 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST $MW_TRACKING_TARGET/api/v1/agent/tracking \
+  curl -s --location --request POST "$MW_TRACKING_TARGET"/api/v1/agent/tracking \
   --header 'Content-Type: application/json' \
   --header "mw-api-key: $MW_API_KEY" \
   --data-raw "$payload" > /dev/null
 }
 
 function force_continue {
-  read -p "Do you still want to continue? (y|N): " response
+  read -r -p "Do you still want to continue? (y|N): " response
   case "$response" in
     [yY])
       echo "Continuing with the script..."
@@ -76,6 +76,7 @@ fi
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
+  # shellcheck source=/dev/null
   source /etc/os-release
   case "$ID" in
     debian|ubuntu)
@@ -104,7 +105,7 @@ MW_APT_LIST_ARCH=""
 MW_AGENT_BINARY=""
 MW_DETECTED_ARCH=$(dpkg --print-architecture)
 
-echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
+echo -e "\n'$MW_DETECTED_ARCH' architecture detected ..."
 
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
   MW_LATEST_VERSION=1.0.0arm64
@@ -137,13 +138,13 @@ echo -e "\nThe host agent will monitor all '.log' files inside your /var/log dir
 # conditional log path capabilities
 # if [[ $MW_ADVANCE_LOG_PATH_SETUP == "true" ]]; then
 # while true; do
-#     read -p "`echo -e '\nDo you want to monitor any more directories for logs ? \n[C-continue to quick install | A-advanced log path setup]\n[C|A] : '`" yn
+#     read -r -p "`echo -e '\nDo you want to monitor any more directories for logs ? \n[C-continue to quick install | A-advanced log path setup]\n[C|A] : '`" yn
 #     case $yn in
 #         [Aa]* )
 #           MW_LOG_PATH_DIR=""
           
 #           while true; do
-#             read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 ] : " MW_LOG_PATH_DIR
+#             read -r -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 ] : " MW_LOG_PATH_DIR
 #             export MW_LOG_PATH_DIR
 #             if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
 #             then 
@@ -190,8 +191,8 @@ echo -e "\nThe host agent will monitor all '.log' files inside your /var/log dir
 
 # Adding APT repo address & public key to system
 sudo mkdir -p $MW_AGENT_HOME/apt
-sudo touch $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public
-sudo wget -q -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/gpg-keys/mw-agent-apt-public.key
+sudo touch $MW_AGENT_HOME/apt/pgp-key-"$MW_VERSION".public
+sudo wget -q -O $MW_AGENT_HOME/apt/pgp-key-"$MW_VERSION".public https://install.middleware.io/gpg-keys/mw-agent-apt-public.key
 sudo touch /etc/apt/sources.list.d/$MW_APT_LIST
 
 # echo -e "Downloading data ingestion rules ...\n"
@@ -206,7 +207,8 @@ sudo apt-get install ca-certificates > /dev/null
 sudo update-ca-certificates > /dev/null
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
-sed -e 's|$MW_LOG_PATHS|'$MW_LOG_PATHS'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml > /dev/null
+# shellcheck disable=SC2016 # $MW_LOG_PATHS is a literal placeholder in the config
+sed -e 's|$MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml > /dev/null
 
 echo "deb [arch=$MW_APT_LIST_ARCH signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/apt-repo/public stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
 

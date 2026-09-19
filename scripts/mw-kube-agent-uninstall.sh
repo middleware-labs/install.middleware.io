@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e errexit
 LOG_FILE="/var/log/mw-kube-agent/mw-kube-agent-uninstall-$(date +%s).log"
 sudo mkdir -p /var/log/mw-kube-agent
@@ -62,7 +62,7 @@ fi
 
 # Fetching cluster name
 CURRENT_CONTEXT="$(kubectl config current-context)"
-MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '"$CURRENT_CONTEXT"')].context.cluster}")"
+MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '$CURRENT_CONTEXT')].context.cluster}")"
 export MW_KUBE_CLUSTER_NAME
 
 echo -e "\nUninstalling Middleware Kubernetes agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
@@ -81,19 +81,19 @@ if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INST
 EOSUDO
 
   if [ -z "${MW_KUBECONFIG}" ]; then
-    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${MW_TARGET}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
-    kubectl delete --kubeconfig=${MW_KUBECONFIG}  -f $MW_KUBE_AGENT_HOME/agent.yaml
+    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'"${MW_KUBE_CLUSTER_NAME}"'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'"${MW_ROLLOUT_RESTART_RULE}"'|g' -e 's|MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'"${MW_DOCKER_ENDPOINT}"'|g' -e 's|MW_API_KEY_VALUE|'"${MW_API_KEY}"'|g' -e 's|TARGET_VALUE|'"${MW_TARGET}"'|g' -e 's|NAMESPACE_VALUE|'"${MW_NAMESPACE}"'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
+    kubectl delete --kubeconfig="${MW_KUBECONFIG}"  -f $MW_KUBE_AGENT_HOME/agent.yaml
   else
-    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${MW_TARGET}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
+    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'"${MW_KUBE_CLUSTER_NAME}"'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'"${MW_ROLLOUT_RESTART_RULE}"'|g' -e 's|MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'"${MW_DOCKER_ENDPOINT}"'|g' -e 's|MW_API_KEY_VALUE|'"${MW_API_KEY}"'|g' -e 's|TARGET_VALUE|'"${MW_TARGET}"'|g' -e 's|NAMESPACE_VALUE|'"${MW_NAMESPACE}"'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
     kubectl delete -f $MW_KUBE_AGENT_HOME/agent.yaml
   fi
 elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
   echo -e "\nMiddleware helm chart is being uninstalled, please wait ..."
-  helm uninstall --wait mw-kube-agent -n ${MW_NAMESPACE}
+  helm uninstall --wait mw-kube-agent -n "${MW_NAMESPACE}"
   if [ -z "${MW_KUBECONFIG}" ]; then
-    kubectl delete --kubeconfig=${MW_KUBECONFIG} namespace ${MW_NAMESPACE}
+    kubectl delete --kubeconfig="${MW_KUBECONFIG}" namespace "${MW_NAMESPACE}"
   else
-    kubectl delete namespace ${MW_NAMESPACE}
+    kubectl delete namespace "${MW_NAMESPACE}"
   fi
 else 
   echo -e "MW_KUBE_AGENT_INSTALL_METHOD environment variable not set to \"helm\" or \"manifest\""

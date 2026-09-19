@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e errexit
 LOG_FILE="/var/log/mw-kube-agent/mw-kube-agent-install-$(date +%s).log"
 sudo mkdir -p /var/log/mw-kube-agent

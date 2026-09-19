@@ -126,15 +126,15 @@ dockerrun="$dockerrun \
 --privileged \
 --network=host $MW_DO_COLLECTOR_DOCKER_IMAGE"
 
-echo $dockerrun
+echo "$dockerrun"
 # shellcheck disable=SC2090
 export dockerrun
 eval " $dockerrun"
 
 echo "checking status"
 # Check if the container is running
-container_status=$(docker inspect -f '{{.State.Status}}' $MW_DO_COLLECTOR_CONTAINER_NAME 2>/dev/null)
-echo $container_status
+container_status=$(docker inspect -f '{{.State.Status}}' "$MW_DO_COLLECTOR_CONTAINER_NAME" 2>/dev/null)
+echo "$container_status"
 
 if [[ "$container_status" == "running" ]]; then
     echo -e "\n\033[1m'${MW_DO_COLLECTOR_CONTAINER_NAME}' is running and collecting data.\033[0m\n"

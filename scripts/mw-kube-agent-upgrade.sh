@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e errexit
 LOG_FILE="/var/log/mw-kube-agent/mw-kube-agent-upgrade-$(date +%s).log"
 sudo mkdir -p /var/log/mw-kube-agent
@@ -62,7 +62,7 @@ fi
 
 # Fetching cluster name
 CURRENT_CONTEXT="$(kubectl config current-context)"
-MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '"$CURRENT_CONTEXT"')].context.cluster}")"
+MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '$CURRENT_CONTEXT')].context.cluster}")"
 export MW_KUBE_CLUSTER_NAME
 
 echo -e "\nUpgrading Middleware Kubernetes agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
@@ -71,11 +71,11 @@ if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ]; then
   echo -e "\nMiddleware Kubernetes agent is being upgraded using manifest files, please wait ..."
   MW_KUBE_AGENT_HOME=/usr/local/bin/mw-kube-agent
   export MW_KUBE_AGENT_HOME
-  kubectl -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
+  kubectl -n "${MW_NAMESPACE}" rollout restart daemonset/mw-kube-agent
 elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
   echo -e "\nMiddleware helm chart is being upgraded, please wait ..."
   helm repo add middleware.io https://helm.middleware.io
-  helm upgrade --set mw.target=${MW_TARGET} --set mw.apiKey=${MW_API_KEY} --wait mw-kube-agent middleware.io/mw-kube-agent -n ${MW_NAMESPACE}
+  helm upgrade --set mw.target="${MW_TARGET}" --set mw.apiKey="${MW_API_KEY}" --wait mw-kube-agent middleware.io/mw-kube-agent -n "${MW_NAMESPACE}"
 else 
   echo -e "MW_KUBE_AGENT_INSTALL_METHOD environment variable not set to \"helm\" or \"manifest\""
   exit 1

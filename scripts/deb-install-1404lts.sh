@@ -32,7 +32,7 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST $MW_TRACKING_TARGET/api/v1/agent/tracking \
+  curl -s --location --request POST "$MW_TRACKING_TARGET"/api/v1/agent/tracking \
   --header 'Content-Type: application/json' \
   --header "mw-api-key: $MW_API_KEY" \
   --data "$payload" > /dev/null
@@ -58,7 +58,7 @@ MW_APT_LIST_ARCH=""
 MW_AGENT_BINARY=""
 MW_DETECTED_ARCH=$(dpkg --print-architecture)
 
-echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
+echo -e "\n'$MW_DETECTED_ARCH' architecture detected ..."
 
 if [[ $MW_DETECTED_ARCH == "arm64" || $MW_DETECTED_ARCH == "armhf" || $MW_DETECTED_ARCH == "armel" || $MW_DETECTED_ARCH == "armeb" ]]; then
   MW_LATEST_VERSION=0.0.28arm64
@@ -91,19 +91,19 @@ echo -e "\nThe host agent will monitor all '.log' files inside your /var/log dir
 # conditional log path capabilities
 if [[ $MW_ADVANCE_LOG_PATH_SETUP == "true" ]]; then
 while true; do
-    read -p "`echo -e '\nDo you want to monitor any more directories for logs ? \n[C-continue to quick install | A-advanced log path setup]\n[C|A] : '`" yn
+    read -r -p "$(echo -e '\nDo you want to monitor any more directories for logs ? \n[C-continue to quick install | A-advanced log path setup]\n[C|A] : ')" yn
     case $yn in
         [Aa]* )
           MW_LOG_PATH_DIR=""
           
           while true; do
-            read -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 ] : " MW_LOG_PATH_DIR
+            read -r -p "    Enter list of comma seperated paths that you want to monitor [ Ex. => /home/test, /etc/test2 ] : " MW_LOG_PATH_DIR
             export MW_LOG_PATH_DIR
             if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+(,/|(/[\w-]+)+)*$ ]]
             then 
               break
             else
-              echo $MW_LOG_PATH_DIR
+              echo "$MW_LOG_PATH_DIR"
               echo "Invalid file path, try again ..."
             fi
           done
@@ -111,7 +111,7 @@ while true; do
           MW_LOG_PATH_COMPLETE=""
           MW_LOG_PATHS_BINDING=""
 
-          MW_LOG_PATH_DIR_ARRAY=($(echo $MW_LOG_PATH_DIR | tr "," "\n"))
+          IFS=", " read -r -a MW_LOG_PATH_DIR_ARRAY <<< "$MW_LOG_PATH_DIR"
 
           for i in "${MW_LOG_PATH_DIR_ARRAY[@]}"
           do
@@ -128,7 +128,7 @@ while true; do
           MW_LOG_PATHS=$MW_LOG_PATH_COMPLETE
           export MW_LOG_PATHS
           echo -e "\n------------------------------------------------"
-          echo -e "\nNow, our agent will also monitor these paths : "$MW_LOG_PATH_COMPLETE
+          echo -e "\nNow, our agent will also monitor these paths : $MW_LOG_PATH_COMPLETE"
           echo -e "\n------------------------------------------------\n"
           sleep 4
           break;;
@@ -144,9 +144,9 @@ fi
 
 # Adding APT repo address & public key to system
 sudo mkdir -p $MW_AGENT_HOME/apt
-sudo touch $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public
-sudo wget -q -O $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public
-sudo apt-key add $MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public
+sudo touch $MW_AGENT_HOME/apt/pgp-key-"$MW_VERSION".public
+sudo wget -q -O $MW_AGENT_HOME/apt/pgp-key-"$MW_VERSION".public https://install.middleware.io/public-keys/pgp-key-"$MW_VERSION".public
+sudo apt-key add $MW_AGENT_HOME/apt/pgp-key-"$MW_VERSION".public
 sudo touch /etc/apt/sources.list.d/$MW_APT_LIST
 
 echo -e "Downloading data ingestion rules ...\n"
@@ -166,7 +166,8 @@ sudo apt-get install ca-certificates > /dev/null
 sudo update-ca-certificates > /dev/null
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
-sed -e 's|$MW_LOG_PATHS|'$MW_LOG_PATHS'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml > /dev/null
+# shellcheck disable=SC2016 # $MW_LOG_PATHS is a literal placeholder in the config
+sed -e 's|$MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' /usr/bin/configyamls/all/otel-config.yaml | sudo tee /usr/bin/configyamls/all/otel-config.yaml > /dev/null
 
 echo "deb [arch=$MW_APT_LIST_ARCH signed-by=$MW_AGENT_HOME/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
 

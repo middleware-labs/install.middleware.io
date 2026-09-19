@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # detecting architecture
 arch=$(uname -m)
@@ -119,7 +119,7 @@ fi
 
 # Fetching cluster name
 CURRENT_CONTEXT="$(kubectl config current-context)"
-MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '"$CURRENT_CONTEXT"')].context.cluster}")"
+MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '$CURRENT_CONTEXT')].context.cluster}")"
 export MW_KUBE_CLUSTER_NAME
 
 echo -e "\nSetting up Middleware Kubernetes agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
@@ -136,19 +136,19 @@ if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INST
   sudo wget -q -O $MW_KUBE_AGENT_HOME/agent.yaml https://install.middleware.io/scripts/mw-kube-agent.yaml
 
   if [ -z "${MW_KUBECONFIG}" ]; then
-    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${MW_TARGET}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
-    kubectl create --kubeconfig=${MW_KUBECONFIG}  -f $MW_KUBE_AGENT_HOME/agent.yaml
-    kubectl --kubeconfig=${MW_KUBECONFIG} -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
+    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'"${MW_KUBE_CLUSTER_NAME}"'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'"${MW_ROLLOUT_RESTART_RULE}"'|g' -e 's|MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'"${MW_DOCKER_ENDPOINT}"'|g' -e 's|MW_API_KEY_VALUE|'"${MW_API_KEY}"'|g' -e 's|TARGET_VALUE|'"${MW_TARGET}"'|g' -e 's|NAMESPACE_VALUE|'"${MW_NAMESPACE}"'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
+    kubectl create --kubeconfig="${MW_KUBECONFIG}"  -f $MW_KUBE_AGENT_HOME/agent.yaml
+    kubectl --kubeconfig="${MW_KUBECONFIG}" -n "${MW_NAMESPACE}" rollout restart daemonset/mw-kube-agent
   else
-    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|TARGET_VALUE|'${MW_TARGET}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
+    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'"${MW_KUBE_CLUSTER_NAME}"'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'"${MW_ROLLOUT_RESTART_RULE}"'|g' -e 's|MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'"${MW_DOCKER_ENDPOINT}"'|g' -e 's|MW_API_KEY_VALUE|'"${MW_API_KEY}"'|g' -e 's|TARGET_VALUE|'"${MW_TARGET}"'|g' -e 's|NAMESPACE_VALUE|'"${MW_NAMESPACE}"'|g' $MW_KUBE_AGENT_HOME/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME/agent.yaml > /dev/null
     kubectl create -f $MW_KUBE_AGENT_HOME/agent.yaml
-    kubectl -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
+    kubectl -n "${MW_NAMESPACE}" rollout restart daemonset/mw-kube-agent
   fi
 elif [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "helm" ]; then
   echo -e "\nMiddleware helm chart is being installed, please wait ..."
   helm repo add middleware.io https://helm.middleware.io
-  helm install --set mw.target=${MW_TARGET} --set mw.apiKey=${MW_API_KEY} --wait mw-kube-agent middleware.io/mw-kube-agent \
-  -n ${MW_NAMESPACE} --create-namespace  
+  helm install --set mw.target="${MW_TARGET}" --set mw.apiKey="${MW_API_KEY}" --wait mw-kube-agent middleware.io/mw-kube-agent \
+  -n "${MW_NAMESPACE}" --create-namespace  
 else 
   echo -e "MW_KUBE_AGENT_INSTALL_METHOD environment variable not set to \"helm\" or \"manifest\""
   exit 1
