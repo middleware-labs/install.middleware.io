@@ -50,8 +50,9 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST "$MW_TRACKING_TARGET"/api/v1/agent/tracking/"$MW_API_KEY" \
+  curl -s --location --request POST "$MW_TRACKING_TARGET"/api/v1/agent/tracking \
   --header 'Content-Type: application/json' \
+  --header "mw-api-key: $MW_API_KEY" \
   --data "$payload" > /dev/null
 }
 
@@ -116,6 +117,7 @@ echo -e "\nInstalling Middleware Agent version ${MW_VERSION} on hostname $(hostn
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
+  # shellcheck source=/dev/null
   source /etc/os-release
   case "$ID" in
     debian|ubuntu)
@@ -209,7 +211,7 @@ sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | su
 sudo touch /etc/apt/sources.list.d/"$MW_APT_LIST"
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
-echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/$MW_APT_LIST > /dev/null
+echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/"$MW_APT_LIST" > /dev/null
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" > /dev/null

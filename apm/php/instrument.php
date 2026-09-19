@@ -1059,7 +1059,7 @@ function read_agent_config($config_path)
   return null;
 }
 
-function makeRequest($url, $data, $timeout = 5)
+function makeRequest($url, $data, $apiKey, $timeout = 5)
 {
   $ch = curl_init();
 
@@ -1073,7 +1073,8 @@ function makeRequest($url, $data, $timeout = 5)
     CURLOPT_SSL_VERIFYHOST => false,
     CURLOPT_HTTPHEADER => [
       'Content-Type: application/json',
-      'Content-Length: ' . strlen($data)
+      'Content-Length: ' . strlen($data),
+      'mw-api-key: ' . $apiKey
     ]
   ]);
 
@@ -1139,10 +1140,10 @@ function trackEvent($status = APM_TRIED, $reason = 'PreInstall tracking')
 
   // Build the URL
   $baseUrl = rtrim($config['target'], '/');
-  $pathSuffix = 'api/v1/apm/tracking/' . $config['api_key'];
+  $pathSuffix = 'api/v1/apm/tracking';
   $url = $baseUrl . '/' . $pathSuffix;
 
-  makeRequest($url, $data);
+  makeRequest($url, $data, $config['api_key']);
 }
 
 /**

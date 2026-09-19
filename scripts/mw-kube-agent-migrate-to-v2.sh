@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e errexit
 LOG_FILE="/var/log/mw-kube-agent/mw-kube-agent-install-$(date +%s).log"
 sudo mkdir -p /var/log/mw-kube-agent
@@ -22,8 +22,9 @@ function send_logs {
 EOF
 )
 
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking \
   --header 'Content-Type: application/json' \
+  --header "mw-api-key: $MW_API_KEY" \
   --data-raw "$payload" > /dev/null
 }
 

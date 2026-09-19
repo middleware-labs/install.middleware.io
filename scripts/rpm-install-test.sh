@@ -24,13 +24,14 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking \
   --header 'Content-Type: application/json' \
+  --header "mw-api-key: $MW_API_KEY" \
   --data-raw "$payload" > /dev/null
 }
 
 function force_continue {
-  read -p "Do you still want to continue? (y|N): " response
+  read -r -p "Do you still want to continue? (y|N): " response
   case "$response" in
     [yY])
       echo "Continuing with the script..."
@@ -67,6 +68,7 @@ fi
 
 # Check if /etc/os-release file exists
 if [ -f /etc/os-release ]; then
+  # shellcheck source=/dev/null
   source /etc/os-release
   case "$ID" in
     rhel|centos|fedora)
@@ -94,7 +96,7 @@ MW_DETECTED_ARCH=$(uname -m)
 
 RPM_FILE=""
 
-echo -e "\n'"$MW_DETECTED_ARCH"' architecture detected ..."
+echo -e "\n'$MW_DETECTED_ARCH' architecture detected ..."
 
 MW_LATEST_VERSION=0.0.31
 export MW_LATEST_VERSION
@@ -104,6 +106,7 @@ if [ "${MW_VERSION}" = "" ]; then
   export MW_VERSION
 fi
 
+# shellcheck disable=SC2034 # RPM_FILE is used by the commented-out wget below
 if [[ $MW_DETECTED_ARCH == "x86_64" ]]; then
   RPM_FILE="mw-agent-${MW_VERSION}-1.x86_64.rpm"
   MW_AGENT_BINARY="mw-agent"
@@ -120,10 +123,12 @@ yum-config-manager --add-repo https://9cd8-2401-4900-1f3f-b85-3ff0-45bc-eb51-5b6
 yum install -y mw-agent
 
 export PATH=$PATH:/usr/bin/$MW_AGENT_BINARY
+# shellcheck source=/dev/null
 source ~/.bashrc
 
 export MW_AUTO_START=true
 
+# shellcheck disable=SC2034
 MW_LOG_PATHS=""
 
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
@@ -151,7 +156,7 @@ sudo touch /etc/systemd/system/mwservice.service
 sudo mkdir -p $MW_AGENT_HOME/apt 
 sudo touch $MW_AGENT_HOME/apt/executable
 
-sudo cat << EOF > /etc/systemd/system/mwservice.service
+cat << EOF | sudo tee /etc/systemd/system/mwservice.service > /dev/null
 [Unit]
 Description=Melt daemon!
 [Service]
@@ -169,7 +174,7 @@ WantedBy=multi-user.target
 EOF
 
 
-sudo cat << EOEXECUTABLE > $MW_AGENT_HOME/apt/executable
+cat << EOEXECUTABLE | sudo tee $MW_AGENT_HOME/apt/executable > /dev/null
 #!/bin/sh
 
 # Check if MW_API_KEY is non-empty, then set the environment variable

@@ -2,7 +2,6 @@
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Function to check if a command exists
@@ -65,9 +64,10 @@ function send_logs {
 EOF
 )
 
-  url=https://app.middleware.io/api/v1/agent/tracking/"$api_key"
+  url=https://app.middleware.io/api/v1/agent/tracking
   curl -s --location --request POST "$url" \
   --header 'Content-Type: application/json' \
+  --header "mw-api-key: $api_key" \
   --data "$payload" >> /dev/null
 }
 
@@ -116,9 +116,10 @@ echo -e "\nInstalling Middleware Agent to /opt/mw-agent. You might be asked to e
 spinner() {
     local pid=$1
     local delay=0.1
+    # shellcheck disable=SC1003 # trailing backslash is a spinner frame
     local spinstr='|/-\'
     tput civis  # Hide cursor
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+    while ps a | awk '{print $1}' | grep -q "$pid"; do
         for i in $(seq 0 $((${#spinstr} - 1))); do
             printf " [%c]  " "${spinstr:$i:1}"
             sleep $delay
@@ -131,10 +132,11 @@ spinner() {
 
 # Run the installer command to install MiddlewareAgent.pkg
 sudo installer -pkg $package -target / > /dev/null 2>&1 &
-spinner $!
+installer_pid=$!
+spinner "$installer_pid"
 
 # Check if the installer command was successful
-if [ $? -eq 0 ]; then
+if wait "$installer_pid"; then
     echo -e "\n${GREEN}Middleware Agent is successfully installed. Middleware Agent will continue to run in the background and send telemetry data to your Middleware account ${MW_TARGET}. ${NC}" | sudo tee -a "$LOG_FILE"
     echo -e "\n${GREEN}Configuration for Middleware Agent can be found at /opt/mw-agent/agent-config.yaml. ${NC}" | sudo tee -a "$LOG_FILE"
 else

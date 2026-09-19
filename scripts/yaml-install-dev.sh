@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 LOG_FILE="/var/log/mw-agent/yaml-installation-$(date +%s).log"
 sudo mkdir -p /var/log/mw-agent
@@ -22,8 +22,9 @@ function send_logs {
 EOF
 )
 
-  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+  curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking \
   --header 'Content-Type: application/json' \
+  --header "mw-api-key: $MW_API_KEY" \
   --data-raw "$payload" > /dev/null
 }
 
@@ -38,8 +39,9 @@ function on_exit {
 trap on_exit EXIT
 
 # recording agent installation attempt
-curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking/$MW_API_KEY \
+curl -s --location --request POST https://app.middleware.io/api/v1/agent/tracking \
 --header 'Content-Type: application/json' \
+--header "mw-api-key: $MW_API_KEY" \
 --data-raw '{
     "status": "tried",
     "metadata": {
@@ -73,7 +75,7 @@ fi
 
 # Fetching cluster name
 CURRENT_CONTEXT="$(kubectl config current-context)"
-MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '"$CURRENT_CONTEXT"')].context.cluster}")"
+MW_KUBE_CLUSTER_NAME="$(kubectl config view -o jsonpath="{.contexts[?(@.name == '$CURRENT_CONTEXT')].context.cluster}")"
 export MW_KUBE_CLUSTER_NAME
 
 echo -e "\nSetting up Middleware Agent ...\n\n\tcluster : $MW_KUBE_CLUSTER_NAME \n\tcontext : $CURRENT_CONTEXT\n"
@@ -137,13 +139,13 @@ wget -q -O $MW_KUBE_AGENT_HOME_GO/agent.yaml https://install.middleware.io/scrip
 EOSUDO
 
 if [ -z "${MW_KUBECONFIG}" ]; then
-    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_API_KEY2_VALUE|'${MW_API_KEY2}'|g' -e 's|MW_API_KEY3_VALUE|'${MW_API_KEY3}'|g' -e 's|TARGET_VALUE|'${TARGET}'|g' -e 's|TARGET2_VALUE|'${TARGET2}'|g' -e 's|TARGET3_VALUE|'${TARGET3}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml > /dev/null
-    kubectl apply --kubeconfig=${MW_KUBECONFIG}  -f $MW_KUBE_AGENT_HOME_GO/agent.yaml
-    kubectl --kubeconfig=${MW_KUBECONFIG} -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
+    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'"${MW_KUBE_CLUSTER_NAME}"'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'"${MW_ROLLOUT_RESTART_RULE}"'|g' -e 's|MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'"${MW_DOCKER_ENDPOINT}"'|g' -e 's|MW_API_KEY_VALUE|'"${MW_API_KEY}"'|g' -e 's|MW_API_KEY2_VALUE|'"${MW_API_KEY2}"'|g' -e 's|MW_API_KEY3_VALUE|'"${MW_API_KEY3}"'|g' -e 's|TARGET_VALUE|'"${TARGET}"'|g' -e 's|TARGET2_VALUE|'"${TARGET2}"'|g' -e 's|TARGET3_VALUE|'"${TARGET3}"'|g' -e 's|NAMESPACE_VALUE|'"${MW_NAMESPACE}"'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml > /dev/null
+    kubectl apply --kubeconfig="${MW_KUBECONFIG}"  -f $MW_KUBE_AGENT_HOME_GO/agent.yaml
+    kubectl --kubeconfig="${MW_KUBECONFIG}" -n "${MW_NAMESPACE}" rollout restart daemonset/mw-kube-agent
 else
-    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'${MW_KUBE_CLUSTER_NAME}'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'${MW_ROLLOUT_RESTART_RULE}'|g' -e 's|MW_LOG_PATHS|'$MW_LOG_PATHS'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'${MW_DOCKER_ENDPOINT}'|g' -e 's|MW_API_KEY_VALUE|'${MW_API_KEY}'|g' -e 's|MW_API_KEY2_VALUE|'${MW_API_KEY2}'|g' -e 's|MW_API_KEY3_VALUE|'${MW_API_KEY3}'|g' -e 's|TARGET_VALUE|'${TARGET}'|g' -e 's|TARGET2_VALUE|'${TARGET2}'|g' -e 's|TARGET3_VALUE|'${TARGET3}'|g' -e 's|NAMESPACE_VALUE|'${MW_NAMESPACE}'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml > /dev/null
+    sed -e 's|MW_KUBE_CLUSTER_NAME_VALUE|'"${MW_KUBE_CLUSTER_NAME}"'|g' -e 's|MW_ROLLOUT_RESTART_RULE|'"${MW_ROLLOUT_RESTART_RULE}"'|g' -e 's|MW_LOG_PATHS|'"$MW_LOG_PATHS"'|g' -e 's|MW_DOCKER_ENDPOINT_VALUE|'"${MW_DOCKER_ENDPOINT}"'|g' -e 's|MW_API_KEY_VALUE|'"${MW_API_KEY}"'|g' -e 's|MW_API_KEY2_VALUE|'"${MW_API_KEY2}"'|g' -e 's|MW_API_KEY3_VALUE|'"${MW_API_KEY3}"'|g' -e 's|TARGET_VALUE|'"${TARGET}"'|g' -e 's|TARGET2_VALUE|'"${TARGET2}"'|g' -e 's|TARGET3_VALUE|'"${TARGET3}"'|g' -e 's|NAMESPACE_VALUE|'"${MW_NAMESPACE}"'|g' $MW_KUBE_AGENT_HOME_GO/agent.yaml | sudo tee $MW_KUBE_AGENT_HOME_GO/agent.yaml > /dev/null
     kubectl apply -f $MW_KUBE_AGENT_HOME_GO/agent.yaml
-    kubectl -n ${MW_NAMESPACE} rollout restart daemonset/mw-kube-agent
+    kubectl -n "${MW_NAMESPACE}" rollout restart daemonset/mw-kube-agent
 fi
 
 
