@@ -96,6 +96,39 @@ run_cmd() {
     sudo "${env_args[@]}" "$@"
   fi
 }
+# Runs an rpm/yum/dnf command with retries and backoff to tolerate transient
+# package-manager lock contention (e.g. another yum/rpm process holding
+# /var/lib/rpm/.rpm.lock). Retries only when the failure looks lock-related.
+run_rpm_cmd_with_retry() {
+  local max_attempts=5
+  local delay=3
+  local attempt=1
+  local output
+  local status
+
+  while [ "$attempt" -le "$max_attempts" ]; do
+    output=$(run_cmd "$@" 2>&1)
+    status=$?
+    echo "$output"
+
+    if [ "$status" -eq 0 ]; then
+      return 0
+    fi
+
+    if echo "$output" | grep -qiE "can't create transaction lock|rpm.lock|resource temporarily unavailable"; then
+      log_warn "Package manager lock is held by another process (attempt ${attempt}/${max_attempts}). Retrying in ${delay}s..."
+      sleep "$delay"
+      attempt=$((attempt + 1))
+      delay=$((delay * 2))
+      continue
+    fi
+
+    # Non-lock failure: don't keep retrying.
+    return "$status"
+  done
+
+  return "$status"
+}
 
 function on_exit {
   if [ $? -eq 0 ]; then
@@ -285,7 +318,7 @@ log_ok "Downloaded ${RPM_FILE}."
 # Remove mw-agent if present
 if rpm -q mw-agent &>/dev/null; then
   log_info "Removing existing Middleware Agent..."
-  if ! run_cmd rpm -e mw-agent; then
+  if ! run_rpm_cmd_with_retry rpm -e mw-agent; then
     log_error "Failed to remove existing Middleware Agent."
     exit 1
   fi
@@ -294,7 +327,7 @@ fi
 
 # Install the new package
 log_info "Installing Middleware Agent (${RPM_FILE})..."
-if ! run_cmd rpm -U "$RPM_FILE"; then
+if ! run_rpm_cmd_with_retry rpm -U "$RPM_FILE"; then
   log_error "Failed to install Middleware Agent."
   exit 1
 fi
