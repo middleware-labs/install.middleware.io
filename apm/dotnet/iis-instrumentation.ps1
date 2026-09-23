@@ -137,6 +137,7 @@ function Get-AppAssemblyCeiling {
     param([string]$Path)
 
     $found = @()
+    $parseFailed = $false
 
     # Binding redirects are authoritative - they override the instrumentation.
     $webConfig = Join-Path $Path "web.config"
@@ -161,7 +162,11 @@ function Get-AppAssemblyCeiling {
                 }
             }
         } catch {
-            Write-Host "    Could not parse $webConfig : $($_.Exception.Message)" -ForegroundColor Yellow
+            # An unreadable config must never be reported as "no conflicts" - it may
+            # pin versions below what the instrumentation needs.
+            Write-Host "    Could not parse ${webConfig}: $($_.Exception.Message)" -ForegroundColor Red
+            $script:configParseFailures += $webConfig
+            $parseFailed = $true
         }
     }
 
@@ -185,7 +190,10 @@ function Get-AppAssemblyCeiling {
     }
 
     if ($found.Count -eq 0) {
-        Write-Host "    No conflicting assemblies found." -ForegroundColor DarkGray
+        # Saying "no conflicts" after a parse failure would contradict the warning.
+        if (-not $parseFailed) {
+            Write-Host "    No conflicting assemblies found." -ForegroundColor DarkGray
+        }
         return $null
     }
 
@@ -319,6 +327,7 @@ if ($OtelVersion -and $OtelVersion -ne "auto") {
 
     $ceiling = $null
     $pathsInspected = 0
+    $script:configParseFailures = @()
     foreach ($AppPoolName in $SelectedAppPools) {
         if (-not (Test-IsNetFrameworkAppPool -AppCmd $AppCmd -AppPoolName $AppPoolName)) {
             Write-Host "  $AppPoolName -> No Managed Code (.NET Core / .NET 5+); binding redirects do not apply, skipping check." -ForegroundColor DarkGray
@@ -332,6 +341,15 @@ if ($OtelVersion -and $OtelVersion -ne "auto") {
                 $ceiling = $appCeiling
             }
         }
+    }
+
+    if ($script:configParseFailures.Count -gt 0) {
+        Write-Host "`nCould not parse the following web.config file(s), so their assembly bindings are unknown:" -ForegroundColor Red
+        foreach ($f in $script:configParseFailures) { Write-Host "  $f" -ForegroundColor Red }
+        Write-Host "Refusing to guess: an unreadable config may bind Microsoft.Extensions.* below what the" -ForegroundColor Red
+        Write-Host "instrumentation requires, which would break the site at startup." -ForegroundColor Red
+        Write-Host "Fix the file, or re-run with -OtelVersion to choose a release explicitly." -ForegroundColor Yellow
+        exit 1
     }
 
     if ($pathsInspected -eq 0) {
