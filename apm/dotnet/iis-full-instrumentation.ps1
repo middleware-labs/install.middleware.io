@@ -88,6 +88,19 @@ function Get-AppPoolPhysicalPaths {
     return @($paths | Sort-Object -Unique)
 }
 
+# Config binding redirects only govern .NET Framework app pools. A "No Managed
+# Code" pool hosts .NET (Core) / .NET 5+, which resolves assemblies through
+# AssemblyLoadContext instead, so none of the version ceiling logic applies.
+function Test-IsNetFrameworkAppPool {
+    param(
+        [string]$AppCmd,
+        [string]$AppPoolName
+    )
+
+    $runtime = & $AppCmd list apppool /name:"$AppPoolName" /text:managedRuntimeVersion 2>$null
+    return -not [string]::IsNullOrWhiteSpace((@($runtime) -join "").Trim())
+}
+
 # Returns the highest assembly version an application will tolerate for the
 # tracked assemblies, or $null when it places no constraint on them.
 function Get-AppAssemblyCeiling {
@@ -262,6 +275,10 @@ if ($OtelVersion -and $OtelVersion -ne "auto") {
 
     $ceiling = $null
     foreach ($AppPoolName in $SelectedAppPools) {
+        if (-not (Test-IsNetFrameworkAppPool -AppCmd $AppCmd -AppPoolName $AppPoolName)) {
+            Write-Host "  $AppPoolName -> No Managed Code (.NET Core / .NET 5+); binding redirects do not apply, skipping check." -ForegroundColor DarkGray
+            continue
+        }
         foreach ($path in (Get-AppPoolPhysicalPaths -AppCmd $AppCmd -AppPoolName $AppPoolName)) {
             Write-Host "  $AppPoolName -> $path"
             $appCeiling = Get-AppAssemblyCeiling -Path $path
@@ -283,7 +300,8 @@ if ($OtelVersion -and $OtelVersion -ne "auto") {
             Write-Host "The lowest version they bind is $ceiling; the oldest available release ($oldestRelease) needs $($OtelReleaseBaselines[$oldestRelease])." -ForegroundColor Red
             Write-Host "Instrumenting anyway would break the site with HTTP 500 at startup." -ForegroundColor Red
             Write-Host "Either raise the binding redirects in the application's web.config, or re-run with -OtelVersion to override this check." -ForegroundColor Yellow
-            throw "Aborting: no compatible OpenTelemetry release for assembly version ceiling $ceiling."
+            Write-Host "Aborting: nothing was installed or changed." -ForegroundColor Red
+            exit 1
         }
         Write-Host "`nApplications bind these assemblies at $ceiling or lower." -ForegroundColor Cyan
         Write-Host "Selected OpenTelemetry $resolvedOtelVersion (requires $($OtelReleaseBaselines[$resolvedOtelVersion]))." -ForegroundColor Green
