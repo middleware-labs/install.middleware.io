@@ -1,4 +1,4 @@
-#Requires -PSEdition Desktop
+﻿#Requires -PSEdition Desktop
 
 # Accept OTLP endpoint and API key as arguments or environment variables
 param(
@@ -18,8 +18,15 @@ param(
     # Read-only dry run: report which App Pools would be instrumented, what the
     # applications bind the shared assemblies to, and which release would be
     # installed. Changes nothing - no env vars, no IIS reset, no install.
-    [switch]$DetectOnly
+    [switch]$DetectOnly,
+
+    # App Pool name(s) to instrument, or "all". Supplying this skips every
+    # interactive prompt so the script can run unattended (Run Command, SSM,
+    # scheduled deploys). Omit it to pick pools interactively.
+    [string[]]$AppPools
 )
+
+$nonInteractive = $AppPools -and @($AppPools).Count -gt 0
 
 # -----------------------------------------------------------------------------
 # OpenTelemetry release compatibility
@@ -65,6 +72,29 @@ $TrackedAssemblies = @(
     "Microsoft.Extensions.Primitives",
     "System.Diagnostics.DiagnosticSource"
 )
+
+# appcmd has no scalar query for the environmentVariables collection
+# ("list apppool /text:environmentVariables" fails with "Unknown attribute"), and
+# Get-ItemProperty's .Collection came back empty in some sessions. Parsing the
+# config XML is the reliable route. Without this, existing variables are
+# invisible and stale ones (CORECLR_*, DOTNET_STARTUP_HOOKS) never get removed.
+function Get-AppPoolEnvVarNames {
+    param(
+        [string]$AppCmd,
+        [string]$AppPoolName
+    )
+
+    try {
+        $configXml = (& $AppCmd list apppool "$AppPoolName" /config 2>$null) -join "`n"
+        if (-not $configXml) { return @() }
+        $node = ([xml]$configXml).add.environmentVariables
+        if (-not $node) { return @() }
+        return @($node.add | ForEach-Object { $_.name } | Where-Object { $_ })
+    } catch {
+        Write-Host "  Could not read existing environment variables for ${AppPoolName}: $($_.Exception.Message)" -ForegroundColor Yellow
+        return @()
+    }
+}
 
 # Resolves every on-disk location served by an App Pool.
 function Get-AppPoolPhysicalPaths {
@@ -226,18 +256,36 @@ if (-not $DetectOnly) {
 
 # Run as Administrator
 $AppCmd = "$env:SystemRoot\System32\inetsrv\appcmd.exe"
+Import-Module WebAdministration -ErrorAction SilentlyContinue
 
 Write-Host "Using OTLP Endpoint: $OtlpEndpoint" -ForegroundColor Cyan
 Write-Host "Using API Key: $ApiKey" -ForegroundColor Cyan
 
 # List all App Pools
 Write-Host "`n========== AVAILABLE IIS APP POOLS ==========" -ForegroundColor Yellow
-$appPools = & $AppCmd list apppool /text:name
-$appPoolsArray = $appPools -split "\r?\n" | Where-Object { $_ -ne "" }
+# Must not be named $appPools: PowerShell variable names are case-insensitive,
+# so that would overwrite the $AppPools parameter with every pool on the box.
+$appPoolListRaw = & $AppCmd list apppool /text:name
+$appPoolsArray = $appPoolListRaw -split "\r?\n" | Where-Object { $_ -ne "" }
 
 for ($i = 0; $i -lt $appPoolsArray.Count; $i++) {
     Write-Host ("[{0}] {1}" -f $i, $appPoolsArray[$i])
 }
+
+if ($nonInteractive) {
+    # Names supplied on the command line - no prompting.
+    if (@($AppPools).Count -eq 1 -and $AppPools[0].Trim().ToLower() -eq 'all') {
+        $selectedIndices = @(0..($appPoolsArray.Count - 1))
+    } else {
+        $missing = @($AppPools | Where-Object { $appPoolsArray -notcontains $_ })
+        if ($missing.Count -gt 0) {
+            Write-Host "`nUnknown App Pool(s): $($missing -join ', ')" -ForegroundColor Red
+            Write-Host "Available: $($appPoolsArray -join ', ')" -ForegroundColor Yellow
+            exit 1
+        }
+        $selectedIndices = @($AppPools | ForEach-Object { [array]::IndexOf($appPoolsArray, $_) })
+    }
+} else {
 
 # Prompt user to select one, multiple, or all App Pools
 do {
@@ -255,6 +303,8 @@ do {
     }
 } while (-not $isValid)
 
+}
+
 $SelectedAppPools = $selectedIndices | ForEach-Object { $appPoolsArray[$_] }
 Write-Host "Selected App Pool(s): $($SelectedAppPools -join ', ')" -ForegroundColor Cyan
 
@@ -268,6 +318,7 @@ if ($OtelVersion -and $OtelVersion -ne "auto") {
     Write-Host "`n========== CHECKING APPLICATIONS FOR ASSEMBLY CONFLICTS ==========" -ForegroundColor Yellow
 
     $ceiling = $null
+    $pathsInspected = 0
     foreach ($AppPoolName in $SelectedAppPools) {
         if (-not (Test-IsNetFrameworkAppPool -AppCmd $AppCmd -AppPoolName $AppPoolName)) {
             Write-Host "  $AppPoolName -> No Managed Code (.NET Core / .NET 5+); binding redirects do not apply, skipping check." -ForegroundColor DarkGray
@@ -275,6 +326,7 @@ if ($OtelVersion -and $OtelVersion -ne "auto") {
         }
         foreach ($path in (Get-AppPoolPhysicalPaths -AppCmd $AppCmd -AppPoolName $AppPoolName)) {
             Write-Host "  $AppPoolName -> $path"
+            $pathsInspected++
             $appCeiling = Get-AppAssemblyCeiling -Path $path
             if ($appCeiling -and (-not $ceiling -or $appCeiling -lt $ceiling)) {
                 $ceiling = $appCeiling
@@ -282,7 +334,13 @@ if ($OtelVersion -and $OtelVersion -ne "auto") {
         }
     }
 
-    if (-not $ceiling) {
+    if ($pathsInspected -eq 0) {
+        # No application directory was resolved, so nothing was actually checked.
+        # Say so rather than reporting a clean result nobody verified.
+        $resolvedOtelVersion = $NewestOtelVersion
+        Write-Host "`nNo application paths resolved for the selected App Pool(s) - nothing could be checked." -ForegroundColor Yellow
+        Write-Host "Defaulting to $resolvedOtelVersion. Verify the apps do not bind Microsoft.Extensions.* below $($OtelReleaseBaselines[$resolvedOtelVersion])." -ForegroundColor Yellow
+    } elseif (-not $ceiling) {
         $resolvedOtelVersion = $NewestOtelVersion
         Write-Host "`nNo conflicting assemblies detected. Using $resolvedOtelVersion." -ForegroundColor Green
     } else {
@@ -307,7 +365,7 @@ if ($OtelVersion -and $OtelVersion -ne "auto") {
 
 if ($DetectOnly) {
     Write-Host "`n-DetectOnly was specified: nothing was installed or changed." -ForegroundColor Yellow
-    return
+    exit 0
 }
 
 Write-Host "`n========== Installing OpenTelemetry for IIS ==========" -ForegroundColor Cyan
@@ -317,7 +375,12 @@ $otelBasePath = "C:\otel-dotnet-auto"
 
 if (Test-Path $otelBasePath) {
     Write-Host "`nDirectory $otelBasePath already exists." -ForegroundColor Yellow
-    $choice = Read-Host "Type 's' to skip downloading, or 'd' to delete and re-download"
+    if ($nonInteractive) {
+        Write-Host "Running unattended: re-downloading so the module matches $resolvedOtelVersion." -ForegroundColor Cyan
+        $choice = 'd'
+    } else {
+        $choice = Read-Host "Type 's' to skip downloading, or 'd' to delete and re-download"
+    }
     if ($choice -eq 'd') {
         Write-Host "Deleting $otelBasePath..." -ForegroundColor Red
         Remove-Item -Recurse -Force $otelBasePath
@@ -340,6 +403,18 @@ $moduleUrl = if ($resolvedOtelVersion -eq "latest") {
     "https://github.com/open-telemetry/opentelemetry-dotnet-instrumentation/releases/download/$resolvedOtelVersion/OpenTelemetry.DotNet.Auto.psm1"
 }
 $modulePath = Join-Path $otelBasePath "OpenTelemetry.DotNet.Auto.psm1"
+
+# A cached module pins its own release, so reusing one from a different version
+# would quietly install something other than what was selected above.
+if ($skipDownload -and $resolvedOtelVersion -ne "latest" -and (Test-Path $modulePath)) {
+    $match = Select-String -Path $modulePath -Pattern '^\s*\$version\s*=\s*"(v[0-9.]+)"' | Select-Object -First 1
+    $cachedVersion = if ($match) { $match.Matches[0].Groups[1].Value } else { $null }
+    if ($cachedVersion -and $cachedVersion -ne $resolvedOtelVersion) {
+        Write-Host "`nCached module in $otelBasePath is $cachedVersion, but $resolvedOtelVersion was selected." -ForegroundColor Red
+        Write-Host "Re-run without skipping the download, or delete $otelBasePath first." -ForegroundColor Yellow
+        exit 1
+    }
+}
 
 if (-not $skipDownload) {
     Write-Host "Downloading OpenTelemetry module ($resolvedOtelVersion)..."
@@ -400,46 +475,35 @@ foreach ($AppPoolName in $SelectedAppPools) {
     Write-Host "`nConfiguring App Pool: $AppPoolName" -ForegroundColor Cyan
 
     # Get current environment variables for the App Pool
-    $currentEnvVars = & $AppCmd list apppool /name:"$AppPoolName" /text:environmentVariables
-    $currentEnvVarNames = @()
-    if ($currentEnvVars) {
-        $currentEnvVarNames = $currentEnvVars -split ';' | ForEach-Object {
-            ($_ -split '=')[0]
-        }
-    }
+    $currentEnvVarNames = Get-AppPoolEnvVarNames -AppCmd $AppCmd -AppPoolName $AppPoolName
 
     $appPoolEnvVarsToRemove = ($oldEnvVars + $envs.Keys) | Sort-Object -Unique
     foreach ($name in $appPoolEnvVarsToRemove) {
         if ($currentEnvVarNames -contains $name) {
-            $cmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /-environmentVariables.`"[name='$name']`""
-            Write-Host "Unsetting App Pool env $name"
-            Invoke-Expression $cmd
+            Write-Host "  Unsetting $name"
+            & $AppCmd set apppool "/apppool.name:$AppPoolName" "/-environmentVariables.[name='$name']" | Out-Null
         }
     }
 
-    # Refresh the list after unsetting
-    $currentEnvVars = & $AppCmd list apppool /name:"$AppPoolName" /text:environmentVariables
-    $currentEnvVarNames = @()
-    if ($currentEnvVars) {
-        $currentEnvVarNames = $currentEnvVars -split ';' | ForEach-Object {
-            ($_ -split '=')[0]
-        }
-    }
+    # Refresh after unsetting so the add loop knows what is still present.
+    $currentEnvVarNames = Get-AppPoolEnvVarNames -AppCmd $AppCmd -AppPoolName $AppPoolName
 
     foreach ($name in $envs.Keys) {
-        $value = $envs[$name] -replace '\\', '\\\\'   # Escape backslashes for appcmd
+        # No backslash escaping: appcmd stores the value verbatim, and escaping
+        # here turned every "\" in a path into "\\\\" in applicationHost.config.
+        $value = $envs[$name]
 
-        # Always remove first to avoid duplicates
-        $removeCmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /-environmentVariables.`"[name='$name']`""
-        Write-Host "Ensuring removal: $removeCmd"
-        Invoke-Expression $removeCmd
+        # Only remove when present, otherwise appcmd prints "Cannot find
+        # requested collection element" for each variable.
+        if ($currentEnvVarNames -contains $name) {
+            & $AppCmd set apppool "/apppool.name:$AppPoolName" "/-environmentVariables.[name='$name']" | Out-Null
+        }
 
-        # Now add
-        $addCmd = "& `"$AppCmd`" set apppool /apppool.name:`"$AppPoolName`" /+environmentVariables.`"[name='$name',value='$value']`""
-        Write-Host "Adding: $addCmd"
-        Invoke-Expression $addCmd
+        Write-Host "  Setting $name = $value"
+        & $AppCmd set apppool "/apppool.name:$AppPoolName" "/+environmentVariables.[name='$name',value='$value']" | Out-Null
     }
     Write-Host "✅ All environment variables set for App Pool: $AppPoolName"
     Restart-WebAppPool -Name $AppPoolName
 }
 Write-Host "Done!"
+exit 0
