@@ -64,8 +64,7 @@ function send_logs {
 EOF
 )
 
-  url=https://app.middleware.io/api/v1/agent/tracking
-  curl -s --location --request POST "$url" \
+  curl -s --location --request POST "$MW_TRACKING_TARGET"/api/v1/agent/tracking \
   --header 'Content-Type: application/json' \
   --header "mw-api-key: $api_key" \
   --data "$payload" >> /dev/null
@@ -104,9 +103,13 @@ input_file="/tmp/mw_agent_cfg.txt"
 sudo -E echo "api-key: $MW_API_KEY" | sudo tee "$input_file" > /dev/null
 sudo -E echo "target: $MW_TARGET" | sudo tee -a "$input_file" > /dev/null
 
+# macOS installers are not published with every mw-agent release (the "latest"
+# release has none), so pin to the last release that ships them.
+MW_VERSION="${MW_VERSION:-1.17.3}"
+
 # Get the installer from Middleware
-echo -e "Downloading Middleware Agent for $arch platform..." | sudo tee -a "$LOG_FILE"
-if ! sudo curl -L -q -# -o $package "https://github.com/middleware-labs/mw-agent/releases/latest/download/$package"; then
+echo -e "Downloading Middleware Agent $MW_VERSION for $arch platform..." | sudo tee -a "$LOG_FILE"
+if ! sudo curl -fL -q -# -o $package "https://github.com/middleware-labs/mw-agent/releases/download/$MW_VERSION/$package"; then
     echo "${RED}Failed to download Middleware macOS installer${NC}" | sudo tee -a "$LOG_FILE"
     exit 1
 fi
