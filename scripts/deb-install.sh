@@ -292,13 +292,41 @@ log_info "The host agent will monitor all '.log' files inside your /var/log dire
 
 # Adding APT repo address & public key to system
 log_info "Adding GPG key and APT repository..."
-sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg
+set -o pipefail
+if ! sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg; then
+  log_error "Failed to download or import the Middleware APT GPG key."
+  exit 1
+fi
+set +o pipefail
+
+if [ ! -s "$MW_KEYRING_LOCATION"/middleware-keyring.gpg ]; then
+  log_error "Middleware APT GPG key is missing or empty at ${MW_KEYRING_LOCATION}/middleware-keyring.gpg."
+  exit 1
+fi
+
 sudo touch /etc/apt/sources.list.d/"$MW_APT_LIST"
 echo "deb [arch=${MW_APT_LIST_ARCH} signed-by=${MW_KEYRING_LOCATION}/middleware-keyring.gpg] https://apt.middleware.io/public stable main" | sudo tee /etc/apt/sources.list.d/"$MW_APT_LIST" > /dev/null
 log_ok "APT repository configured."
 
 log_info "Updating package lists..."
-sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" > /dev/null
+APT_UPDATE_OUTPUT=$(sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" 2>&1)
+APT_UPDATE_STATUS=$?
+echo "$APT_UPDATE_OUTPUT"
+if [ $APT_UPDATE_STATUS -ne 0 ] || echo "$APT_UPDATE_OUTPUT" | grep -q "NO_PUBKEY"; then
+  log_warn "apt-get update failed or reported an unsigned repository (possible NO_PUBKEY). Attempting recovery..."
+  sudo dpkg --configure -a || true
+  if ! sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg; then
+    log_error "Retry of GPG key import failed."
+    exit 1
+  fi
+  APT_UPDATE_OUTPUT=$(sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/${MW_APT_LIST}" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" 2>&1)
+  APT_UPDATE_STATUS=$?
+  echo "$APT_UPDATE_OUTPUT"
+  if [ $APT_UPDATE_STATUS -ne 0 ] || echo "$APT_UPDATE_OUTPUT" | grep -q "NO_PUBKEY"; then
+    log_error "Failed to update package lists after retry."
+    exit 1
+  fi
+fi
 log_ok "Package lists updated."
 
 log_info "Installing Middleware Agent (${MW_AGENT_BINARY}=${MW_VERSION})..."
