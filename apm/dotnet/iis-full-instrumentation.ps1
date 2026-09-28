@@ -484,6 +484,9 @@ $envs = @{
     "OTEL_DOTNET_AUTO_TRACES_ENABLED" = "true"
     "OTEL_DOTNET_AUTO_METRICS_ENABLED" = "true"
     "OTEL_DOTNET_AUTO_LOGS_ENABLED" = "true"
+    # Leave host.name unset so mw-agent fills in its own (os.Hostname or EC2) value;
+    # .NET would otherwise report the NetBIOS name, which does not match the agent.
+    "OTEL_DOTNET_AUTO_HOST_RESOURCE_DETECTOR_ENABLED" = "false"
     "COR_ENABLE_PROFILING" = "1"
     "COR_PROFILER" = "{918728DD-259F-4A6A-AC2B-B85E1B658318}"
     "COR_PROFILER_PATH" = "C:\Program Files\OpenTelemetry .NET AutoInstrumentation\win-x64\OpenTelemetry.AutoInstrumentation.Native.dll"

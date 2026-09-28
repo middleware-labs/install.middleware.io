@@ -76,7 +76,8 @@ $instrVars = @(
     "OTEL_METRICS_EXPORTER",
     "OTEL_LOGS_EXPORTER",
     "OTEL_BSP_SCHEDULE_DELAY",
-    "OTEL_BSP_MAX_EXPORT_BATCH_SIZE"
+    "OTEL_BSP_MAX_EXPORT_BATCH_SIZE",
+    "OTEL_DOTNET_AUTO_HOST_RESOURCE_DETECTOR_ENABLED"
 )
 
 # -----------------------------------------------------------------------------
