@@ -8,9 +8,18 @@ set -e
 detect() {
     CURRENT_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     CURRENT_ARCH=$(uname -m)
-    if [ "${CURRENT_ARCH}" == "x86_64" ]; then
-        CURRENT_ARCH="amd64"
-    fi
+    case "${CURRENT_ARCH}" in
+        x86_64|amd64)
+            CURRENT_ARCH="amd64"
+            ;;
+        aarch64|arm64)
+            CURRENT_ARCH="arm64"
+            ;;
+        *)
+            echo "Unsupported architecture: ${CURRENT_ARCH}"
+            exit 1
+            ;;
+    esac
 
     echo "Detected platform: ${CURRENT_OS} ${CURRENT_ARCH}"
 }
