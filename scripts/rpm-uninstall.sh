@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Returns 0 if a systemd unit named $1.service is known to systemd
+service_exists() {
+    systemctl list-unit-files --no-legend "$1.service" 2>/dev/null | grep -q "^$1\.service"
+}
+
+# stopping and removing whichever agent service is installed:
+# mw-agent-opamp (MW_REMOTE_MANAGEMENT=true) or mw-agent (standalone)
+if service_exists mw-agent-opamp; then
+    sudo systemctl stop mw-agent-opamp
+    sudo systemctl disable mw-agent-opamp
+fi
+if service_exists mw-agent; then
+    sudo systemctl stop mw-agent
+    sudo systemctl disable mw-agent
+fi
+sudo rm -rf /etc/systemd/system/mw-agent-opamp.service
+sudo rm -rf /etc/systemd/system/mw-agent.service
+
 # stopping and removing the service
 sudo systemctl stop mwservice
 sudo systemctl disable mwservice

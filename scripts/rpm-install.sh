@@ -262,6 +262,43 @@ if [ "${MW_TARGET}" = "" ]; then
 fi
 export MW_TARGET
 
+# Remote management (OpAMP) defaults. All three are exported so the package's
+# postinst can render them into the agent config.
+if [ "${MW_REMOTE_MANAGEMENT}" = "" ]; then
+  MW_REMOTE_MANAGEMENT=false
+fi
+export MW_REMOTE_MANAGEMENT
+
+if [ "${MW_AGENT_GROUP}" = "" ]; then
+  MW_AGENT_GROUP=default
+fi
+export MW_AGENT_GROUP
+
+# Derive the OpAMP server URL from MW_TARGET unless given explicitly:
+# https://host[:port][/path] -> wss://host[:port]/v1/opamp (http:// -> ws://).
+# The localhost fallback only applies when MW_TARGET itself is unset.
+if [ "${MW_OPAMP_SERVER_URL}" = "" ]; then
+  if [ -n "${MW_TARGET}" ]; then
+    opamp_host="${MW_TARGET#*://}"
+    opamp_host="${opamp_host%%/*}"
+    case "${MW_TARGET}" in
+      http://*) opamp_scheme=ws ;;
+      *)        opamp_scheme=wss ;;
+    esac
+    MW_OPAMP_SERVER_URL="${opamp_scheme}://${opamp_host}/v1/opamp"
+  else
+    MW_OPAMP_SERVER_URL="ws://localhost:4320/v1/opamp"
+  fi
+fi
+export MW_OPAMP_SERVER_URL
+
+# The 2.0.0 package ships two systemd units that Conflicts= each other:
+# mw-agent (standalone) and mw-agent-opamp (remotely managed over OpAMP).
+MW_AGENT_SERVICE=mw-agent
+if [ "${MW_REMOTE_MANAGEMENT}" = true ]; then
+  MW_AGENT_SERVICE=mw-agent-opamp
+fi
+
 if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
   export MW_API_URL_FOR_SYNTHETIC_MONITORING
 fi
@@ -350,18 +387,23 @@ if [ -f "$HOME/.zshrc" ]; then
     fi
 fi
 
-log_info "Enabling mw-agent service..."
-if ! sudo systemctl enable mw-agent; then
+if [ "${MW_REMOTE_MANAGEMENT}" = true ]; then
+  # Make sure only the OpAMP-managed unit comes back after a reboot.
+  sudo systemctl disable mw-agent >/dev/null 2>&1 || true
+fi
+
+log_info "Enabling ${MW_AGENT_SERVICE} service..."
+if ! sudo systemctl enable "${MW_AGENT_SERVICE}"; then
   log_error "Failed to enable Middleware Agent service."
   exit 1
 fi
 log_ok "Service enabled to start on boot."
 
 if [ "${MW_AUTO_START}" = true ]; then
-    log_info "Starting mw-agent..."
-    sudo systemctl start mw-agent
-    sudo systemctl restart mw-agent
-    log_ok "mw-agent is running."
+    log_info "Starting ${MW_AGENT_SERVICE}..."
+    sudo systemctl start "${MW_AGENT_SERVICE}"
+    sudo systemctl restart "${MW_AGENT_SERVICE}"
+    log_ok "${MW_AGENT_SERVICE} is running."
 fi
 
 log_ok "Middleware Agent installation completed successfully."
@@ -372,14 +414,19 @@ echo "  Middleware Agent v${MW_VERSION} (${MW_DETECTED_ARCH}) installed successf
 echo "================================================================="
 echo ""
 echo "  Binary:        ${MW_AGENT_HOME}/bin/mw-agent"
-echo "  Service:       mw-agent"
+echo "  Service:       ${MW_AGENT_SERVICE}"
+if [ "${MW_REMOTE_MANAGEMENT}" = true ]; then
+  echo "  Mode:          Remote management (OpAMP)"
+  echo "  OpAMP server:  ${MW_OPAMP_SERVER_URL}"
+  echo "  Agent group:   ${MW_AGENT_GROUP}"
+fi
 echo "  Log file:      ${LOG_FILE}"
 echo ""
 echo "  Useful commands:"
-echo "    systemctl status mw-agent          # Check service status"
-echo "    journalctl -u mw-agent -f          # Follow logs"
-echo "    systemctl restart mw-agent         # Restart"
-echo "    systemctl stop mw-agent            # Stop"
+printf '    %-35s# Check service status\n' "systemctl status ${MW_AGENT_SERVICE}"
+printf '    %-35s# Follow logs\n'          "journalctl -u ${MW_AGENT_SERVICE} -f"
+printf '    %-35s# Restart\n'              "systemctl restart ${MW_AGENT_SERVICE}"
+printf '    %-35s# Stop\n'                 "systemctl stop ${MW_AGENT_SERVICE}"
 echo ""
 
 # -------------------------------------------------------
