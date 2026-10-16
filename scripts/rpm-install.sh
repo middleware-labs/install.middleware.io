@@ -392,7 +392,7 @@ install_from_yum_repo() {
   if ! printf '%s\n' \
     '[middleware]' \
     'name=Middleware Agent' \
-    'baseurl=https://yum.middleware.io/$basearch' \
+    "baseurl=https://yum.middleware.io/\$basearch" \
     'enabled=1' \
     'gpgcheck=0' \
     'repo_gpgcheck=0' \
