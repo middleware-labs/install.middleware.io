@@ -252,6 +252,18 @@ if [ "${MW_REMOTE_MANAGEMENT}" = "" ]; then
 fi
 export MW_REMOTE_MANAGEMENT
 
+# Remote management needs the mw-agent-opamp unit, which only packages from
+# 2.0.0 on ship. With an older package the install would end with no agent
+# unit enabled, so refuse before changing anything on the host.
+version_lt() {
+  [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" = "$1" ]
+}
+if [ "${MW_REMOTE_MANAGEMENT}" = true ] && version_lt "${MW_VERSION#v}" "2.0.0"; then
+  log_error "Remote management (MW_REMOTE_MANAGEMENT=true) needs Middleware Agent 2.0.0 or later; this install would use version '${MW_VERSION}'."
+  log_error "Set MW_VERSION to 2.0.0 or later, or install without MW_REMOTE_MANAGEMENT. Nothing was installed and no service was changed."
+  exit 1
+fi
+
 if [ "${MW_AGENT_GROUP}" = "" ]; then
   MW_AGENT_GROUP=default
 fi
