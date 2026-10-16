@@ -155,6 +155,7 @@ export MW_LATEST_VERSION
 # Check if MW_VERSION is provided
 if [ "${MW_VERSION}" = "" ]; then
   MW_VERSION=$MW_LATEST_VERSION
+  MW_VERSION_FROM_LOOKUP=true
 fi
 export MW_VERSION
 
@@ -258,9 +259,17 @@ export MW_REMOTE_MANAGEMENT
 version_lt() {
   [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" = "$1" ]
 }
-if [ "${MW_REMOTE_MANAGEMENT}" = true ] && version_lt "${MW_VERSION#v}" "2.0.0"; then
-  log_error "Remote management (MW_REMOTE_MANAGEMENT=true) needs Middleware Agent 2.0.0 or later; this install would use version '${MW_VERSION}'."
-  log_error "Set MW_VERSION to 2.0.0 or later, or install without MW_REMOTE_MANAGEMENT. Nothing was installed and no service was changed."
+# "2.0.0~" sorts below every 2.0.0 build, pre-releases (2.0.0~rc1, 2.0.0-rc1)
+# included, and above every 1.x.
+if [ "${MW_REMOTE_MANAGEMENT}" = true ] && version_lt "${MW_VERSION#v}" "2.0.0~"; then
+  if [ "${MW_VERSION_FROM_LOOKUP}" = true ] && [ "${MW_VERSION}" = "1.6.6" ]; then
+    # get_latest_mw_agent_version falls back to 1.6.6 when GitHub can't be reached.
+    log_error "Remote management (MW_REMOTE_MANAGEMENT=true) needs Middleware Agent 2.0.0 or later, but the latest version could not be looked up from GitHub (rate limit, or no access to api.github.com)."
+    log_error "Set MW_VERSION explicitly (2.0.0 or later) and run the installer again. Nothing was installed and no service was changed."
+  else
+    log_error "Remote management (MW_REMOTE_MANAGEMENT=true) needs Middleware Agent 2.0.0 or later; this install would use version '${MW_VERSION}'."
+    log_error "Set MW_VERSION to 2.0.0 or later, or install without MW_REMOTE_MANAGEMENT. Nothing was installed and no service was changed."
+  fi
   exit 1
 fi
 
@@ -402,9 +411,13 @@ if [ -f "$HOME/.zshrc" ]; then
     fi
 fi
 
+# Only the chosen unit may come back after a reboot: the two Conflicts= each
+# other, and with both enabled systemd picks one at random. Disabling a unit
+# that doesn't exist (1.x packages have no mw-agent-opamp) is a no-op.
 if [ "${MW_REMOTE_MANAGEMENT}" = true ]; then
-  # Make sure only the OpAMP-managed unit comes back after a reboot.
   sudo systemctl disable mw-agent >/dev/null 2>&1 || true
+else
+  sudo systemctl disable mw-agent-opamp >/dev/null 2>&1 || true
 fi
 
 log_info "Enabling ${MW_AGENT_SERVICE} service..."
