@@ -369,9 +369,43 @@ fi
 
 log_info "The host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
 
-log_info "Downloading ${RPM_FILE} from yum.middleware.io..."
-curl -L -q -s -o "$RPM_FILE" yum.middleware.io/"$MW_DETECTED_ARCH"/Packages/"$RPM_FILE" $skip_certificate_check
-log_ok "Downloaded ${RPM_FILE}."
+# Configures the Middleware yum repo, so the host can update mw-agent with
+# yum/dnf, and installs mw-agent-${MW_VERSION} from it. Returns non-zero when
+# that doesn't work (no yum/dnf, index broken or stale, version missing) so the
+# caller can fall back to downloading the rpm directly.
+install_from_yum_repo() {
+  local pkg_manager
+  if command_exists dnf; then
+    pkg_manager=dnf
+  elif command_exists yum; then
+    pkg_manager=yum
+  else
+    log_info "Neither dnf nor yum is available; skipping the Middleware yum repository."
+    return 1
+  fi
+
+  # gpgcheck=0: the packages aren't signed yet; the repo is served over HTTPS.
+  # skip_if_unavailable=1: a broken or unreachable Middleware repo must not
+  # break the host's other yum/dnf operations.
+  # metadata_expire=300: new releases show up within five minutes.
+  log_info "Configuring the Middleware yum repository..."
+  if ! printf '%s\n' \
+    '[middleware]' \
+    'name=Middleware Agent' \
+    'baseurl=https://yum.middleware.io/$basearch' \
+    'enabled=1' \
+    'gpgcheck=0' \
+    'repo_gpgcheck=0' \
+    'skip_if_unavailable=1' \
+    'metadata_expire=300' | sudo tee /etc/yum.repos.d/middleware.repo > /dev/null; then
+    return 1
+  fi
+
+  # Only the Middleware repo: mw-agent has no dependencies, and the host's
+  # other repos then can't slow down or break the install.
+  log_info "Installing Middleware Agent ${MW_VERSION} from the Middleware yum repository..."
+  run_rpm_cmd_with_retry "$pkg_manager" install -y --disablerepo='*' --enablerepo=middleware "mw-agent-${MW_VERSION#v}"
+}
 
 # Remove mw-agent if present
 if rpm -q mw-agent &>/dev/null; then
@@ -384,10 +418,20 @@ if rpm -q mw-agent &>/dev/null; then
 fi
 
 # Install the new package
-log_info "Installing Middleware Agent (${RPM_FILE})..."
-if ! run_rpm_cmd_with_retry rpm -U "$RPM_FILE"; then
-  log_error "Failed to install Middleware Agent."
-  exit 1
+if install_from_yum_repo; then
+  log_ok "Installed Middleware Agent ${MW_VERSION} from the Middleware yum repository."
+else
+  log_warn "Could not install Middleware Agent ${MW_VERSION} from the Middleware yum repository; downloading ${RPM_FILE} directly instead."
+
+  log_info "Downloading ${RPM_FILE} from yum.middleware.io..."
+  curl -L -q -s -o "$RPM_FILE" yum.middleware.io/"$MW_DETECTED_ARCH"/Packages/"$RPM_FILE" $skip_certificate_check
+  log_ok "Downloaded ${RPM_FILE}."
+
+  log_info "Installing Middleware Agent (${RPM_FILE})..."
+  if ! run_rpm_cmd_with_retry rpm -U "$RPM_FILE"; then
+    log_error "Failed to install Middleware Agent."
+    exit 1
+  fi
 fi
 
 sudo systemctl daemon-reload
