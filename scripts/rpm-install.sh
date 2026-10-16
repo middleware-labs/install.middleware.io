@@ -190,6 +190,7 @@ export MW_LATEST_VERSION
 # Check if MW_VERSION is provided
 if [ "${MW_VERSION}" = "" ]; then
   MW_VERSION=$MW_LATEST_VERSION
+  MW_VERSION_FROM_LOOKUP=true
 fi
 export MW_VERSION
 
@@ -262,6 +263,107 @@ if [ "${MW_TARGET}" = "" ]; then
 fi
 export MW_TARGET
 
+# Remote management (OpAMP) defaults. All three are exported so the package's
+# postinst can render them into the agent config.
+if [ "${MW_REMOTE_MANAGEMENT}" = "" ]; then
+  MW_REMOTE_MANAGEMENT=false
+fi
+export MW_REMOTE_MANAGEMENT
+
+# Remote management needs the mw-agent-opamp unit, which only packages from
+# 2.0.0 on ship. With an older package the install would end with no agent
+# unit enabled, so refuse before changing anything on the host.
+version_lt() {
+  [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" = "$1" ]
+}
+# "2.0.0~" sorts below every 2.0.0 build, pre-releases (2.0.0~rc1, 2.0.0-rc1)
+# included, and above every 1.x.
+if [ "${MW_REMOTE_MANAGEMENT}" = true ] && version_lt "${MW_VERSION#v}" "2.0.0~"; then
+  if [ "${MW_VERSION_FROM_LOOKUP}" = true ] && [ "${MW_VERSION}" = "1.6.6" ]; then
+    # get_latest_mw_agent_version falls back to 1.6.6 when GitHub can't be reached.
+    log_error "Remote management (MW_REMOTE_MANAGEMENT=true) needs Middleware Agent 2.0.0 or later, but the latest version could not be looked up from GitHub (rate limit, or no access to api.github.com)."
+    log_error "Set MW_VERSION explicitly (2.0.0 or later) and run the installer again. Nothing was installed and no service was changed."
+  else
+    log_error "Remote management (MW_REMOTE_MANAGEMENT=true) needs Middleware Agent 2.0.0 or later; this install would use version '${MW_VERSION}'."
+    log_error "Set MW_VERSION to 2.0.0 or later, or install without MW_REMOTE_MANAGEMENT. Nothing was installed and no service was changed."
+  fi
+  exit 1
+fi
+
+if [ "${MW_AGENT_GROUP}" = "" ]; then
+  MW_AGENT_GROUP=default
+fi
+export MW_AGENT_GROUP
+
+# Derive the OpAMP server URL from MW_TARGET unless given explicitly:
+# https://host[:port][/path] -> wss://host[:port]/v1/opamp (http:// -> ws://).
+# The localhost fallback only applies when MW_TARGET itself is unset.
+if [ "${MW_OPAMP_SERVER_URL}" = "" ]; then
+  if [ -n "${MW_TARGET}" ]; then
+    opamp_host="${MW_TARGET#*://}"
+    opamp_host="${opamp_host%%/*}"
+    case "${MW_TARGET}" in
+      http://*) opamp_scheme=ws ;;
+      *)        opamp_scheme=wss ;;
+    esac
+    MW_OPAMP_SERVER_URL="${opamp_scheme}://${opamp_host}/v1/opamp"
+  else
+    MW_OPAMP_SERVER_URL="ws://localhost:4320/v1/opamp"
+  fi
+fi
+export MW_OPAMP_SERVER_URL
+
+# Before committing the host to remote management, check that an OpAMP server
+# accepts this agent at MW_OPAMP_SERVER_URL: the same websocket handshake, with
+# the same API key, that the supervisor makes. If nothing accepts it (no OpAMP
+# server in this environment, a key that isn't valid there, no network path),
+# a remotely managed host would never get a config and collect nothing, so
+# install the standalone agent instead. MW_OPAMP_SKIP_CHECK=true skips this,
+# e.g. when the server is reachable only after the install.
+opamp_handshake_status() {
+  local url="$1" http_url
+  case "$url" in
+    wss://*) http_url="https://${url#wss://}" ;;
+    ws://*)  http_url="http://${url#ws://}" ;;
+    *)       echo "bad-url"; return ;;
+  esac
+  # The server requires an agent id header; this fixed one never sends an
+  # agent message, so no agent is registered. A 101 keeps the connection open,
+  # so curl ends at --max-time; the status it received is still printed.
+  curl -s -o /dev/null --http1.1 --max-time 5 -w '%{http_code}' \
+    -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" \
+    -H "Sec-WebSocket-Key: $(head -c 16 /dev/urandom | base64)" \
+    -H "Authorization: Bearer ${MW_API_KEY}" \
+    -H "OpAMP-Agent-ID: mw-install-check" \
+    "$http_url" 2>/dev/null || true
+}
+if [ "${MW_REMOTE_MANAGEMENT}" = true ] && [ "${MW_OPAMP_SKIP_CHECK}" != true ]; then
+  log_info "Checking the OpAMP server at ${MW_OPAMP_SERVER_URL}..."
+  opamp_status=$(opamp_handshake_status "${MW_OPAMP_SERVER_URL}")
+  if [ "${opamp_status}" = "101" ]; then
+    log_ok "OpAMP server accepted the agent."
+  else
+    case "${opamp_status}" in
+      000|"")  opamp_reason="no answer (DNS, network or firewall)" ;;
+      401|403) opamp_reason="the API key isn't accepted there (HTTP ${opamp_status})" ;;
+      503)     opamp_reason="the server couldn't verify the API key right now (HTTP 503); try again later" ;;
+      bad-url) opamp_reason="MW_OPAMP_SERVER_URL must start with wss:// or ws://" ;;
+      *)       opamp_reason="no OpAMP server at that address (HTTP ${opamp_status})" ;;
+    esac
+    log_warn "Remote management: the OpAMP server at ${MW_OPAMP_SERVER_URL} did not accept the agent: ${opamp_reason}."
+    log_warn "Installing the standalone agent instead, so this host keeps collecting. Fix the address or key and run the installer again with MW_REMOTE_MANAGEMENT=true, or set MW_OPAMP_SKIP_CHECK=true to skip this check."
+    MW_REMOTE_MANAGEMENT=false
+    export MW_REMOTE_MANAGEMENT
+  fi
+fi
+
+# The 2.0.0 package ships two systemd units that Conflicts= each other:
+# mw-agent (standalone) and mw-agent-opamp (remotely managed over OpAMP).
+MW_AGENT_SERVICE=mw-agent
+if [ "${MW_REMOTE_MANAGEMENT}" = true ]; then
+  MW_AGENT_SERVICE=mw-agent-opamp
+fi
+
 if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
   export MW_API_URL_FOR_SYNTHETIC_MONITORING
 fi
@@ -311,9 +413,43 @@ fi
 
 log_info "The host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
 
-log_info "Downloading ${RPM_FILE} from yum.middleware.io..."
-curl -L -q -s -o "$RPM_FILE" yum.middleware.io/"$MW_DETECTED_ARCH"/Packages/"$RPM_FILE" $skip_certificate_check
-log_ok "Downloaded ${RPM_FILE}."
+# Configures the Middleware yum repo, so the host can update mw-agent with
+# yum/dnf, and installs mw-agent-${MW_VERSION} from it. Returns non-zero when
+# that doesn't work (no yum/dnf, index broken or stale, version missing) so the
+# caller can fall back to downloading the rpm directly.
+install_from_yum_repo() {
+  local pkg_manager
+  if command_exists dnf; then
+    pkg_manager=dnf
+  elif command_exists yum; then
+    pkg_manager=yum
+  else
+    log_info "Neither dnf nor yum is available; skipping the Middleware yum repository."
+    return 1
+  fi
+
+  # gpgcheck=0: the packages aren't signed yet; the repo is served over HTTPS.
+  # skip_if_unavailable=1: a broken or unreachable Middleware repo must not
+  # break the host's other yum/dnf operations.
+  # metadata_expire=300: new releases show up within five minutes.
+  log_info "Configuring the Middleware yum repository..."
+  if ! printf '%s\n' \
+    '[middleware]' \
+    'name=Middleware Agent' \
+    "baseurl=https://yum.middleware.io/\$basearch" \
+    'enabled=1' \
+    'gpgcheck=0' \
+    'repo_gpgcheck=0' \
+    'skip_if_unavailable=1' \
+    'metadata_expire=300' | sudo tee /etc/yum.repos.d/middleware.repo > /dev/null; then
+    return 1
+  fi
+
+  # Only the Middleware repo: mw-agent has no dependencies, and the host's
+  # other repos then can't slow down or break the install.
+  log_info "Installing Middleware Agent ${MW_VERSION} from the Middleware yum repository..."
+  run_rpm_cmd_with_retry "$pkg_manager" install -y --disablerepo='*' --enablerepo=middleware "mw-agent-${MW_VERSION#v}"
+}
 
 # Remove mw-agent if present
 if rpm -q mw-agent &>/dev/null; then
@@ -326,10 +462,20 @@ if rpm -q mw-agent &>/dev/null; then
 fi
 
 # Install the new package
-log_info "Installing Middleware Agent (${RPM_FILE})..."
-if ! run_rpm_cmd_with_retry rpm -U "$RPM_FILE"; then
-  log_error "Failed to install Middleware Agent."
-  exit 1
+if install_from_yum_repo; then
+  log_ok "Installed Middleware Agent ${MW_VERSION} from the Middleware yum repository."
+else
+  log_warn "Could not install Middleware Agent ${MW_VERSION} from the Middleware yum repository; downloading ${RPM_FILE} directly instead."
+
+  log_info "Downloading ${RPM_FILE} from yum.middleware.io..."
+  curl -L -q -s -o "$RPM_FILE" yum.middleware.io/"$MW_DETECTED_ARCH"/Packages/"$RPM_FILE" $skip_certificate_check
+  log_ok "Downloaded ${RPM_FILE}."
+
+  log_info "Installing Middleware Agent (${RPM_FILE})..."
+  if ! run_rpm_cmd_with_retry rpm -U "$RPM_FILE"; then
+    log_error "Failed to install Middleware Agent."
+    exit 1
+  fi
 fi
 
 sudo systemctl daemon-reload
@@ -350,18 +496,27 @@ if [ -f "$HOME/.zshrc" ]; then
     fi
 fi
 
-log_info "Enabling mw-agent service..."
-if ! sudo systemctl enable mw-agent; then
+# Only the chosen unit may come back after a reboot: the two Conflicts= each
+# other, and with both enabled systemd picks one at random. Disabling a unit
+# that doesn't exist (1.x packages have no mw-agent-opamp) is a no-op.
+if [ "${MW_REMOTE_MANAGEMENT}" = true ]; then
+  sudo systemctl disable mw-agent >/dev/null 2>&1 || true
+else
+  sudo systemctl disable mw-agent-opamp >/dev/null 2>&1 || true
+fi
+
+log_info "Enabling ${MW_AGENT_SERVICE} service..."
+if ! sudo systemctl enable "${MW_AGENT_SERVICE}"; then
   log_error "Failed to enable Middleware Agent service."
   exit 1
 fi
 log_ok "Service enabled to start on boot."
 
 if [ "${MW_AUTO_START}" = true ]; then
-    log_info "Starting mw-agent..."
-    sudo systemctl start mw-agent
-    sudo systemctl restart mw-agent
-    log_ok "mw-agent is running."
+    log_info "Starting ${MW_AGENT_SERVICE}..."
+    sudo systemctl start "${MW_AGENT_SERVICE}"
+    sudo systemctl restart "${MW_AGENT_SERVICE}"
+    log_ok "${MW_AGENT_SERVICE} is running."
 fi
 
 log_ok "Middleware Agent installation completed successfully."
@@ -372,14 +527,19 @@ echo "  Middleware Agent v${MW_VERSION} (${MW_DETECTED_ARCH}) installed successf
 echo "================================================================="
 echo ""
 echo "  Binary:        ${MW_AGENT_HOME}/bin/mw-agent"
-echo "  Service:       mw-agent"
+echo "  Service:       ${MW_AGENT_SERVICE}"
+if [ "${MW_REMOTE_MANAGEMENT}" = true ]; then
+  echo "  Mode:          Remote management (OpAMP)"
+  echo "  OpAMP server:  ${MW_OPAMP_SERVER_URL}"
+  echo "  Agent group:   ${MW_AGENT_GROUP}"
+fi
 echo "  Log file:      ${LOG_FILE}"
 echo ""
 echo "  Useful commands:"
-echo "    systemctl status mw-agent          # Check service status"
-echo "    journalctl -u mw-agent -f          # Follow logs"
-echo "    systemctl restart mw-agent         # Restart"
-echo "    systemctl stop mw-agent            # Stop"
+printf '    %-35s# Check service status\n' "systemctl status ${MW_AGENT_SERVICE}"
+printf '    %-35s# Follow logs\n'          "journalctl -u ${MW_AGENT_SERVICE} -f"
+printf '    %-35s# Restart\n'              "systemctl restart ${MW_AGENT_SERVICE}"
+printf '    %-35s# Stop\n'                 "systemctl stop ${MW_AGENT_SERVICE}"
 echo ""
 
 # -------------------------------------------------------

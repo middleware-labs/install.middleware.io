@@ -13,6 +13,11 @@ version_ge() {
     dpkg --compare-versions "$1" "ge" "$2"
 }
 
+# Returns 0 if a systemd unit named $1.service is known to systemd
+service_exists() {
+    systemctl list-unit-files --no-legend "$1.service" 2>/dev/null | grep -q "^$1\.service"
+}
+
 # Get Middleware Agent version
 version_string=$(mw-agent version)
 echo "$version_string" " detected"
@@ -23,6 +28,13 @@ threshold_version="1.6.4"
 
 # Compare version and run commands based on version
 if version_ge "$version" "$threshold_version"; then
+    # stopping and removing the OpAMP-managed service (installed with MW_REMOTE_MANAGEMENT=true)
+    if service_exists mw-agent-opamp; then
+        sudo systemctl stop mw-agent-opamp
+        sudo systemctl disable mw-agent-opamp
+    fi
+    sudo rm -rf /etc/systemd/system/mw-agent-opamp.service
+
     # stopping and removing the service
     sudo systemctl stop mw-agent
     sudo systemctl disable mw-agent
