@@ -313,49 +313,11 @@ if [ "${MW_OPAMP_SERVER_URL}" = "" ]; then
 fi
 export MW_OPAMP_SERVER_URL
 
-# Before committing the host to remote management, check that an OpAMP server
-# accepts this agent at MW_OPAMP_SERVER_URL: the same websocket handshake, with
-# the same API key, that the supervisor makes. If nothing accepts it (no OpAMP
-# server in this environment, a key that isn't valid there, no network path),
-# a remotely managed host would never get a config and collect nothing, so
-# install the standalone agent instead. MW_OPAMP_SKIP_CHECK=true skips this,
-# e.g. when the server is reachable only after the install.
-opamp_handshake_status() {
-  local url="$1" http_url
-  case "$url" in
-    wss://*) http_url="https://${url#wss://}" ;;
-    ws://*)  http_url="http://${url#ws://}" ;;
-    *)       echo "bad-url"; return ;;
-  esac
-  # The server requires an agent id header; this fixed one never sends an
-  # agent message, so no agent is registered. A 101 keeps the connection open,
-  # so curl ends at --max-time; the status it received is still printed.
-  curl -s -o /dev/null --http1.1 --max-time 5 -w '%{http_code}' \
-    -H "Connection: Upgrade" -H "Upgrade: websocket" -H "Sec-WebSocket-Version: 13" \
-    -H "Sec-WebSocket-Key: $(head -c 16 /dev/urandom | base64)" \
-    -H "Authorization: Bearer ${MW_API_KEY}" \
-    -H "OpAMP-Agent-ID: mw-install-check" \
-    "$http_url" 2>/dev/null || true
-}
-if [ "${MW_REMOTE_MANAGEMENT}" = true ] && [ "${MW_OPAMP_SKIP_CHECK}" != true ]; then
-  log_info "Checking the OpAMP server at ${MW_OPAMP_SERVER_URL}..."
-  opamp_status=$(opamp_handshake_status "${MW_OPAMP_SERVER_URL}")
-  if [ "${opamp_status}" = "101" ]; then
-    log_ok "OpAMP server accepted the agent."
-  else
-    case "${opamp_status}" in
-      000|"")  opamp_reason="no answer (DNS, network or firewall)" ;;
-      401|403) opamp_reason="the API key isn't accepted there (HTTP ${opamp_status})" ;;
-      503)     opamp_reason="the server couldn't verify the API key right now (HTTP 503); try again later" ;;
-      bad-url) opamp_reason="MW_OPAMP_SERVER_URL must start with wss:// or ws://" ;;
-      *)       opamp_reason="no OpAMP server at that address (HTTP ${opamp_status})" ;;
-    esac
-    log_warn "Remote management: the OpAMP server at ${MW_OPAMP_SERVER_URL} did not accept the agent: ${opamp_reason}."
-    log_warn "Installing the standalone agent instead, so this host keeps collecting. Fix the address or key and run the installer again with MW_REMOTE_MANAGEMENT=true, or set MW_OPAMP_SKIP_CHECK=true to skip this check."
-    MW_REMOTE_MANAGEMENT=false
-    export MW_REMOTE_MANAGEMENT
-  fi
-fi
+# A remotely managed host stays managed even if the OpAMP server can't be
+# reached now: the agent runs its startup fallback config, so the host is
+# monitored, and the supervisor keeps retrying until the server's config
+# replaces it. (MW_OPAMP_SKIP_CHECK, for the handshake check this replaced, is
+# still accepted and has no effect.)
 
 # The 2.0.0 package ships two systemd units that Conflicts= each other:
 # mw-agent (standalone) and mw-agent-opamp (remotely managed over OpAMP).
