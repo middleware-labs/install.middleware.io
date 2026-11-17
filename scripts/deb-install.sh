@@ -317,6 +317,16 @@ if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
   export MW_AGENT_FEATURES_SYNTHETIC_MONITORING
 fi
 
+# Cloud network monitoring and eBPF APM: the obi receiver inside mw-agent (2.0.804+).
+# The eBPF preflight check below warns on hosts that can't run them.
+if [ -n "${MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING}" ]; then
+  export MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING
+fi
+
+if [ -n "${MW_AGENT_FEATURES_EBPF_APM}" ]; then
+  export MW_AGENT_FEATURES_EBPF_APM
+fi
+
 # OTel Injector defaults
 if [ "${MW_ENABLE_INJECTOR}" = "" ]; then
   MW_ENABLE_INJECTOR=true
@@ -346,10 +356,96 @@ export OTEL_INJECTOR_VERSION
 export OTEL_INJECTOR_REPO
 
 # OBI Agent defaults
+MW_ENABLE_OBI_REQUESTED="${MW_ENABLE_OBI}"
 if [ "${MW_ENABLE_OBI}" = "" ]; then
   MW_ENABLE_OBI=true
 fi
 export MW_ENABLE_OBI
+
+# From 2.0.804 on, mw-agent runs OBI itself (the obi receiver), so the standalone
+# obi-agent service from install-obi.sh is installed only for older versions.
+MW_OBI_EMBEDDED_SINCE="2.0.804"
+MW_OBI_EMBEDDED=false
+if ! version_lt "${MW_VERSION#v}" "${MW_OBI_EMBEDDED_SINCE}~"; then
+  MW_OBI_EMBEDDED=true
+fi
+
+is_true() {
+  case "$(echo "$1" | tr '[:upper:]' '[:lower:]')" in
+    1|t|true) return 0 ;;
+    *)        return 1 ;;
+  esac
+}
+
+# Checks that this host can run mw-agent's eBPF features (cloud network monitoring,
+# eBPF APM). The kernel and BTF checks are the ones the obi receiver makes when it is
+# created (CheckOSSupport in OBI's pkg/obi/os.go): if they fail, the receiver can't be
+# created and the collector doesn't start while the receiver is in its config.
+# Logs each failed check and returns non-zero if any failed.
+ebpf_preflight_check() {
+  local failed=0
+  local kernel kernel_major kernel_minor btf_found path lockdown
+
+  kernel=$(uname -r)
+  kernel_major=$(echo "$kernel" | cut -d. -f1)
+  kernel_minor=$(echo "$kernel" | cut -d. -f2 | sed 's/[^0-9].*//')
+  if [ $(( kernel_major * 1000 + kernel_minor )) -lt 5008 ]; then
+    log_warn "eBPF preflight: kernel ${kernel} is not supported (needs 5.8 or later)."
+    failed=1
+  fi
+
+  # Same locations as OBI's hasBTF (libbpf's vmlinux BTF search paths).
+  btf_found=false
+  for path in /sys/kernel/btf/vmlinux \
+    "/boot/vmlinux-${kernel}" \
+    "/lib/modules/${kernel}/vmlinux-${kernel}" \
+    "/lib/modules/${kernel}/build/vmlinux" \
+    "/usr/lib/modules/${kernel}/kernel/vmlinux" \
+    "/usr/lib/debug/boot/vmlinux-${kernel}" \
+    "/usr/lib/debug/boot/vmlinux-${kernel}.debug" \
+    "/usr/lib/debug/lib/modules/${kernel}/vmlinux"; do
+    if [ -e "$path" ]; then
+      btf_found=true
+      break
+    fi
+  done
+  if [ "$btf_found" = false ]; then
+    log_warn "eBPF preflight: the kernel has no BTF (/sys/kernel/btf/vmlinux not found; needs CONFIG_DEBUG_INFO_BTF=y)."
+    failed=1
+  fi
+
+  case "$(uname -m)" in
+    x86_64|aarch64) ;;
+    *)
+      log_warn "eBPF preflight: architecture $(uname -m) is not supported (needs x86_64 or aarch64)."
+      failed=1
+      ;;
+  esac
+
+  # Lockdown in confidentiality mode stops eBPF programs from reading kernel memory,
+  # so they fail to load.
+  lockdown=$(cat /sys/kernel/security/lockdown 2>/dev/null)
+  if echo "$lockdown" | grep -q '\[confidentiality\]'; then
+    log_warn "eBPF preflight: kernel lockdown is in confidentiality mode, which blocks the agent's eBPF programs."
+    failed=1
+  fi
+
+  return "$failed"
+}
+
+if [ "${MW_OBI_EMBEDDED}" = true ]; then
+  log_info "Checking whether this host can run eBPF (cloud network monitoring, eBPF APM)..."
+  if ebpf_preflight_check; then
+    log_ok "eBPF preflight passed: cloud network monitoring and eBPF APM can run on this host."
+  else
+    log_warn "This host can't run cloud network monitoring or eBPF APM. Installing the agent anyway; its other features are unaffected."
+    for feature in MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING MW_AGENT_FEATURES_EBPF_APM; do
+      if is_true "${!feature}"; then
+        log_warn "${feature} is enabled but won't work on this host."
+      fi
+    done
+  fi
+fi
 
 
 log_info "The host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
@@ -532,7 +628,16 @@ fi
 # -------------------------------------------------------
 # OBI Agent Installation
 # -------------------------------------------------------
-if [ "${MW_ENABLE_OBI}" = true ]; then
+if [ "${MW_OBI_EMBEDDED}" = true ]; then
+  log_info "Standalone OBI Agent not installed: Middleware Agent ${MW_VERSION} runs OBI itself (MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING, MW_AGENT_FEATURES_EBPF_APM)."
+  if [ -n "${MW_ENABLE_OBI_REQUESTED}" ]; then
+    log_info "MW_ENABLE_OBI=${MW_ENABLE_OBI_REQUESTED} has no effect from Middleware Agent ${MW_OBI_EMBEDDED_SINCE} on."
+  fi
+  if [ -f /etc/systemd/system/obi-agent.service ]; then
+    log_warn "A standalone obi-agent service from an earlier install is still on this host and may send the same data as mw-agent's eBPF features. Remove it with:"
+    log_warn "  sudo bash -c \"\$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)\" -- --uninstall"
+  fi
+elif [ "${MW_ENABLE_OBI}" = true ]; then
   log_info "Installing OBI Agent..."
   echo ""
   if ! run_cmd bash -c "$(curl -fsSL https://install.middleware.io/scripts/install-obi.sh)"; then
