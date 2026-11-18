@@ -72,9 +72,24 @@ send_logs "tried" "Agent Installation Attempted"
 
 MW_LOG_PATHS=""
 
-if [ "${MW_AGENT_DOCKER_IMAGE}" = "" ]; then 
-  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:master"
+get_latest_mw_agent_version() {
+  # Image tags on ghcr.io match the mw-agent GitHub release tags (e.g. 1.21.3).
+  curl --silent "https://api.github.com/repos/middleware-labs/mw-agent/releases/latest" \
+    | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+}
+
+if [ "${MW_AGENT_DOCKER_IMAGE}" = "" ]; then
+  mw_image_tag="${MW_VERSION}"
+  if [ -z "$mw_image_tag" ]; then
+    mw_image_tag=$(get_latest_mw_agent_version)
+  fi
+  if [ -z "$mw_image_tag" ] || [ "$mw_image_tag" = "null" ]; then
+    echo "Could not determine the latest mw-agent release, falling back to the 'master' image tag"
+    mw_image_tag="master"
+  fi
+  MW_AGENT_DOCKER_IMAGE="ghcr.io/middleware-labs/mw-host-agent:${mw_image_tag}"
 fi
+echo -e "\nUsing Middleware Agent image ${MW_AGENT_DOCKER_IMAGE}"
 export MW_AGENT_DOCKER_IMAGE
 
 
@@ -186,6 +201,12 @@ if [[ $(uname) == "Darwin" ]]; then
   -p 9319:9319 -p 9320:9320 -p 8006:8006  $MW_AGENT_DOCKER_IMAGE"
 
 else
+
+  if [ "${MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING}" = "true" ]; then
+    dockerrun="$dockerrun \
+    -v /sys/fs/cgroup:/sys/fs/cgroup \
+    -v /sys/kernel/tracing:/sys/kernel/tracing"
+  fi
 
   dockerrun="$dockerrun \
   -v /var/run/docker.sock:/var/run/docker.sock \
