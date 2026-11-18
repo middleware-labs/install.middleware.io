@@ -317,7 +317,7 @@ if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
   export MW_AGENT_FEATURES_SYNTHETIC_MONITORING
 fi
 
-# Cloud network monitoring and eBPF APM: the obi receiver inside mw-agent (2.0.804+).
+# Cloud network monitoring and eBPF APM: the obi receiver inside mw-agent (2.0.1+).
 # The eBPF preflight check below warns on hosts that can't run them.
 if [ -n "${MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING}" ]; then
   export MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING
@@ -362,9 +362,9 @@ if [ "${MW_ENABLE_OBI}" = "" ]; then
 fi
 export MW_ENABLE_OBI
 
-# From 2.0.804 on, mw-agent runs OBI itself (the obi receiver), so the standalone
+# From 2.0.1 on, mw-agent runs OBI itself (the obi receiver), so the standalone
 # obi-agent service from install-obi.sh is installed only for older versions.
-MW_OBI_EMBEDDED_SINCE="2.0.804"
+MW_OBI_EMBEDDED_SINCE="2.0.1"
 MW_OBI_EMBEDDED=false
 if ! version_lt "${MW_VERSION#v}" "${MW_OBI_EMBEDDED_SINCE}~"; then
   MW_OBI_EMBEDDED=true
