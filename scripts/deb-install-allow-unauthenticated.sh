@@ -207,7 +207,7 @@ fi
 echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]\n"
 
 # Adding APT repo address & public key to system
-sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg
+sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --batch --yes --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg
 sudo touch /etc/apt/sources.list.d/"$MW_APT_LIST"
 
 echo -e "Adding Middleware Agent APT Repository ...\n"
