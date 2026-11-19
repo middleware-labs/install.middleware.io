@@ -344,9 +344,16 @@ if [ -n "${MW_AGENT_FEATURES_EBPF_APM}" ]; then
   export MW_AGENT_FEATURES_EBPF_APM
 fi
 
-# OTel Injector defaults
+# APM service auto-detection: off unless asked for, like the features above (the agent's
+# own default is on).
+if [ -z "${MW_AGENT_FEATURES_REPORT_SERVICES}" ]; then
+  MW_AGENT_FEATURES_REPORT_SERVICES=false
+fi
+export MW_AGENT_FEATURES_REPORT_SERVICES
+
+# OTel Injector: off unless asked for
 if [ "${MW_ENABLE_INJECTOR}" = "" ]; then
-  MW_ENABLE_INJECTOR=true
+  MW_ENABLE_INJECTOR=false
 fi
 export MW_ENABLE_INJECTOR
 
@@ -672,7 +679,7 @@ if [ "${MW_ENABLE_INJECTOR}" = true ]; then
     log_warn "OpenTelemetry Injector installation did not complete; continuing without it. Core agent monitoring is unaffected."
   fi
 else
-  log_info "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR})."
+  log_info "OTel Injector installation skipped (MW_ENABLE_INJECTOR=${MW_ENABLE_INJECTOR}). Set MW_ENABLE_INJECTOR=true to install it."
   echo ""
 fi
 
