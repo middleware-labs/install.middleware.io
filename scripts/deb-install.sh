@@ -460,7 +460,7 @@ log_info "The host agent will monitor all '.log' files inside your /var/log dire
 # Adding APT repo address & public key to system
 log_info "Adding GPG key and APT repository..."
 set -o pipefail
-if ! sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg; then
+if ! sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --batch --yes --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg; then
   log_error "Failed to download or import the Middleware APT GPG key."
   exit 1
 fi
@@ -482,7 +482,7 @@ echo "$APT_UPDATE_OUTPUT"
 if [ $APT_UPDATE_STATUS -ne 0 ] || echo "$APT_UPDATE_OUTPUT" | grep -q "NO_PUBKEY"; then
   log_warn "apt-get update failed or reported an unsigned repository (possible NO_PUBKEY). Attempting recovery..."
   sudo dpkg --configure -a || true
-  if ! sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg; then
+  if ! sudo curl -q -fs https://apt.middleware.io/gpg-keys/mw-agent-apt-public.key | sudo gpg --batch --yes --dearmor -o "$MW_KEYRING_LOCATION"/middleware-keyring.gpg; then
     log_error "Retry of GPG key import failed."
     exit 1
   fi
@@ -496,8 +496,19 @@ if [ $APT_UPDATE_STATUS -ne 0 ] || echo "$APT_UPDATE_OUTPUT" | grep -q "NO_PUBKE
 fi
 log_ok "Package lists updated."
 
+# apt-get does nothing when this exact version is already installed, so the
+# package's postinst would not run. The postinst is what sets up the mode
+# MW_REMOTE_MANAGEMENT asks for (supervisor-config.yaml for OpAMP), so
+# switching modes at the same version would leave the new unit without its
+# config. Reinstall in that case so the postinst runs again.
+MW_APT_INSTALL_ARGS=()
+if [ "$(dpkg-query -W -f='${Status} ${Version}' "${MW_AGENT_BINARY}" 2>/dev/null)" = "install ok installed ${MW_VERSION}" ]; then
+  log_info "Middleware Agent ${MW_VERSION} is already installed; reinstalling it to apply this configuration."
+  MW_APT_INSTALL_ARGS=(--reinstall)
+fi
+
 log_info "Installing Middleware Agent (${MW_AGENT_BINARY}=${MW_VERSION})..."
-if ! run_cmd apt-get install -y "${MW_AGENT_BINARY}=$MW_VERSION"; then
+if ! run_cmd apt-get install -y "${MW_APT_INSTALL_ARGS[@]}" "${MW_AGENT_BINARY}=$MW_VERSION"; then
   log_error "Failed to install Middleware Agent."
   exit 1
 fi
